@@ -92,6 +92,21 @@ export default function VocabularyPage() {
         </h2>
         <VocabQuiz questions={questions} />
       </section>
+
+      <Link
+        href="/quiz"
+        className="hover-pop mt-8 flex items-center justify-between gap-4 rounded-3xl bg-gradient-to-br from-brand to-grape p-5 text-white shadow-md focus-visible:ring-4 focus-visible:ring-brand/40 focus-visible:outline-none"
+      >
+        <span>
+          <span className="font-display block text-lg font-bold">
+            Comprehension quiz
+          </span>
+          <span className="text-white/85">Show what you understood.</span>
+        </span>
+        <span className="font-display shrink-0 rounded-full bg-white px-5 py-2 font-semibold text-brand">
+          Start →
+        </span>
+      </Link>
     </div>
   );
 }

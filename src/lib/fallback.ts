@@ -1,4 +1,4 @@
-import type { FrontPage, Story, VocabularyItem } from "@/lib/schemas";
+import type { FrontPage, Question, Story, VocabularyItem } from "@/lib/schemas";
 
 /** Safe, static front-page content so the page never renders empty (§6.3). */
 export const FALLBACK_FRONT_PAGE: FrontPage = {
@@ -107,5 +107,72 @@ export const FALLBACK_VOCABULARY: VocabularyItem[] = [
     exampleFromStory: "He was a curious explorer, just like you.",
     synonyms: ["inquisitive"],
     antonyms: ["uninterested"],
+  },
+];
+
+export const FALLBACK_QUESTIONS: Question[] = [
+  {
+    id: "q1",
+    type: "literal",
+    question: "Where did Maya find the lantern?",
+    choices: ["In the attic", "In the kitchen", "In the garden", "At school"],
+    answer: "In the attic",
+    explanation: "Maya climbed the stairs to the attic and found it there.",
+    rubric: {
+      mustInclude: ["attic"],
+      niceToHave: [],
+      commonWrongPatterns: ["kitchen", "garden"],
+    },
+  },
+  {
+    id: "q2",
+    type: "literal",
+    question: "What did Maya use to polish the lantern?",
+    answer: "her sleeve",
+    explanation: "She polished the lantern gently with her sleeve.",
+    rubric: {
+      mustInclude: ["sleeve"],
+      niceToHave: [],
+      commonWrongPatterns: ["cloth", "water"],
+    },
+  },
+  {
+    id: "q3",
+    type: "inferential",
+    question: "Why do you think the lantern felt special to Maya?",
+    answer:
+      "It was old and glowed with a warm light, and it had belonged to her great-grandfather.",
+    explanation:
+      "The lantern glowed after she polished it, and Grandma said it belonged to her great-grandfather.",
+    rubric: {
+      mustInclude: ["it glowed or it belonged to her great-grandfather"],
+      niceToHave: ["mentions it was old or a family treasure"],
+      commonWrongPatterns: ["says it was brand new"],
+    },
+  },
+  {
+    id: "q4",
+    type: "vocabulary-in-context",
+    question: "In the story, what does “flickered” mean?",
+    answer: "shone with a light that was not steady",
+    explanation: "The glow flickered, then steadied — it wavered at first.",
+    rubric: {
+      mustInclude: ["unsteady or wavering light"],
+      niceToHave: [],
+      commonWrongPatterns: ["says it went out completely"],
+    },
+  },
+  {
+    id: "q5",
+    type: "theme",
+    question: "What is the main idea of the story?",
+    answer: "Being curious can lead you to wonderful discoveries.",
+    explanation:
+      "Maya's curiosity led her to explore the attic and discover a family treasure.",
+    rubric: {
+      mustInclude: ["curiosity leads to discovery"],
+      niceToHave: ["mentions exploring or family"],
+      commonWrongPatterns: ["says the story is about cleaning"],
+    },
   },
 ];

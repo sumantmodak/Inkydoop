@@ -131,6 +131,23 @@ export const PackSummarySchema = z.object({
 
 export const GradeSchema = z.enum(["nailed_it", "almost", "lets_look_again"]);
 
+/** One grader's structured output (§6.5 Step 3). */
+export const GraderOutputSchema = z.object({
+  score: GradeSchema,
+  mustIncludeHits: z.array(z.string()),
+  mustIncludeMissed: z.array(z.string()),
+  wrongPatternHits: z.array(z.string()),
+  confidence: z.number().min(0).max(1),
+});
+
+/** Final result returned by the grading pipeline / POST /api/grade. */
+export const GradeResultSchema = z.object({
+  grade: GradeSchema,
+  feedback: z.string(),
+  graderAgreement: z.boolean(),
+  judged: z.boolean(),
+});
+
 /** Produced by the §6.5 grading pipeline. */
 export const QuizAttemptSchema = z.object({
   questionId: z.string(),
@@ -158,4 +175,6 @@ export type DailyPack = z.infer<typeof DailyPackSchema>;
 export type FrontPage = z.infer<typeof FrontPageSchema>;
 export type PackSummary = z.infer<typeof PackSummarySchema>;
 export type Grade = z.infer<typeof GradeSchema>;
+export type GraderOutput = z.infer<typeof GraderOutputSchema>;
+export type GradeResult = z.infer<typeof GradeResultSchema>;
 export type QuizAttempt = z.infer<typeof QuizAttemptSchema>;
