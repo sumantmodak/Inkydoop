@@ -113,6 +113,12 @@ export const DailyPackSchema = z.object({
   questions: z.array(QuestionSchema),
 });
 
+/** Story-independent front-page content (§6.1 Step 4). */
+export const FrontPageSchema = z.object({
+  wordOfTheDay: WordOfTheDaySchema,
+  interestingSentences: z.array(InterestingSentenceSchema),
+});
+
 /** Metadata-only projection for the Story Library (§3.5). */
 export const PackSummarySchema = z.object({
   date: DateSchema,
@@ -149,6 +155,7 @@ export type QuestionType = z.infer<typeof QuestionTypeSchema>;
 export type Rubric = z.infer<typeof RubricSchema>;
 export type Question = z.infer<typeof QuestionSchema>;
 export type DailyPack = z.infer<typeof DailyPackSchema>;
+export type FrontPage = z.infer<typeof FrontPageSchema>;
 export type PackSummary = z.infer<typeof PackSummarySchema>;
 export type Grade = z.infer<typeof GradeSchema>;
 export type QuizAttempt = z.infer<typeof QuizAttemptSchema>;
