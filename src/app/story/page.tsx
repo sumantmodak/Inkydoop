@@ -13,8 +13,7 @@ export default async function StoryPage() {
   const cover = story.images.find((img) => img.role === "cover");
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-6 sm:py-10">
-      <FreshnessBanner meta={meta} />
+    <div className="mx-auto w-full max-w-2xl px-4 py-6 sm:py-8">
       <Link
         href="/"
         className="font-display inline-flex items-center gap-1 rounded-full bg-surface px-4 py-1.5 text-sm font-semibold text-brand shadow-sm transition-transform hover:-translate-x-0.5 focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none"
@@ -22,49 +21,50 @@ export default async function StoryPage() {
         ← Back
       </Link>
 
-      <article className="mt-5">
-        {cover ? (
-          <header className="animate-pop-in group relative mb-8 overflow-hidden rounded-[2rem] shadow-xl ring-4 ring-white dark:ring-surface">
-            <StoryImage
-              alt={cover.alt}
-              blobPath={cover.blobPath}
-              className="aspect-[4/3] w-full transition-transform duration-700 group-hover:scale-105 sm:aspect-[16/10]"
-            />
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
-            <span className="font-display absolute top-4 left-4 -rotate-3 rounded-full bg-sunny px-3 py-1 text-xs font-extrabold text-[#2b2d52] shadow-md">
+      {cover?.blobPath ? (
+        <div className="animate-pop-in group relative mt-4 overflow-hidden rounded-3xl shadow-md">
+          <StoryImage
+            alt={cover.alt}
+            blobPath={cover.blobPath}
+            className="w-full transition-transform duration-700 group-hover:scale-105"
+          />
+          <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
+            <span className="font-display inline-block -rotate-2 rounded-full bg-sunny px-3 py-1 text-xs font-extrabold text-[#2b2d52] shadow-md">
               ✦ Today&apos;s Story
             </span>
-            <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7">
-              <h1 className="font-display text-3xl font-bold tracking-tight text-white drop-shadow-md sm:text-5xl">
-                {story.title}
-              </h1>
-              <p className="mt-2 text-sm font-medium text-white/90">
-                {story.readingTimeMin} min read · tap a{" "}
-                <span className="font-semibold text-sunny">highlighted</span>{" "}
-                word for its meaning
-              </p>
-            </div>
-          </header>
-        ) : (
-          <header className="mb-6">
-            <h1 className="font-display text-3xl font-bold tracking-tight text-brand sm:text-4xl">
+            <h1 className="font-display mt-2 text-3xl font-bold tracking-tight text-white [text-shadow:0_2px_10px_rgba(0,0,0,0.6)] sm:text-4xl">
               {story.title}
             </h1>
-            <p className="mt-2 text-sm text-muted">
+            <p className="mt-1.5 text-sm font-medium text-white [text-shadow:0_1px_6px_rgba(0,0,0,0.65)]">
               {story.readingTimeMin} min read · tap a{" "}
-              <span className="font-semibold text-brand">highlighted</span> word
+              <span className="font-semibold text-sunny">highlighted</span> word
               for its meaning
             </p>
-          </header>
-        )}
-
-        <div className="mt-6">
-          <StoryBody
-            paragraphs={story.paragraphs}
-            images={story.images}
-            vocabulary={vocabulary}
-          />
+          </div>
         </div>
+      ) : (
+        <div className="mt-5">
+          <h1 className="font-display text-3xl font-bold tracking-tight text-brand sm:text-4xl">
+            {story.title}
+          </h1>
+          <p className="mt-2 text-sm text-muted">
+            {story.readingTimeMin} min read · tap a{" "}
+            <span className="font-semibold text-brand">highlighted</span> word
+            for its meaning
+          </p>
+        </div>
+      )}
+
+      <div className="mt-6">
+        <FreshnessBanner meta={meta} />
+      </div>
+
+      <article className="mt-2">
+        <StoryBody
+          paragraphs={story.paragraphs}
+          images={story.images}
+          vocabulary={vocabulary}
+        />
 
         <Link
           href="/vocabulary"

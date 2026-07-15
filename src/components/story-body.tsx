@@ -127,37 +127,44 @@ export function StoryBody({ paragraphs, images, vocabulary }: StoryBodyProps) {
     );
   }
 
+  const scenes = images.filter((img) => img.role === "scene");
+  const sceneOrder = new Map(scenes.map((s, idx) => [s, idx]));
+
+  function sceneFigure(img: StoryImageType) {
+    const idx = sceneOrder.get(img) ?? 0;
+    const left = idx % 2 === 0;
+    const frame = left ? "bg-sky" : "bg-bubble";
+    const tilt = left ? "sm:-rotate-2" : "sm:rotate-2";
+    return (
+      <figure
+        key={`scene-${idx}`}
+        className={`animate-pop-in mx-auto w-full transition-transform duration-300 hover:rotate-0 sm:hover:scale-[1.02] ${tilt}`}
+      >
+        <div className={`torn p-2.5 shadow-xl ${frame}`}>
+          <StoryImage
+            alt={img.alt}
+            blobPath={img.blobPath}
+            className="torn aspect-[4/3] w-full"
+          />
+        </div>
+        <figcaption
+          aria-hidden="true"
+          className="font-display mt-3 text-center text-sm text-muted italic"
+        >
+          {img.alt}
+        </figcaption>
+      </figure>
+    );
+  }
+
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
       {paragraphs.map((text, i) => (
-        <div key={i} className="flex flex-col gap-5">
+        <div key={i} className="flex flex-col gap-6">
           {renderParagraph(text, i)}
-          {images
-            .filter((img) => img.role === "scene" && img.afterParagraph === i)
-            .map((img, j) => {
-              const tilt = j % 2 === 0 ? "sm:-rotate-2" : "sm:rotate-2";
-              const frame = j % 2 === 0 ? "bg-sky" : "bg-bubble";
-              return (
-                <figure
-                  key={`img-${i}-${j}`}
-                  className={`animate-pop-in mx-auto my-4 w-full max-w-xl transition-transform duration-300 hover:rotate-0 sm:hover:scale-[1.03] ${tilt}`}
-                >
-                  <div className={`torn p-2.5 shadow-xl ${frame}`}>
-                    <StoryImage
-                      alt={img.alt}
-                      blobPath={img.blobPath}
-                      className="torn aspect-[4/3] w-full"
-                    />
-                  </div>
-                  <figcaption
-                    aria-hidden="true"
-                    className="font-display mt-3 text-center text-sm text-muted italic"
-                  >
-                    {img.alt}
-                  </figcaption>
-                </figure>
-              );
-            })}
+          {scenes
+            .filter((img) => img.afterParagraph === i)
+            .map((img) => sceneFigure(img))}
         </div>
       ))}
 
