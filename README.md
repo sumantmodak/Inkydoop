@@ -1,4 +1,4 @@
-# inkydoop
+# Inkydoop
 
 An AI‑powered English Language Arts (ELA) web app for **elementary school students (grades 3–5)**. Every day brings a fresh word, a short AI‑generated story, vocabulary practice, and reading‑comprehension questions — all in a kid‑friendly UI.
 

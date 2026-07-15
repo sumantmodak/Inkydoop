@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Secrets and local env
+.env
+.env.local
+.env*.local
+
+# Next.js build output
+.next/
+out/
+next-env.d.ts
+
+# Azurite local storage emulator
+.azurite/
+
+# Test / coverage output
+coverage/
+playwright-report/
+test-results/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
