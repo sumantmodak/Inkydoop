@@ -23,22 +23,40 @@ export default async function StoryPage() {
       </Link>
 
       <article className="mt-5">
-        {cover && (
-          <StoryImage
-            alt={cover.alt}
-            blobPath={cover.blobPath}
-            className="animate-pop-in mb-6 h-56 w-full rounded-3xl shadow-md"
-          />
+        {cover ? (
+          <header className="animate-pop-in relative mb-8 overflow-hidden rounded-[2rem] shadow-xl ring-4 ring-white dark:ring-surface">
+            <StoryImage
+              alt={cover.alt}
+              blobPath={cover.blobPath}
+              className="aspect-[4/3] w-full sm:aspect-[16/10]"
+            />
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
+            <span className="font-display absolute top-4 left-4 -rotate-3 rounded-full bg-sunny px-3 py-1 text-xs font-extrabold text-[#2b2d52] shadow-md">
+              ✦ Today&apos;s Story
+            </span>
+            <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7">
+              <h1 className="font-display text-3xl font-bold tracking-tight text-white drop-shadow-md sm:text-5xl">
+                {story.title}
+              </h1>
+              <p className="mt-2 text-sm font-medium text-white/90">
+                {story.readingTimeMin} min read · tap a{" "}
+                <span className="font-semibold text-sunny">highlighted</span>{" "}
+                word for its meaning
+              </p>
+            </div>
+          </header>
+        ) : (
+          <header className="mb-6">
+            <h1 className="font-display text-3xl font-bold tracking-tight text-brand sm:text-4xl">
+              {story.title}
+            </h1>
+            <p className="mt-2 text-sm text-muted">
+              {story.readingTimeMin} min read · tap a{" "}
+              <span className="font-semibold text-brand">highlighted</span> word
+              for its meaning
+            </p>
+          </header>
         )}
-
-        <h1 className="font-display text-3xl font-bold tracking-tight text-brand sm:text-4xl">
-          {story.title}
-        </h1>
-        <p className="mt-2 text-sm text-muted">
-          {story.readingTimeMin} min read · tap a{" "}
-          <span className="font-semibold text-brand">highlighted</span> word for
-          its meaning
-        </p>
 
         <div className="mt-6">
           <StoryBody

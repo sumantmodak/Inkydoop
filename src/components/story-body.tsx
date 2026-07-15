@@ -134,14 +134,30 @@ export function StoryBody({ paragraphs, images, vocabulary }: StoryBodyProps) {
           {renderParagraph(text, i)}
           {images
             .filter((img) => img.role === "scene" && img.afterParagraph === i)
-            .map((img, j) => (
-              <StoryImage
-                key={`img-${i}-${j}`}
-                alt={img.alt}
-                blobPath={img.blobPath}
-                className="h-48 w-full rounded-2xl shadow-sm"
-              />
-            ))}
+            .map((img, j) => {
+              const tilt = j % 2 === 0 ? "sm:-rotate-2" : "sm:rotate-2";
+              const frame = j % 2 === 0 ? "bg-sky" : "bg-bubble";
+              return (
+                <figure
+                  key={`img-${i}-${j}`}
+                  className={`animate-pop-in mx-auto my-3 w-full max-w-md transition-transform duration-300 hover:rotate-0 sm:hover:scale-[1.03] ${tilt}`}
+                >
+                  <div className={`torn p-2.5 shadow-xl ${frame}`}>
+                    <StoryImage
+                      alt={img.alt}
+                      blobPath={img.blobPath}
+                      className="torn aspect-[4/3] w-full"
+                    />
+                  </div>
+                  <figcaption
+                    aria-hidden="true"
+                    className="font-display mt-3 text-center text-sm text-muted italic"
+                  >
+                    {img.alt}
+                  </figcaption>
+                </figure>
+              );
+            })}
         </div>
       ))}
 
