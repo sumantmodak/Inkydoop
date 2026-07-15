@@ -42,6 +42,7 @@ Keep this list in sync with `package.json` as scripts are added. Do not invent c
 ## Conventions
 
 - **Package manager:** pnpm. **Runtime:** Node 22.
+- **Next.js 16 (App Router).** APIs differ from older majors (e.g. async request APIs); verify against the installed version's bundled docs rather than assuming older-Next patterns. `CLAUDE.md` intentionally just points to this file.
 - **Validation:** define/extend Zod schemas in one place (`src/lib/schemas.ts`) and infer types from them — never hand-maintain a parallel `type`.
 - **Secrets:** never commit, log, or expose to the client bundle. Server-only env vars are **not** prefixed `NEXT_PUBLIC_`. `GENERATE_API_KEY`, `OPENROUTER_API_KEY`, and `IMAGE_API_KEY` are secrets (§11).
 - **Env access goes through the validated `src/lib/env.ts`**, not raw `process.env` scattered across the code.
