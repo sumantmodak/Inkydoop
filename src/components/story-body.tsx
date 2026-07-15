@@ -140,7 +140,7 @@ export function StoryBody({ paragraphs, images, vocabulary }: StoryBodyProps) {
               return (
                 <figure
                   key={`img-${i}-${j}`}
-                  className={`animate-pop-in mx-auto my-3 w-full max-w-md transition-transform duration-300 hover:rotate-0 sm:hover:scale-[1.03] ${tilt}`}
+                  className={`animate-pop-in mx-auto my-4 w-full max-w-xl transition-transform duration-300 hover:rotate-0 sm:hover:scale-[1.03] ${tilt}`}
                 >
                   <div className={`torn p-2.5 shadow-xl ${frame}`}>
                     <StoryImage

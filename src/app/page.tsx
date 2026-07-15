@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Mascot } from "@/components/mascot";
+import { StoryImage } from "@/components/story-image";
 import { FreshnessBanner } from "@/components/freshness-banner";
 import { getServedPack } from "@/lib/store/read";
 
@@ -24,6 +25,8 @@ const SENTENCE_SPANS = [
 export default async function Home() {
   const { pack, meta } = await getServedPack();
   const { wordOfTheDay, interestingSentences } = pack;
+  const story = pack.story;
+  const cover = story.images.find((img) => img.role === "cover");
 
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:py-10">
@@ -42,30 +45,40 @@ export default async function Home() {
       <main className="grid grid-cols-1 gap-4 sm:grid-cols-6">
         <Link
           href="/story"
-          aria-label="Read today's story"
-          className="hover-pop animate-pop-in group relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand to-grape p-6 text-white shadow-lg focus-visible:ring-4 focus-visible:ring-brand/40 focus-visible:outline-none sm:col-span-6 sm:p-8"
+          aria-label={`Read today's story: ${story.title}`}
+          className="hover-pop animate-pop-in group relative flex min-h-72 flex-col justify-end overflow-hidden rounded-3xl shadow-lg ring-4 ring-white focus-visible:ring-4 focus-visible:ring-brand/40 focus-visible:outline-none sm:col-span-6 sm:min-h-96 dark:ring-surface"
         >
-          <div className="relative z-10 flex items-center gap-5">
-            <Mascot className="animate-float h-24 w-24 shrink-0 drop-shadow-lg sm:h-28 sm:w-28" />
-            <div>
-              <p className="font-display text-sm font-semibold tracking-wide text-white/80 uppercase">
-                Today&apos;s Story
-              </p>
-              <h2 className="font-display mt-1 text-2xl font-bold sm:text-3xl">
-                Ready for a new adventure?
-              </h2>
-              <p className="mt-1 text-white/85">
-                A fresh illustrated story with vocabulary and questions.
-              </p>
-              <span className="mt-4 inline-flex items-center gap-2 rounded-full bg-white px-5 py-2 font-display font-semibold text-brand transition-transform group-hover:scale-105">
-                Read it now →
-              </span>
-            </div>
-          </div>
+          {cover ? (
+            <StoryImage
+              alt={cover.alt}
+              blobPath={cover.blobPath}
+              className="absolute inset-0 h-full w-full transition-transform duration-700 group-hover:scale-105"
+            />
+          ) : (
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 bg-gradient-to-br from-brand to-grape"
+            />
+          )}
           <div
             aria-hidden="true"
-            className="absolute -right-8 -bottom-10 h-40 w-40 rounded-full bg-white/10"
+            className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent"
           />
+          <Mascot className="animate-float absolute top-4 right-4 h-16 w-16 drop-shadow-lg sm:h-20 sm:w-20" />
+          <div className="relative z-10 p-6 sm:p-8">
+            <span className="font-display inline-block -rotate-2 rounded-full bg-sunny px-3 py-1 text-xs font-extrabold text-[#2b2d52] shadow-md">
+              ✦ Today&apos;s Story
+            </span>
+            <h2 className="font-display mt-3 text-3xl font-bold text-white drop-shadow-md sm:text-4xl">
+              {story.title}
+            </h2>
+            <p className="mt-1 max-w-md text-white/85">
+              A fresh illustrated story with vocabulary and questions.
+            </p>
+            <span className="font-display mt-4 inline-flex items-center gap-2 rounded-full bg-white px-5 py-2 font-semibold text-brand transition-transform group-hover:scale-105">
+              Read it now →
+            </span>
+          </div>
         </Link>
 
         <section

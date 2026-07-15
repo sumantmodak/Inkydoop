@@ -24,11 +24,11 @@ export default async function StoryPage() {
 
       <article className="mt-5">
         {cover ? (
-          <header className="animate-pop-in relative mb-8 overflow-hidden rounded-[2rem] shadow-xl ring-4 ring-white dark:ring-surface">
+          <header className="animate-pop-in group relative mb-8 overflow-hidden rounded-[2rem] shadow-xl ring-4 ring-white dark:ring-surface">
             <StoryImage
               alt={cover.alt}
               blobPath={cover.blobPath}
-              className="aspect-[4/3] w-full sm:aspect-[16/10]"
+              className="aspect-[4/3] w-full transition-transform duration-700 group-hover:scale-105 sm:aspect-[16/10]"
             />
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
             <span className="font-display absolute top-4 left-4 -rotate-3 rounded-full bg-sunny px-3 py-1 text-xs font-extrabold text-[#2b2d52] shadow-md">
