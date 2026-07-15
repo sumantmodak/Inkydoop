@@ -6,8 +6,14 @@ import { getServedPack } from "@/lib/store/read";
 
 export const dynamic = "force-dynamic";
 
-export default async function StoryPage() {
-  const { pack, meta } = await getServedPack();
+export default async function StoryPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ date?: string }>;
+}) {
+  const { date } = await searchParams;
+  const validDate = /^\d{4}-\d{2}-\d{2}$/.test(date ?? "") ? date : undefined;
+  const { pack, meta } = await getServedPack(validDate);
   const story = pack.story;
   const vocabulary = pack.vocabulary;
   const cover = story.images.find((img) => img.role === "cover");

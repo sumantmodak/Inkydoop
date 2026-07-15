@@ -37,7 +37,15 @@ export default async function Home() {
             Inkydoop
           </h1>
         </div>
-        <ThemeToggle />
+        <div className="flex items-center gap-2">
+          <Link
+            href="/library"
+            className="font-display rounded-full bg-surface px-4 py-1.5 text-sm font-semibold text-brand shadow-sm transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none"
+          >
+            Library
+          </Link>
+          <ThemeToggle />
+        </div>
       </header>
 
       <FreshnessBanner meta={meta} />

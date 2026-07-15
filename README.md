@@ -838,10 +838,10 @@ Task-by-task plan grouped by milestone. Each task lists **outputs** and **depend
 
 ### M6.6 — Story Library
 
-- [ ] **T6.6.1 Store `list()`** — add `list({ limit, cursor })` to `AzureTableDailyPackStore`: single-partition scan projecting metadata columns only, newest-first, returning `{ items: PackSummary[], nextCursor? }` from the Table continuation token (§5.4). Unit test paging. _Dep:_ T6.1, T6.2
-- [ ] **T6.6.2 `/api/stories`** — `GET /api/stories?limit=&cursor=` returns a metadata-only page; no `packJson`, no LLM. Zod-validate the response. _Dep:_ T6.6.1
-- [ ] **T6.6.3 Library UI** — `/library` route: responsive card grid (cover thumb, title, genre, theme, date, reading time) with infinite scroll / “load more” via `nextCursor`; graceful cover fallback when `coverBlobPath` is null. _Dep:_ T6.6.2, T6.5.4
-- [ ] **T6.6.4 Open a story** — card → `/story?date=YYYY-MM-DD` loads that pack via `GET /api/story?date=` and reuses the Story view (§3.2). _Dep:_ T6.6.3, T3.1, T6.4
+- [x] **T6.6.1 Store `list()`** — add `list({ limit, cursor })` to `AzureTableDailyPackStore`: single-partition scan projecting metadata columns only, newest-first, returning `{ items: PackSummary[], nextCursor? }` from the Table continuation token (§5.4). Unit test paging. _Dep:_ T6.1, T6.2
+- [x] **T6.6.2 `/api/stories`** — `GET /api/stories?limit=&cursor=` returns a metadata-only page; no `packJson`, no LLM. Zod-validate the response. _Dep:_ T6.6.1
+- [x] **T6.6.3 Library UI** — `/library` route: responsive card grid (cover thumb, title, genre, theme, date, reading time) with infinite scroll / “load more” via `nextCursor`; graceful cover fallback when `coverBlobPath` is null. _Dep:_ T6.6.2, T6.5.4
+- [x] **T6.6.4 Open a story** — card → `/story?date=YYYY-MM-DD` loads that pack via `GET /api/story?date=` and reuses the Story view (§3.2). _Dep:_ T6.6.3, T3.1, T6.4
 - [ ] **T6.6.5 Filter/search (optional)** — client-side genre filter + title search over the loaded metadata pages. _Dep:_ T6.6.3
 - **Acceptance:** the library lists all packs newest-first without loading full stories; paging works past one page; clicking any card loads that date’s story, vocab, and quiz.
 

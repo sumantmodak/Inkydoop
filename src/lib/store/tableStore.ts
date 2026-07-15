@@ -1,7 +1,11 @@
 import { TableClient, odata } from "@azure/data-tables";
 import { DefaultAzureCredential } from "@azure/identity";
 import { env } from "@/lib/env";
-import { DailyPackSchema, type DailyPack } from "@/lib/schemas";
+import {
+  DailyPackSchema,
+  type DailyPack,
+  type PackSummary,
+} from "@/lib/schemas";
 
 const PARTITION = "daily";
 
@@ -113,4 +117,60 @@ export async function upsertPack(date: string, pack: DailyPack): Promise<void> {
     readingTimeMin: pack.story.readingTimeMin,
   };
   await client.upsertEntity(entity, "Replace");
+}
+
+const DEFAULT_LIST_LIMIT = 12;
+const MAX_LIST_LIMIT = 50;
+
+/** Only the metadata columns projected for the Story Library (§5.4). */
+type PackMetaEntity = Pick<
+  PackEntity,
+  "date" | "title" | "genre" | "theme" | "readingTimeMin" | "coverBlobPath"
+>;
+
+export function clampListLimit(limit?: number): number {
+  if (!limit || !Number.isFinite(limit) || limit < 1) return DEFAULT_LIST_LIMIT;
+  return Math.min(Math.floor(limit), MAX_LIST_LIMIT);
+}
+
+export function entityToSummary(entity: PackMetaEntity): PackSummary {
+  return {
+    date: entity.date,
+    title: entity.title,
+    genre: entity.genre,
+    theme: entity.theme,
+    readingTimeMin: entity.readingTimeMin,
+    coverBlobPath: entity.coverBlobPath ? entity.coverBlobPath : null,
+  };
+}
+
+/** Metadata-only, paged, newest-first listing for the Story Library (§3.5). */
+export async function listPacks(opts?: {
+  limit?: number;
+  cursor?: string;
+}): Promise<{ items: PackSummary[]; nextCursor?: string }> {
+  const client = await getClient();
+  const limit = clampListLimit(opts?.limit);
+  const pages = client
+    .listEntities<PackEntity>({
+      queryOptions: {
+        filter: odata`PartitionKey eq ${PARTITION}`,
+        select: [
+          "date",
+          "title",
+          "genre",
+          "theme",
+          "readingTimeMin",
+          "coverBlobPath",
+        ],
+      },
+    })
+    .byPage({ maxPageSize: limit, continuationToken: opts?.cursor });
+
+  const { value } = await pages.next();
+  const page = (value ?? []) as PackEntity[] & { continuationToken?: string };
+  return {
+    items: page.map(entityToSummary),
+    nextCursor: page.continuationToken || undefined,
+  };
 }
