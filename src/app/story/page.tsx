@@ -41,6 +41,21 @@ export default function StoryPage() {
             vocabulary={vocabulary}
           />
         </div>
+
+        <Link
+          href="/vocabulary"
+          className="hover-pop mt-8 flex items-center justify-between gap-4 rounded-3xl bg-gradient-to-br from-mint to-sky p-5 text-white shadow-md focus-visible:ring-4 focus-visible:ring-mint/40 focus-visible:outline-none"
+        >
+          <span>
+            <span className="font-display block text-lg font-bold">
+              Practice the words
+            </span>
+            <span className="text-white/85">Try a quick vocabulary quiz.</span>
+          </span>
+          <span className="font-display shrink-0 rounded-full bg-white px-5 py-2 font-semibold text-emerald-700">
+            Let&apos;s go →
+          </span>
+        </Link>
       </article>
     </div>
   );
