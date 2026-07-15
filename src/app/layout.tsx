@@ -1,19 +1,20 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Fredoka, Lexend } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const fredoka = Fredoka({
+  variable: "--font-fredoka",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const lexend = Lexend({
+  variable: "--font-lexend",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "inkydoop — daily reading for grades 3–5",
+  title: "Inkydoop — daily reading for grades 3–5",
   description:
     "A fresh word, an AI-generated story, vocabulary practice, and reading questions every day.",
 };
@@ -30,7 +31,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${fredoka.variable} ${lexend.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />

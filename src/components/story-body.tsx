@@ -115,8 +115,8 @@ export function StoryBody({ paragraphs, images, vocabulary }: StoryBodyProps) {
               onClick={(e) => onWordClick(e, token)}
               className={
                 isVocab
-                  ? "rounded font-semibold text-sky-700 underline decoration-dotted underline-offset-2 hover:bg-sky-100 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none dark:text-sky-300 dark:hover:bg-sky-950/50"
-                  : "rounded hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none dark:hover:bg-slate-800"
+                  ? "rounded font-display font-semibold text-brand underline decoration-dotted decoration-2 underline-offset-2 hover:bg-brand/10 focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none"
+                  : "rounded hover:bg-brand/5 focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none"
               }
             >
               {token}
@@ -138,7 +138,7 @@ export function StoryBody({ paragraphs, images, vocabulary }: StoryBodyProps) {
               <StoryImage
                 key={`img-${i}-${j}`}
                 alt={img.alt}
-                className="h-48 w-full rounded-xl"
+                className="h-48 w-full rounded-2xl shadow-sm"
               />
             ))}
         </div>
@@ -157,27 +157,24 @@ export function StoryBody({ paragraphs, images, vocabulary }: StoryBodyProps) {
             role="dialog"
             aria-label={`Definition of ${popover.word}`}
             style={{ top: popover.top, left: popover.left }}
-            className="fixed z-20 w-72 rounded-xl border border-slate-200 bg-white p-4 shadow-lg dark:border-slate-700 dark:bg-slate-800"
+            className="animate-pop-in fixed z-20 w-72 rounded-2xl border-2 border-surface-border bg-surface p-4 shadow-xl"
           >
             <div className="flex items-baseline justify-between gap-2">
-              <span className="text-lg font-bold">{popover.word}</span>
+              <span className="font-display text-lg font-bold text-brand">
+                {popover.word}
+              </span>
               {popover.pos && (
-                <span className="text-xs text-slate-500 italic dark:text-slate-400">
-                  {popover.pos}
-                </span>
+                <span className="text-xs text-muted italic">{popover.pos}</span>
               )}
             </div>
-            <p
-              className="mt-1 text-slate-700 dark:text-slate-300"
-              aria-live="polite"
-            >
+            <p className="mt-1 text-foreground/90" aria-live="polite">
               {popover.loading ? "Looking it up\u2026" : popover.definition}
             </p>
             <button
               ref={closeRef}
               type="button"
               onClick={close}
-              className="mt-3 rounded-lg bg-slate-100 px-3 py-1 text-sm font-medium hover:bg-slate-200 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none dark:bg-slate-700 dark:hover:bg-slate-600"
+              className="font-display mt-3 rounded-full bg-brand px-4 py-1.5 text-sm font-semibold text-white transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none"
             >
               Close
             </button>

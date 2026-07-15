@@ -9,7 +9,7 @@ export function StoryImage({ alt, className }: StoryImageProps) {
     <div
       role="img"
       aria-label={alt}
-      className={`flex items-center justify-center bg-gradient-to-br from-sky-200 to-violet-200 p-4 text-center text-sm text-slate-600 dark:from-sky-900 dark:to-violet-900 dark:text-slate-300 ${className ?? ""}`}
+      className={`flex items-center justify-center bg-gradient-to-br from-brand/25 to-grape/25 p-4 text-center text-sm text-brand dark:from-brand/30 dark:to-grape/30 ${className ?? ""}`}
     >
       <span>{alt}</span>
     </div>

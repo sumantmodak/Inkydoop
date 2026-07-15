@@ -9,31 +9,29 @@ export default function StoryPage() {
   const cover = story.images.find((img) => img.role === "cover");
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:py-12">
+    <div className="mx-auto w-full max-w-2xl px-4 py-6 sm:py-10">
       <Link
         href="/"
-        className="text-sm text-sky-700 hover:underline focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none dark:text-sky-300"
+        className="font-display inline-flex items-center gap-1 rounded-full bg-surface px-4 py-1.5 text-sm font-semibold text-brand shadow-sm transition-transform hover:-translate-x-0.5 focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none"
       >
         ← Back
       </Link>
 
-      <article className="mt-4">
+      <article className="mt-5">
         {cover && (
           <StoryImage
             alt={cover.alt}
-            className="mb-6 h-56 w-full rounded-2xl"
+            className="animate-pop-in mb-6 h-56 w-full rounded-3xl shadow-md"
           />
         )}
 
-        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+        <h1 className="font-display text-3xl font-bold tracking-tight text-brand sm:text-4xl">
           {story.title}
         </h1>
-        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-2 text-sm text-muted">
           {story.readingTimeMin} min read · tap a{" "}
-          <span className="font-semibold text-sky-700 dark:text-sky-300">
-            highlighted
-          </span>{" "}
-          word for its meaning
+          <span className="font-semibold text-brand">highlighted</span> word for
+          its meaning
         </p>
 
         <div className="mt-6">

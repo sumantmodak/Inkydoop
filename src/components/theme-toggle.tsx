@@ -36,7 +36,7 @@ export function ThemeToggle() {
       onClick={() => setTheme(!dark)}
       aria-pressed={dark}
       aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
-      className="rounded-full border border-slate-300 p-2 text-slate-700 transition-colors hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
+      className="hover-wiggle rounded-full border-2 border-surface-border bg-surface p-2 text-brand shadow-sm transition-colors hover:bg-brand/10 focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none"
     >
       {dark ? (
         <svg

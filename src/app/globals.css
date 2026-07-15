@@ -2,25 +2,108 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+@theme {
+  --color-brand: #7c5cfc;
+  --color-brand-dark: #5b3fd6;
+  --color-sunny: #ffc93c;
+  --color-coral: #ff6b6b;
+  --color-sky: #38bdf8;
+  --color-mint: #34d399;
+  --color-grape: #a855f7;
+  --color-bubble: #ff8fd0;
+}
+
 :root {
-  --background: #fffdf7;
-  --foreground: #1f2937;
+  --background: #fff7ec;
+  --foreground: #2b2d52;
+  --surface: #ffffff;
+  --surface-border: #efe6d6;
+  --muted: #6b6f8d;
 }
 
 .dark {
-  --background: #0b1120;
-  --foreground: #e5e7eb;
+  --background: #10132b;
+  --foreground: #e7e9ff;
+  --surface: #1a1e3d;
+  --surface-border: #2b2f55;
+  --muted: #a2a7cc;
 }
 
 @theme inline {
+  --font-display: var(--font-fredoka), system-ui, sans-serif;
+  --font-sans: var(--font-lexend), system-ui, sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-surface: var(--surface);
+  --color-surface-border: var(--surface-border);
+  --color-muted: var(--muted);
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
+  background-image: radial-gradient(var(--surface-border) 1px, transparent 1px);
+  background-size: 22px 22px;
   color: var(--foreground);
-  font-family: var(--font-sans), system-ui, sans-serif;
+  font-family: var(--font-sans);
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes pop-in {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes wiggle {
+  0%,
+  100% {
+    transform: rotate(-2.5deg);
+  }
+  50% {
+    transform: rotate(2.5deg);
+  }
+}
+
+.animate-pop-in {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .animate-float {
+    animation: float 4s ease-in-out infinite;
+  }
+  .animate-pop-in {
+    animation: pop-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .hover-pop {
+    transition:
+      transform 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+  .hover-pop:hover {
+    transform: translateY(-4px) scale(1.02);
+  }
+  .hover-wiggle:hover {
+    animation: wiggle 0.4s ease-in-out;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-pop-in {
+    opacity: 1;
+  }
 }
