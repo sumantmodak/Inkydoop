@@ -41,6 +41,36 @@ export const StorySchema = z.object({
   images: z.array(StoryImageSchema),
 });
 
+/**
+ * Image spec produced by story generation (§6.1 Step 1). Becomes a StoryImage
+ * once rendered and uploaded (blobPath added in §6.1 Step 4.5).
+ */
+export const ImageSpecSchema = z.object({
+  role: z.enum(["cover", "scene"]),
+  afterParagraph: z.number().int(),
+  prompt: z.string(),
+  alt: z.string(),
+});
+
+/**
+ * Raw story-model output. Images may be missing/partial; a cheap follow-up
+ * fills them without re-rolling the story text (§6.1 Step 1).
+ */
+export const StoryDraftSchema = z.object({
+  title: z.string(),
+  genre: z.string(),
+  theme: z.string(),
+  paragraphs: z.array(z.string()),
+  candidateVocab: z.array(z.string()),
+  artDirection: ArtDirectionSchema,
+  images: z.array(ImageSpecSchema).optional(),
+});
+
+/** Validated story generation output (images guaranteed present). */
+export const GeneratedStorySchema = StoryDraftSchema.extend({
+  images: z.array(ImageSpecSchema),
+});
+
 export const VocabularyItemSchema = z.object({
   word: z.string(),
   pos: z.string(),
@@ -111,6 +141,9 @@ export type InterestingSentence = z.infer<typeof InterestingSentenceSchema>;
 export type ArtDirection = z.infer<typeof ArtDirectionSchema>;
 export type StoryImage = z.infer<typeof StoryImageSchema>;
 export type Story = z.infer<typeof StorySchema>;
+export type ImageSpec = z.infer<typeof ImageSpecSchema>;
+export type StoryDraft = z.infer<typeof StoryDraftSchema>;
+export type GeneratedStory = z.infer<typeof GeneratedStorySchema>;
 export type VocabularyItem = z.infer<typeof VocabularyItemSchema>;
 export type QuestionType = z.infer<typeof QuestionTypeSchema>;
 export type Rubric = z.infer<typeof RubricSchema>;

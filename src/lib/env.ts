@@ -43,6 +43,8 @@ const EnvSchema = z
 
 export type Env = z.infer<typeof EnvSchema>;
 
+let cached: Env | null = null;
+
 function loadEnv(): Env {
   const parsed = EnvSchema.safeParse(process.env);
   if (!parsed.success) {
@@ -54,4 +56,13 @@ function loadEnv(): Env {
   return parsed.data;
 }
 
-export const env = loadEnv();
+export function getEnv(): Env {
+  if (!cached) cached = loadEnv();
+  return cached;
+}
+
+// Lazy: validation runs on first property access (request time), not at import,
+// so `next build` doesn't require runtime secrets.
+export const env: Env = new Proxy({} as Env, {
+  get: (_target, prop) => getEnv()[prop as keyof Env],
+});
