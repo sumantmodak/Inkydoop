@@ -11,11 +11,18 @@ const SENTENCE_PILLS = [
   "bg-grape/25 text-purple-800 dark:text-purple-200",
 ];
 
+const SENTENCE_SPANS = [
+  "sm:col-span-3",
+  "sm:col-span-3",
+  "sm:col-span-2",
+  "sm:col-span-4",
+];
+
 export default function Home() {
   const { wordOfTheDay, interestingSentences } = FALLBACK_FRONT_PAGE;
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-6 sm:py-10">
+    <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:py-10">
       <header className="mb-8 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Mascot className="hover-wiggle h-11 w-11" />
@@ -26,11 +33,11 @@ export default function Home() {
         <ThemeToggle />
       </header>
 
-      <main className="flex flex-col gap-6">
+      <main className="grid grid-cols-1 gap-4 sm:grid-cols-6">
         <Link
           href="/story"
           aria-label="Read today's story"
-          className="hover-pop animate-pop-in group relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand to-grape p-6 text-white shadow-lg focus-visible:ring-4 focus-visible:ring-brand/40 focus-visible:outline-none sm:p-8"
+          className="hover-pop animate-pop-in group relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand to-grape p-6 text-white shadow-lg focus-visible:ring-4 focus-visible:ring-brand/40 focus-visible:outline-none sm:col-span-6 sm:p-8"
         >
           <div className="relative z-10 flex items-center gap-5">
             <Mascot className="animate-float h-24 w-24 shrink-0 drop-shadow-lg sm:h-28 sm:w-28" />
@@ -57,7 +64,7 @@ export default function Home() {
 
         <section
           aria-labelledby="wotd-heading"
-          className="animate-pop-in rounded-3xl border-2 border-sunny/40 bg-surface p-6 shadow-sm"
+          className="animate-pop-in rounded-3xl border-2 border-sunny/40 bg-surface p-6 shadow-sm sm:col-span-4"
           style={{ animationDelay: "80ms" }}
         >
           <div className="flex items-center gap-2">
@@ -91,26 +98,36 @@ export default function Home() {
           </ul>
         </section>
 
-        <section
-          aria-labelledby="sentences-heading"
-          className="animate-pop-in"
-          style={{ animationDelay: "160ms" }}
+        <aside
+          className="animate-pop-in flex flex-col items-center justify-center gap-2 rounded-3xl bg-gradient-to-br from-mint/25 to-sky/25 p-5 text-center shadow-sm sm:col-span-2"
+          style={{ animationDelay: "120ms" }}
         >
+          <Mascot className="animate-float h-14 w-14" />
+          <p className="font-display font-semibold text-brand">Tip!</p>
+          <p className="text-sm text-foreground/80">
+            Tap tricky words in the story to see what they mean.
+          </p>
+        </aside>
+
+        <section aria-labelledby="sentences-heading" className="contents">
           <h2
             id="sentences-heading"
-            className="font-display mb-3 text-sm font-bold tracking-wide text-muted uppercase"
+            className="font-display mt-2 text-sm font-bold tracking-wide text-muted uppercase sm:col-span-6"
           >
             Sparkling Sentences
           </h2>
-          <ul className="flex flex-col gap-3">
+          <ul className="contents">
             {interestingSentences.map((sentence, i) => (
               <li
                 key={i}
-                className="hover-pop flex flex-col gap-2 rounded-2xl border-2 border-surface-border bg-surface p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"
+                className={`hover-pop animate-pop-in flex flex-col gap-3 rounded-2xl border-2 border-surface-border bg-surface p-4 shadow-sm ${
+                  SENTENCE_SPANS[i % SENTENCE_SPANS.length]
+                }`}
+                style={{ animationDelay: `${180 + i * 60}ms` }}
               >
                 <span className="text-lg">{sentence.text}</span>
                 <span
-                  className={`w-fit shrink-0 rounded-full px-3 py-1 font-display text-xs font-semibold ${
+                  className={`w-fit rounded-full px-3 py-1 font-display text-xs font-semibold ${
                     SENTENCE_PILLS[i % SENTENCE_PILLS.length]
                   }`}
                 >
