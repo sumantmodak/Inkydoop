@@ -14,15 +14,16 @@ An AI‑powered English Language Arts (ELA) web app for **elementary school stud
 
 ## 2. Target Audience
 
-| Audience | Grades | Reading Level | Story Length | Vocabulary Difficulty |
-|----------|--------|---------------|--------------|-----------------------|
-| Elementary | 3–5 | Lexile ~600–1100 | ~1,000 words | Tier 1–2 words |
+| Audience   | Grades | Reading Level    | Story Length | Vocabulary Difficulty |
+| ---------- | ------ | ---------------- | ------------ | --------------------- |
+| Elementary | 3–5    | Lexile ~600–1100 | ~1,000 words | Tier 1–2 words        |
 
 All generated content targets this single band; no grade selector is required.
 
 ## 3. Core Features
 
 ### 3.1 Front Page
+
 - **Word of the Day** card
   - Word, pronunciation, part of speech
   - Kid‑friendly definition
@@ -30,13 +31,14 @@ All generated content targets this single band; no grade selector is required.
   - “Use it in a sentence” mini prompt
 - **Interesting Sentences** strip
   - 3–5 vivid, well‑crafted sentences (mix of imagery, idiom, strong verbs)
-  - Each sentence tagged with what makes it interesting (e.g., *metaphor*, *strong verb*, *alliteration*)
+  - Each sentence tagged with what makes it interesting (e.g., _metaphor_, _strong verb_, _alliteration_)
 - **Today’s Story** entry point (cover image / title / 1‑line hook)
 - Theme toggle
 
 > The **cover image** is the first `story.images[]` entry (`role: cover`), served from Azure Blob Storage.
 
 ### 3.2 Story
+
 - AI‑generated, **~1,000 words**, divided into short paragraphs/chapters.
 - Genre rotates daily (adventure, mystery, sci‑fi, friendship, fable, historical…).
 - Includes a small set of **target vocabulary** woven naturally into the prose.
@@ -45,6 +47,7 @@ All generated content targets this single band; no grade selector is required.
 - Estimated reading time displayed.
 
 ### 3.3 Vocabulary Builder
+
 - Pulls **5–10 interesting words** from today’s story.
 - For each word:
   - Definition, part of speech, example sentence (from the story)
@@ -56,6 +59,7 @@ All generated content targets this single band; no grade selector is required.
     - Use in your own sentence (AI feedback)
 
 ### 3.4 Comprehension Q&A
+
 - 5–8 questions generated from the story, mixing:
   - **Literal** (“Who…”, “Where…”)
   - **Inferential** (“Why did…”, “What might happen if…”)
@@ -68,6 +72,7 @@ All generated content targets this single band; no grade selector is required.
 - Optional score summary at the end.
 
 ### 3.5 Story Library (browse the archive)
+
 - A **browse page** listing **every** past daily pack, newest‑first.
 - Each entry is a card showing lightweight **metadata**: cover thumbnail, title, genre, theme, date, and reading time — no full story loaded until you open it.
 - **Paginated / infinite scroll** so the list stays fast as the archive grows (the store returns a continuation cursor, see §5.4).
@@ -114,23 +119,26 @@ Landing page
 
 - **Frontend:** Next.js (React) + TypeScript + Tailwind CSS
 - **Backend:** Next.js API routes (single deployable — TypeScript end‑to‑end; Go/C# were considered and rejected to avoid a two‑language system)
-- **AI:** OpenRouter API for text (model‑agnostic; default to a strong, low‑cost model) + a dedicated **image‑generation API** for illustrations
+- **AI:** OpenRouter API for text (model‑agnostic; **default to OpenAI models** — `openai/gpt-5.5` for the story, `openai/gpt-4o` for the judge, `openai/gpt-4o-mini` for the smaller tasks) + the **OpenAI Images API** (`gpt-image-1`) for illustrations
 - **Storage:** **Azure Table Storage** (`@azure/data-tables`) for the daily JSON pack + **Azure Blob Storage** (`@azure/storage-blob`) for story images — same drivers in dev and prod (dev uses the free **Azurite** emulator, which emulates both Table and Blob). See §5.4.
 - **Hosting:** Azure Container Apps (Managed Identity to both Table and Blob)
 
 ### 5.3 Why OpenRouter
+
 - One API key, many models — easy to A/B test quality vs. cost.
 - Can pin a specific model per content type (e.g. story vs. quiz generation).
 
 ### 5.4 Storage: Azure Table + Blob Storage
 
 We use two Azure Storage primitives in one Storage Account:
+
 - **Table Storage** for the daily JSON pack (tiny, keyed reads/writes).
 - **Blob Storage** for story images (binary, too large for Table's 64 KB/property cap).
 
 Our Table access pattern is tiny:
+
 - Write ≤ 1 row per day from `/api/generate`.
-- Read by exact key `date` or *“latest row where `date ≤ today`”*.
+- Read by exact key `date` or _“latest row where `date ≤ today`”_.
 - No joins, no relational queries, no user data yet.
 
 We use **Azure Table Storage in both dev and prod** — one driver, one code path, no environment drift.
@@ -155,11 +163,15 @@ We use **Azure Table Storage in both dev and prod** — one driver, one code pat
 ```ts
 interface DailyPackStore {
   get(date: string): Promise<DailyPack | null>;
-  getLatest(onOrBefore: string): Promise<{ date: string; pack: DailyPack } | null>;
+  getLatest(
+    onOrBefore: string,
+  ): Promise<{ date: string; pack: DailyPack } | null>;
   upsert(date: string, pack: DailyPack): Promise<void>;
   // Story Library (§3.5): metadata-only, paged, newest-first.
-  list(opts?: { limit?: number; cursor?: string }):
-    Promise<{ items: PackSummary[]; nextCursor?: string }>;
+  list(opts?: {
+    limit?: number;
+    cursor?: string;
+  }): Promise<{ items: PackSummary[]; nextCursor?: string }>;
 }
 
 class AzureTableDailyPackStore implements DailyPackStore {
@@ -193,17 +205,19 @@ To keep cost low and quality high, generate content **once per day** and cache i
 Each call to `/api/generate` runs the pipeline below. All LLM calls go through **OpenRouter** with `response_format: { type: "json_object" }` so we get parseable JSON, and every response is validated with **Zod** before we move on.
 
 #### Step 0 — Seed the day
+
 - Compute a deterministic seed from `date` (e.g. SHA‑256 → int).
 - Use the seed to pick:
   - **Genre** from a rotating list (adventure, mystery, sci‑fi, friendship, fable, historical, slice‑of‑life…).
-  - **Theme / motif** (e.g. *courage*, *curiosity*, *teamwork*, *change*).
+  - **Theme / motif** (e.g. _courage_, _curiosity_, _teamwork_, _change_).
   - **Setting hint** (forest, space station, small town, ancient market…).
 - Fixed constraints: target Lexile 500–800, ~1,000 words, Tier 1–2 vocabulary, short sentences.
 
 Determinism here means a `force` regenerate for the same date picks the same genre/theme — only the LLM output changes. This makes debugging predictable.
 
 #### Step 1 — Generate the story (one big call)
-- **Model:** `OPENROUTER_MODEL_STORY` (a stronger model, e.g. a 70B‑class instruct model).
+
+- **Model:** `OPENROUTER_MODEL_STORY` (the strongest model — default `openai/gpt-5.5` via OpenRouter; it also emits the art bible + image prompts).
 - **Inputs:** genre, theme, setting, target word count (~1,000), Lexile band (500–800), safety rules, a small list of **seed words** we’d like woven in (optional — story can introduce its own too).
 - **Output (JSON):** the story author also emits an **“art bible”** (`artDirection`) and the **image specs** (`images`) in the same call, so the model that knows the characters/setting/pacing is the one that describes them for illustration — this is what keeps characters consistent across images (see §6.1 Step 4.5).
   ```json
@@ -215,13 +229,15 @@ Determinism here means a `force` regenerate for the same date picks the same gen
     "candidateVocab": ["lantern", "echoed", "stubborn"],
     "artDirection": {
       "style": "soft watercolor children's-book illustration, warm palette",
-      "characters": [{ "name": "Mia", "look": "9-year-old, curly brown hair, red raincoat" }],
+      "characters": [
+        { "name": "Mia", "look": "9-year-old, curly brown hair, red raincoat" }
+      ],
       "setting": "a foggy seaside town at dusk"
     },
     "images": [
       { "role": "cover", "afterParagraph": -1, "prompt": "...", "alt": "..." },
-      { "role": "scene", "afterParagraph": 2,  "prompt": "...", "alt": "..." },
-      { "role": "scene", "afterParagraph": 5,  "prompt": "...", "alt": "..." }
+      { "role": "scene", "afterParagraph": 2, "prompt": "...", "alt": "..." },
+      { "role": "scene", "afterParagraph": 5, "prompt": "...", "alt": "..." }
     ]
   }
   ```
@@ -234,6 +250,7 @@ Determinism here means a `force` regenerate for the same date picks the same gen
 Why one call instead of chapter‑by‑chapter: keeps narrative coherence, costs less than multi‑turn drafting, and at ~1,000 words it fits comfortably in modern context windows. Emitting the art bible here (rather than re‑reading the story in a later call) means the illustrations share one canonical character/setting description — no drift from a second model re‑inferring what everyone looks like.
 
 #### Step 2 — Extract vocabulary from the story
+
 - **Model:** `OPENROUTER_MODEL_VOCAB` (smaller/cheaper model is fine).
 - **Inputs:** the full story text + `candidateVocab` hint.
 - **Task:** pick **5–10** words that are (a) actually present in the story, (b) appropriately challenging for grades 3–5, (c) varied (no two near‑synonyms).
@@ -253,6 +270,7 @@ Why one call instead of chapter‑by‑chapter: keeps narrative coherence, costs
 - **Validation:** every `exampleFromStory` must be a substring of the story (case‑insensitive); definitions max ~140 chars; reject duplicates.
 
 #### Step 3 — Generate comprehension questions
+
 - **Model:** `OPENROUTER_MODEL_QUIZ` (small model — questions are structured and short).
 - **Inputs:** the full story + the chosen vocabulary list.
 - **Task:** produce **5–8** questions with a required mix:
@@ -268,7 +286,12 @@ Why one call instead of chapter‑by‑chapter: keeps narrative coherence, costs
       "id": "q1",
       "type": "literal",
       "question": "Where did Mia find the lantern?",
-      "choices": ["In the attic", "Under the bed", "In the garden", "At school"],
+      "choices": [
+        "In the attic",
+        "Under the bed",
+        "In the garden",
+        "At school"
+      ],
       "answer": "In the attic",
       "explanation": "Paragraph 2 says Mia 'climbed to the attic and discovered the lantern.'",
       "rubric": {
@@ -279,10 +302,11 @@ Why one call instead of chapter‑by‑chapter: keeps narrative coherence, costs
     }
   ]
   ```
-- **Rubric (for grading, see §6.5):** every question also carries a **pre‑computed rubric** — frozen grading criteria written *before* any student answer exists. `mustInclude` = concepts required for full credit; `niceToHave` = optional extras; `commonWrongPatterns` = known misconceptions to catch. Pre‑computing keeps grading consistent across all students, prevents answer‑influenced rubric drift, and lets an admin review criteria before they go live.
+- **Rubric (for grading, see §6.5):** every question also carries a **pre‑computed rubric** — frozen grading criteria written _before_ any student answer exists. `mustInclude` = concepts required for full credit; `niceToHave` = optional extras; `commonWrongPatterns` = known misconceptions to catch. Pre‑computing keeps grading consistent across all students, prevents answer‑influenced rubric drift, and lets an admin review criteria before they go live.
 - **Validation:** answer must be one of `choices` (when present); every `explanation` should reference something verifiable in the story (we cheaply check that key answer phrases appear in the text); each `mustInclude` bullet must be non‑empty. On failure → regenerate that question only.
 
 #### Step 4 — Generate front‑page extras (independent of the story)
+
 - **Model:** `OPENROUTER_MODEL_WOTD` (small model).
 - Two parallel sub‑calls:
   1. **Word of the Day** — a word appropriate for grades 3–5 (not necessarily in the story), with pronunciation, kid‑friendly definition, 2–3 example sentences, and a one‑line “try using it” prompt.
@@ -290,32 +314,37 @@ Why one call instead of chapter‑by‑chapter: keeps narrative coherence, costs
 - These are **independent of the story** so the front page can refresh even if a story regeneration is in flight.
 
 #### Step 4.5 — Render illustrations (specs → images → Blob)
+
 The image **specs and art bible already exist** from Step 1 — this step is purely mechanical, no further story inference.
+
 - **Assemble each prompt:** `artDirection.style` + the relevant character `look`(s) + the spec's scene `prompt`, so every image shares one canonical style and character description (consistency by construction).
-- **Image model:** call the dedicated **image API** (`IMAGE_API_KEY` / `IMAGE_MODEL`) once per spec.
+- **Image model:** call the **OpenAI Images API** (`IMAGE_API_KEY` / `IMAGE_MODEL`, default `gpt-image-1`) once per spec.
 - **Safety:** every prompt carries kid‑safe constraints (no scary/violent imagery). Each returned image passes a **moderation check** before upload; on a trip, regenerate up to N=2, then drop that image.
 - **Upload:** convert to WebP, upload to Blob at `{date}/{role}-{n}.webp`, and record `{ role, afterParagraph, alt, blobPath }` in `story.images[]`.
 - **Non‑blocking:** illustrations never block a valid text pack. If an image fails after retries, the pack is still persisted with whatever images succeeded (or none) — the UI simply renders text without the missing image.
 
 #### Step 5 — Assemble, safety‑check, persist
+
 - Combine outputs into a single `DailyPack` (see §7).
 - Run the final **safety filter pass** over the whole pack (story + questions + WOTD + sentences + image alt text). If anything trips the filter at this stage, regenerate only the offending piece.
 - Compute `readingTimeMin` = `wordCount / 150` rounded up.
 - Persist image bytes to **Blob** and the JSON pack (with `story.images[]` blob paths) to **Table** with `UPSERT` on `date`; if `force=false` and a row exists, the endpoint returns `{ generated: false, reason: "exists" }` without calling any model.
 
 #### Cost & latency profile (rough)
-| Step | Model class | Tokens out | Notes |
-|------|-------------|-----------|-------|
-| 1 Story | Large | ~1.5k–2.5k | |
-| 2 Vocab | Small | ~300 | |
-| 3 Quiz | Small | ~500 | |
-| 4 WOTD + Sentences | Small | ~250 (parallel) | |
-| 4.5 Illustrations | Image API | 3 images | **New dominant cost** — ~1–4¢/image → ~3–12¢/day |
-| **Total per day** | — | text ~2.5k–3.5k + 3 images | Text ≈ a few cents; images dominate but still ~$1–4/month |
+
+| Step               | Model class | Tokens out                 | Notes                                                     |
+| ------------------ | ----------- | -------------------------- | --------------------------------------------------------- |
+| 1 Story            | Large       | ~1.5k–2.5k                 |                                                           |
+| 2 Vocab            | Small       | ~300                       |                                                           |
+| 3 Quiz             | Small       | ~500                       |                                                           |
+| 4 WOTD + Sentences | Small       | ~250 (parallel)            |                                                           |
+| 4.5 Illustrations  | Image API   | 3 images                   | **New dominant cost** — ~1–4¢/image → ~3–12¢/day          |
+| **Total per day**  | —           | text ~2.5k–3.5k + 3 images | Text ≈ a few cents; images dominate but still ~$1–4/month |
 
 A full daily generation is **one HTTP call to `/api/generate`** and typically completes in ~15–50s (image generation adds ~5–20s). This is fine — generation is a manual admin call, off the read path; reads serve cached blobs instantly.
 
 #### Error handling
+
 - Each step has a **retry budget** (default 2) with a corrective prompt seeded from the validator’s complaint.
 - If a step fails after retries, the endpoint returns `{ ok: false, step, error }` and writes **nothing** (transactional — no half‑packs).
 - Token usage per step is recorded in the response for visibility.
@@ -354,19 +383,20 @@ curl -X POST "https://inkydoop.com/api/generate?date=2026-07-01&force=true" \
 
 ```ts
 // app/api/generate/route.ts
-import { timingSafeEqual } from 'node:crypto';
+import { timingSafeEqual } from "node:crypto";
 
 function authorized(req: Request): boolean {
   const provided =
-    req.headers.get('x-generate-key') ??
-    new URL(req.url).searchParams.get('key') ?? '';
-  const expected = process.env.GENERATE_API_KEY ?? '';
+    req.headers.get("x-generate-key") ??
+    new URL(req.url).searchParams.get("key") ??
+    "";
+  const expected = process.env.GENERATE_API_KEY ?? "";
   if (!expected || provided.length !== expected.length) return false;
   return timingSafeEqual(Buffer.from(provided), Buffer.from(expected));
 }
 
 export async function POST(req: Request) {
-  if (!authorized(req)) return new Response('unauthorized', { status: 401 });
+  if (!authorized(req)) return new Response("unauthorized", { status: 401 });
   const { date, force = false } = await parseParams(req);
   const result = await generateAndStore({ date, force });
   return Response.json({ ok: true, result });
@@ -385,10 +415,16 @@ export const GET = POST; // allow manual trigger
   2. If missing, return the **most recent** `DailyPack` (highest `date <= today`).
   3. The response includes a `meta` block so the UI can show context:
      ```json
-     { "meta": { "requestedDate": "2026-07-01", "servedDate": "2026-06-29", "isFresh": false } }
+     {
+       "meta": {
+         "requestedDate": "2026-07-01",
+         "servedDate": "2026-06-29",
+         "isFresh": false
+       }
+     }
      ```
   4. Only if **no pack exists at all** does the API return HTTP 404.
-- The UI shows a small banner when `isFresh: false`, e.g. *“Today’s pack isn’t ready yet — here’s the latest from {servedDate}.”*
+- The UI shows a small banner when `isFresh: false`, e.g. _“Today’s pack isn’t ready yet — here’s the latest from {servedDate}.”_
 - To produce today’s content, run (locally or in any shell):
 
   ```bash
@@ -401,6 +437,7 @@ This keeps the system simple and predictable: zero hidden LLM calls, no surprise
 ### 6.4 Prompt Design (sketch)
 
 **Story prompt**
+
 ```
 You are writing a {genre} story for elementary students in grades 3–5 (Lexile ~{lexile}).
 Length: {wordCount} words. Tone: engaging, age‑appropriate, no violence/scary content.
@@ -415,6 +452,7 @@ Return JSON: {
 ```
 
 **Quiz prompt**
+
 ```
 Given this story, create 6 comprehension questions for elementary students in grades 3–5.
 Mix: 2 literal, 2 inferential, 1 vocabulary‑in‑context, 1 theme.
@@ -449,7 +487,7 @@ Student answer
 
 **Step 3 — Graders ×2** (`OPENROUTER_MODEL_GRADER`, small, run in parallel). Both receive the **same** inputs — the pre‑computed rubric, the story, and the wrapped answer — and each emits `{ score, mustIncludeHits[], mustIncludeMissed[], wrongPatternHits[], confidence }`. Use two independent variants (different temperatures or model framings) so their **agreement rate** is a real quality signal. **Charity rules** in every grader prompt: ignore spelling/grammar; accept the most generous reading that still matches a rubric bullet; concept match ≥ keyword match; never penalize brevity.
 
-**Step 4 — Judge** (`OPENROUTER_MODEL_JUDGE`, medium). Runs **only** when the two graders disagree, or either confidence is low. It sees the rubric + both graders' **structured outputs** (scores and rubric hits — *not* their free‑text justifications, which cause anchoring) and re‑adjudicates. When graders agree with high confidence, the judge is skipped — that's the cost savings (~80% of answers). On judge failure → default to the **more forgiving** of the two grades.
+**Step 4 — Judge** (`OPENROUTER_MODEL_JUDGE`, medium). Runs **only** when the two graders disagree, or either confidence is low. It sees the rubric + both graders' **structured outputs** (scores and rubric hits — _not_ their free‑text justifications, which cause anchoring) and re‑adjudicates. When graders agree with high confidence, the judge is skipped — that's the cost savings (~80% of answers). On judge failure → default to the **more forgiving** of the two grades.
 
 **Step 5 — Feedback** (`OPENROUTER_MODEL_WOTD`, small). Turns the final grade + rubric hits/misses into one or two encouraging, kid‑appropriate sentences. Kept **separate from grading** so “be kind” never inflates the score. Never says “wrong” — on a miss it offers a concrete hint (“Reread paragraph 3…”). On failure → fall back to a static template keyed on the grade.
 
@@ -519,19 +557,19 @@ Optional later: `User`, `Progress` (persist `QuizAttempt` per user).
 
 ## 10. Milestones
 
-| # | Milestone | Output |
-|---|-----------|--------|
-| M0 | Project scaffold | Next.js + TS + Tailwind, env config, OpenRouter client |
-| M1 | Story generation | API route returns a validated story JSON |
-| M2 | Front page | Word of the Day + Interesting Sentences (static fallback + AI) |
-| M3 | Story view | Renders story, tap‑a‑word definitions |
-| M4 | Vocabulary builder | Word list + 1 exercise type (MC) |
-| M5 | Comprehension Q&A | Questions with hidden answers, reveal on submit; multi‑agent grading of free‑text answers (§6.5) |
-| M6 | Daily caching + generation API | `DailyPack` persistence; key‑protected `POST /api/generate` as the **only** generation path; read endpoints fall back to the latest available pack when today’s is missing |
-| M6.5 | Illustrations | 3 images/story (cover + 2 scenes) generated, moderated, stored in Blob; rendered inline + as cover |
-| M6.6 | Story Library | Browse all packs (metadata‑only, paged, newest‑first); open any date to load its story (§3.5) |
-| M7 | Polish | Read‑aloud, theme, accessibility pass, deploy |
-| M8 | Teacher mode | Printable **PDF of today’s pack** (story + vocabulary + Q&A with answer key) |
+| #    | Milestone                      | Output                                                                                                                                                                     |
+| ---- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M0   | Project scaffold               | Next.js + TS + Tailwind, env config, OpenRouter client                                                                                                                     |
+| M1   | Story generation               | API route returns a validated story JSON                                                                                                                                   |
+| M2   | Front page                     | Word of the Day + Interesting Sentences (static fallback + AI)                                                                                                             |
+| M3   | Story view                     | Renders story, tap‑a‑word definitions                                                                                                                                      |
+| M4   | Vocabulary builder             | Word list + 1 exercise type (MC)                                                                                                                                           |
+| M5   | Comprehension Q&A              | Questions with hidden answers, reveal on submit; multi‑agent grading of free‑text answers (§6.5)                                                                           |
+| M6   | Daily caching + generation API | `DailyPack` persistence; key‑protected `POST /api/generate` as the **only** generation path; read endpoints fall back to the latest available pack when today’s is missing |
+| M6.5 | Illustrations                  | 3 images/story (cover + 2 scenes) generated, moderated, stored in Blob; rendered inline + as cover                                                                         |
+| M6.6 | Story Library                  | Browse all packs (metadata‑only, paged, newest‑first); open any date to load its story (§3.5)                                                                              |
+| M7   | Polish                         | Read‑aloud, theme, accessibility pass, deploy                                                                                                                              |
+| M8   | Teacher mode                   | Printable **PDF of today’s pack** (story + vocabulary + Q&A with answer key)                                                                                               |
 
 ## 11. Configuration
 
@@ -539,17 +577,17 @@ Environment variables (`.env.local`):
 
 ```
 OPENROUTER_API_KEY=...
-OPENROUTER_MODEL_STORY=meta-llama/llama-3.1-70b-instruct
-OPENROUTER_MODEL_VOCAB=meta-llama/llama-3.1-8b-instruct
-OPENROUTER_MODEL_QUIZ=meta-llama/llama-3.1-8b-instruct
-OPENROUTER_MODEL_WOTD=meta-llama/llama-3.1-8b-instruct
+OPENROUTER_MODEL_STORY=openai/gpt-5.5
+OPENROUTER_MODEL_VOCAB=openai/gpt-4o-mini
+OPENROUTER_MODEL_QUIZ=openai/gpt-4o-mini
+OPENROUTER_MODEL_WOTD=openai/gpt-4o-mini
 # Answer grading (§6.5). Guard reuses QUIZ, feedback reuses WOTD.
-OPENROUTER_MODEL_GRADER=meta-llama/llama-3.1-8b-instruct
-OPENROUTER_MODEL_JUDGE=meta-llama/llama-3.1-70b-instruct
+OPENROUTER_MODEL_GRADER=openai/gpt-4o-mini
+OPENROUTER_MODEL_JUDGE=openai/gpt-4o
 
-# Story illustrations (§6.1 Step 4.5)
+# Story illustrations (§6.1 Step 4.5) — OpenAI Images API (use an OpenAI API key)
 IMAGE_API_KEY=...
-IMAGE_MODEL=...            # e.g. a hosted SDXL/FLUX or provider image model
+IMAGE_MODEL=gpt-image-1
 
 # Azure Storage — one account, Table for JSON + Blob for images
 # (used in dev via Azurite, and in prod via a real Storage Account)
@@ -566,6 +604,7 @@ GENERATE_API_KEY=replace-with-long-random-string
 ```
 
 **Key handling rules**
+
 - Treat `GENERATE_API_KEY` as a secret: never commit, never log, never expose to the client bundle (server‑side only — do **not** prefix with `NEXT_PUBLIC_`).
 - Use a long random value (≥ 32 bytes hex).
 - Rotate by updating the env var and redeploying.
@@ -577,6 +616,7 @@ Since we already committed to **Azure Table + Blob Storage**, the path of least 
 ### 12.1 Recommended target: **Azure Container Apps** (ACA)
 
 Next.js runs great as a container, and ACA gives us:
+
 - HTTPS + custom domains + auto‑scaling out of the box.
 - **Scale‑to‑zero** for a hobby workload — you pay only when someone hits the site.
 - Simple **revisions** (blue/green) and per‑revision env vars.
@@ -634,12 +674,12 @@ az containerapp create \
       OPENROUTER_API_KEY=secretref:openrouter-key \
       GENERATE_API_KEY=secretref:generate-key \
       IMAGE_API_KEY=secretref:image-key \
-      OPENROUTER_MODEL_STORY=meta-llama/llama-3.1-70b-instruct \
-      OPENROUTER_MODEL_VOCAB=meta-llama/llama-3.1-8b-instruct \
-      OPENROUTER_MODEL_QUIZ=meta-llama/llama-3.1-8b-instruct \
-      OPENROUTER_MODEL_WOTD=meta-llama/llama-3.1-8b-instruct \
-      OPENROUTER_MODEL_GRADER=meta-llama/llama-3.1-8b-instruct \
-      OPENROUTER_MODEL_JUDGE=meta-llama/llama-3.1-70b-instruct
+      OPENROUTER_MODEL_STORY=openai/gpt-5.5 \
+      OPENROUTER_MODEL_VOCAB=openai/gpt-4o-mini \
+      OPENROUTER_MODEL_QUIZ=openai/gpt-4o-mini \
+      OPENROUTER_MODEL_WOTD=openai/gpt-4o-mini \
+      OPENROUTER_MODEL_GRADER=openai/gpt-4o-mini \
+      OPENROUTER_MODEL_JUDGE=openai/gpt-4o
 
 # Grant the app's managed identity access to Table + Blob
 PRINCIPAL_ID=$(az containerapp show -n $APP -g $RG --query identity.principalId -o tsv)
@@ -693,12 +733,12 @@ Secrets stored as GitHub Environment secrets: `AZURE_CLIENT_ID`, `AZURE_TENANT_I
 
 ### 12.4 Alternatives (and why we\u2019re not picking them)
 
-| Option | Verdict |
-|---|---|
-| **Vercel** | Fastest to ship Next.js, but adds a second vendor and a second bill. Fine if you want zero‑config previews; Azure Table still works from Vercel (via connection string). |
-| **Azure Static Web Apps + Functions** | Great for pure static + light API, but our `/api/generate` can run 10–30s (LLM). SWA managed Functions have short defaults; ACA is simpler. |
-| **Azure App Service (Linux, Node)** | Works fine; slightly more expensive at idle than ACA scale‑to‑zero. Pick this if you dislike containers. |
-| **AKS** | Overkill for a single web app. |
+| Option                                | Verdict                                                                                                                                                                  |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Vercel**                            | Fastest to ship Next.js, but adds a second vendor and a second bill. Fine if you want zero‑config previews; Azure Table still works from Vercel (via connection string). |
+| **Azure Static Web Apps + Functions** | Great for pure static + light API, but our `/api/generate` can run 10–30s (LLM). SWA managed Functions have short defaults; ACA is simpler.                              |
+| **Azure App Service (Linux, Node)**   | Works fine; slightly more expensive at idle than ACA scale‑to‑zero. Pick this if you dislike containers.                                                                 |
+| **AKS**                               | Overkill for a single web app.                                                                                                                                           |
 
 ### 12.5 Cost sketch (hobby scale)
 
@@ -727,93 +767,105 @@ Secrets stored as GitHub Environment secrets: `AZURE_CLIENT_ID`, `AZURE_TENANT_I
 
 ## 14. Execution Plan
 
-Task-by-task plan grouped by milestone. Each task lists **outputs** and **dependencies** (by task ID). A task is *done* when its acceptance check passes. Conventions: `T{milestone}.{n}`; TypeScript throughout; every LLM/IO boundary validated with **Zod**.
+Task-by-task plan grouped by milestone. Each task lists **outputs** and **dependencies** (by task ID). A task is _done_ when its acceptance check passes. Conventions: `T{milestone}.{n}`; TypeScript throughout; every LLM/IO boundary validated with **Zod**.
 
 ### M0 — Project scaffold
-- [ ] **T0.1 Init repo** — `create-next-app` (App Router, TS, ESLint, Tailwind, `src/`), set `next.config.js` → `output: 'standalone'`. Add `pnpm` + Node 22 `.nvmrc`. *Dep:* —
-- [ ] **T0.2 Tooling** — Prettier, ESLint config, `vitest` + `@testing-library`, Playwright, `.editorconfig`. Scripts: `dev`, `build`, `lint`, `test`, `test:e2e`. *Dep:* T0.1
-- [ ] **T0.3 Env plumbing** — `src/lib/env.ts`: Zod-validate all env vars from §11; fail fast on boot. `.env.example` committed; `.env.local` gitignored. *Dep:* T0.1
-- [ ] **T0.4 OpenRouter client** — `src/lib/ai/openrouter.ts`: typed `chatJson<T>(model, messages, schema)` that sets `response_format: json_object`, parses, and Zod-validates with a retry-on-invalid-JSON budget. *Dep:* T0.3
-- [ ] **T0.5 Azurite dev storage** — `dev:storage` npm script; `.azurite/` gitignored; README dev-setup note. *Dep:* T0.1
-- [ ] **T0.6 Shared schemas** — `src/lib/schemas.ts`: Zod schemas + inferred types for `DailyPack`, `story` (incl. `artDirection`, `images`), `vocabulary`, `questions` (incl. `rubric`), `QuizAttempt` (§7). Single source of truth for UI + API. *Dep:* T0.3
-- [ ] **T0.7 CI** — `.github/workflows/ci.yml`: `pnpm i`, lint, test, build on PR. *Dep:* T0.2
+
+- [ ] **T0.1 Init repo** — `create-next-app` (App Router, TS, ESLint, Tailwind, `src/`), set `next.config.js` → `output: 'standalone'`. Add `pnpm` + Node 22 `.nvmrc`. _Dep:_ —
+- [ ] **T0.2 Tooling** — Prettier, ESLint config, `vitest` + `@testing-library`, Playwright, `.editorconfig`. Scripts: `dev`, `build`, `lint`, `test`, `test:e2e`. _Dep:_ T0.1
+- [ ] **T0.3 Env plumbing** — `src/lib/env.ts`: Zod-validate all env vars from §11; fail fast on boot. `.env.example` committed; `.env.local` gitignored. _Dep:_ T0.1
+- [ ] **T0.4 OpenRouter client** — `src/lib/ai/openrouter.ts`: typed `chatJson<T>(model, messages, schema)` that sets `response_format: json_object`, parses, and Zod-validates with a retry-on-invalid-JSON budget. _Dep:_ T0.3
+- [ ] **T0.5 Azurite dev storage** — `dev:storage` npm script; `.azurite/` gitignored; README dev-setup note. _Dep:_ T0.1
+- [ ] **T0.6 Shared schemas** — `src/lib/schemas.ts`: Zod schemas + inferred types for `DailyPack`, `story` (incl. `artDirection`, `images`), `vocabulary`, `questions` (incl. `rubric`), `QuizAttempt` (§7). Single source of truth for UI + API. _Dep:_ T0.3
+- [ ] **T0.7 CI** — `.github/workflows/ci.yml`: `pnpm i`, lint, test, build on PR. _Dep:_ T0.2
 - **Acceptance:** `pnpm build` + `pnpm test` green; boot fails clearly on a missing env var.
 
 ### M1 — Story generation
-- [ ] **T1.1 Seed** — `src/lib/gen/seed.ts`: deterministic `date → { genre, theme, setting }` via SHA-256 (§6.1 Step 0) + unit tests proving determinism. *Dep:* T0.6
-- [ ] **T1.2 Story prompt** — `src/lib/gen/story.ts`: build the §6.4 story prompt (incl. art-director instructions) and call `chatJson` with the story schema. *Dep:* T0.4, T1.1
-- [ ] **T1.3 Validators** — word-count ±15%, Flesch–Kincaid band check, safety regex/moderation, `artDirection`/`images` presence; corrective-retry loop (N=2); image-fields-only fallback regen. *Dep:* T1.2
-- [ ] **T1.4 Story API (dev)** — temporary `GET /api/dev/story` returning a validated story for manual inspection. *Dep:* T1.3
+
+- [ ] **T1.1 Seed** — `src/lib/gen/seed.ts`: deterministic `date → { genre, theme, setting }` via SHA-256 (§6.1 Step 0) + unit tests proving determinism. _Dep:_ T0.6
+- [ ] **T1.2 Story prompt** — `src/lib/gen/story.ts`: build the §6.4 story prompt (incl. art-director instructions) and call `chatJson` with the story schema. _Dep:_ T0.4, T1.1
+- [ ] **T1.3 Validators** — word-count ±15%, Flesch–Kincaid band check, safety regex/moderation, `artDirection`/`images` presence; corrective-retry loop (N=2); image-fields-only fallback regen. _Dep:_ T1.2
+- [ ] **T1.4 Story API (dev)** — temporary `GET /api/dev/story` returning a validated story for manual inspection. _Dep:_ T1.3
 - **Acceptance:** repeated calls for a fixed date yield the same genre/theme; output passes all validators.
 
 ### M2 — Front page
-- [ ] **T2.1 WOTD + Sentences gen** — `src/lib/gen/frontpage.ts`: two parallel small-model calls (§6.1 Step 4), Zod-validated. *Dep:* T0.4
-- [ ] **T2.2 Static fallback** — bundled default WOTD + sentences so the page never renders empty. *Dep:* T0.6
-- [ ] **T2.3 Landing UI** — `/` page: WOTD card, Interesting Sentences strip, Today’s Story hook (cover slot), theme toggle. Tailwind + accessible components. *Dep:* T2.1, T2.2
+
+- [ ] **T2.1 WOTD + Sentences gen** — `src/lib/gen/frontpage.ts`: two parallel small-model calls (§6.1 Step 4), Zod-validated. _Dep:_ T0.4
+- [ ] **T2.2 Static fallback** — bundled default WOTD + sentences so the page never renders empty. _Dep:_ T0.6
+- [ ] **T2.3 Landing UI** — `/` page: WOTD card, Interesting Sentences strip, Today’s Story hook (cover slot), theme toggle. Tailwind + accessible components. _Dep:_ T2.1, T2.2
 - **Acceptance:** landing renders from a sample pack and from static fallback; Lighthouse a11y ≥ 90.
 
 ### M3 — Story view
-- [ ] **T3.1 Story renderer** — `/story` route: paragraphs, reading-time, cover + inline images placed by `afterParagraph` (graceful when an image is missing). *Dep:* T2.3, T1.3
-- [ ] **T3.2 Tap-a-word** — client popover: tap a word → definition (from pack vocab first, else a lightweight lookup). Keyboard + touch accessible. *Dep:* T3.1
+
+- [ ] **T3.1 Story renderer** — `/story` route: paragraphs, reading-time, cover + inline images placed by `afterParagraph` (graceful when an image is missing). _Dep:_ T2.3, T1.3
+- [ ] **T3.2 Tap-a-word** — client popover: tap a word → definition (from pack vocab first, else a lightweight lookup). Keyboard + touch accessible. _Dep:_ T3.1
 - **Acceptance:** story renders with 0–3 images correctly; tap-a-word works on touch and keyboard.
 
 ### M4 — Vocabulary builder
-- [ ] **T4.1 Vocab gen** — `src/lib/gen/vocab.ts`: §6.1 Step 2 extraction, substring validation, dedupe. *Dep:* T1.3
-- [ ] **T4.2 Vocab UI + MC exercise** — word list with definition/synonyms; one Multiple-Choice activity with immediate, encouraging feedback. *Dep:* T4.1, T2.3
+
+- [ ] **T4.1 Vocab gen** — `src/lib/gen/vocab.ts`: §6.1 Step 2 extraction, substring validation, dedupe. _Dep:_ T1.3
+- [ ] **T4.2 Vocab UI + MC exercise** — word list with definition/synonyms; one Multiple-Choice activity with immediate, encouraging feedback. _Dep:_ T4.1, T2.3
 - **Acceptance:** every `exampleFromStory` is a real substring; MC exercise scores correctly.
 
 ### M5 — Comprehension Q&A + grading
-- [ ] **T5.1 Question gen** — `src/lib/gen/quiz.ts`: §6.1 Step 3 with required type mix + **pre-computed rubric** per question; validators. *Dep:* T1.3, T4.1
-- [ ] **T5.2 Router (Step 1)** — `src/lib/grade/router.ts`: MC exact-match, literal fuzzy-match (Levenshtein ≥ 0.85); no LLM. Unit tests. *Dep:* T0.6
-- [ ] **T5.3 Guard (Step 2)** — injection + safety detection; wrap answer in `<student_answer>` tags. *Dep:* T0.4
-- [ ] **T5.4 Graders ×2 (Step 3)** — two parallel variants vs. rubric + story; charity rules; structured output. *Dep:* T5.1, T5.3
-- [ ] **T5.5 Judge (Step 4)** — runs only on disagreement/low-confidence; structured inputs only; forgiving default on failure. *Dep:* T5.4
-- [ ] **T5.6 Feedback (Step 5)** — kind, specific message; static template fallback. *Dep:* T5.4
-- [ ] **T5.7 Grade API** — `POST /api/grade`: orchestrate Steps 1–5, return `{ grade, feedback, telemetry }`. Rate-limited. *Dep:* T5.2–T5.6
-- [ ] **T5.8 Quiz UI** — questions with hidden answers, submit → reveal + feedback; de-emphasized “Show answer”; optional score summary. *Dep:* T5.7, T2.3
+
+- [ ] **T5.1 Question gen** — `src/lib/gen/quiz.ts`: §6.1 Step 3 with required type mix + **pre-computed rubric** per question; validators. _Dep:_ T1.3, T4.1
+- [ ] **T5.2 Router (Step 1)** — `src/lib/grade/router.ts`: MC exact-match, literal fuzzy-match (Levenshtein ≥ 0.85); no LLM. Unit tests. _Dep:_ T0.6
+- [ ] **T5.3 Guard (Step 2)** — injection + safety detection; wrap answer in `<student_answer>` tags. _Dep:_ T0.4
+- [ ] **T5.4 Graders ×2 (Step 3)** — two parallel variants vs. rubric + story; charity rules; structured output. _Dep:_ T5.1, T5.3
+- [ ] **T5.5 Judge (Step 4)** — runs only on disagreement/low-confidence; structured inputs only; forgiving default on failure. _Dep:_ T5.4
+- [ ] **T5.6 Feedback (Step 5)** — kind, specific message; static template fallback. _Dep:_ T5.4
+- [ ] **T5.7 Grade API** — `POST /api/grade`: orchestrate Steps 1–5, return `{ grade, feedback, telemetry }`. Rate-limited. _Dep:_ T5.2–T5.6
+- [ ] **T5.8 Quiz UI** — questions with hidden answers, submit → reveal + feedback; de-emphasized “Show answer”; optional score summary. _Dep:_ T5.7, T2.3
 - **Acceptance:** MC/literal grade with zero LLM calls; an injection attempt is neutralized; grader-agreement + judged flags recorded.
 
 ### M6 — Daily caching + generation API
-- [ ] **T6.1 Table store** — `src/lib/store/tableStore.ts`: `AzureTableDailyPackStore` (`get`/`getLatest`/`upsert`), inverted-date RowKey (§5.4). *Dep:* T0.5, T0.6
-- [ ] **T6.2 Assemble + persist (Step 5)** — combine all gen outputs into `DailyPack`, final safety pass, `readingTimeMin`, upsert; also write the denormalized metadata columns (`title`, `genre`, `theme`, `coverBlobPath`, `readingTimeMin`) for the Story Library (§5.4). *Dep:* T1.3, T2.1, T4.1, T5.1, T6.1
-- [ ] **T6.3 `/api/generate`** — key-protected (`timingSafeEqual`), `date`/`force` params, rate-limit, structured summary, safe logging (§6.2). `GET = POST`. *Dep:* T6.2
-- [ ] **T6.4 Read endpoints + fallback** — story/vocab/quiz/front-page reads serve cache; latest-pack fallback + `meta.isFresh` banner (§6.3). *Dep:* T6.1
-- [ ] **T6.5 Wire UI to reads** — replace dev/sample data in M2–M5 with real read endpoints. *Dep:* T6.4, T2.3, T3.1, T4.2, T5.8
+
+- [ ] **T6.1 Table store** — `src/lib/store/tableStore.ts`: `AzureTableDailyPackStore` (`get`/`getLatest`/`upsert`), inverted-date RowKey (§5.4). _Dep:_ T0.5, T0.6
+- [ ] **T6.2 Assemble + persist (Step 5)** — combine all gen outputs into `DailyPack`, final safety pass, `readingTimeMin`, upsert; also write the denormalized metadata columns (`title`, `genre`, `theme`, `coverBlobPath`, `readingTimeMin`) for the Story Library (§5.4). _Dep:_ T1.3, T2.1, T4.1, T5.1, T6.1
+- [ ] **T6.3 `/api/generate`** — key-protected (`timingSafeEqual`), `date`/`force` params, rate-limit, structured summary, safe logging (§6.2). `GET = POST`. _Dep:_ T6.2
+- [ ] **T6.4 Read endpoints + fallback** — story/vocab/quiz/front-page reads serve cache; latest-pack fallback + `meta.isFresh` banner (§6.3). _Dep:_ T6.1
+- [ ] **T6.5 Wire UI to reads** — replace dev/sample data in M2–M5 with real read endpoints. _Dep:_ T6.4, T2.3, T3.1, T4.2, T5.8
 - **Acceptance:** one `/api/generate` call populates a day; reads serve it; missing-today falls back with the banner; 404 only when no pack ever existed.
 
 ### M6.5 — Illustrations
-- [ ] **T6.5.1 Blob store** — `src/lib/store/blobStore.ts`: upload WebP to `story-images` at `{date}/{role}-{n}.webp`; Managed Identity in prod, Azurite in dev. *Dep:* T6.1
-- [ ] **T6.5.2 Image render (Step 4.5)** — assemble prompt from `artDirection` + spec; call image API; **moderate**; WebP-encode; upload; record `blobPath`. Non-blocking on failure. *Dep:* T6.5.1, T1.3
-- [ ] **T6.5.3 Hook into generate** — call T6.5.2 within `/api/generate`; persist `story.images[]` paths. *Dep:* T6.5.2, T6.3
-- [ ] **T6.5.4 Serve images** — resolve `blobPath` → URL in story + cover UI; alt text applied. *Dep:* T3.1, T6.5.3
+
+- [ ] **T6.5.1 Blob store** — `src/lib/store/blobStore.ts`: upload WebP to `story-images` at `{date}/{role}-{n}.webp`; Managed Identity in prod, Azurite in dev. _Dep:_ T6.1
+- [ ] **T6.5.2 Image render (Step 4.5)** — assemble prompt from `artDirection` + spec; call image API; **moderate**; WebP-encode; upload; record `blobPath`. Non-blocking on failure. _Dep:_ T6.5.1, T1.3
+- [ ] **T6.5.3 Hook into generate** — call T6.5.2 within `/api/generate`; persist `story.images[]` paths. _Dep:_ T6.5.2, T6.3
+- [ ] **T6.5.4 Serve images** — resolve `blobPath` → URL in story + cover UI; alt text applied. _Dep:_ T3.1, T6.5.3
 - **Acceptance:** generate produces ≤3 moderated WebP blobs; a failed/blocked image leaves a valid text pack; images render with alt text.
 
 ### M6.6 — Story Library
-- [ ] **T6.6.1 Store `list()`** — add `list({ limit, cursor })` to `AzureTableDailyPackStore`: single-partition scan projecting metadata columns only, newest-first, returning `{ items: PackSummary[], nextCursor? }` from the Table continuation token (§5.4). Unit test paging. *Dep:* T6.1, T6.2
-- [ ] **T6.6.2 `/api/stories`** — `GET /api/stories?limit=&cursor=` returns a metadata-only page; no `packJson`, no LLM. Zod-validate the response. *Dep:* T6.6.1
-- [ ] **T6.6.3 Library UI** — `/library` route: responsive card grid (cover thumb, title, genre, theme, date, reading time) with infinite scroll / “load more” via `nextCursor`; graceful cover fallback when `coverBlobPath` is null. *Dep:* T6.6.2, T6.5.4
-- [ ] **T6.6.4 Open a story** — card → `/story?date=YYYY-MM-DD` loads that pack via `GET /api/story?date=` and reuses the Story view (§3.2). *Dep:* T6.6.3, T3.1, T6.4
-- [ ] **T6.6.5 Filter/search (optional)** — client-side genre filter + title search over the loaded metadata pages. *Dep:* T6.6.3
+
+- [ ] **T6.6.1 Store `list()`** — add `list({ limit, cursor })` to `AzureTableDailyPackStore`: single-partition scan projecting metadata columns only, newest-first, returning `{ items: PackSummary[], nextCursor? }` from the Table continuation token (§5.4). Unit test paging. _Dep:_ T6.1, T6.2
+- [ ] **T6.6.2 `/api/stories`** — `GET /api/stories?limit=&cursor=` returns a metadata-only page; no `packJson`, no LLM. Zod-validate the response. _Dep:_ T6.6.1
+- [ ] **T6.6.3 Library UI** — `/library` route: responsive card grid (cover thumb, title, genre, theme, date, reading time) with infinite scroll / “load more” via `nextCursor`; graceful cover fallback when `coverBlobPath` is null. _Dep:_ T6.6.2, T6.5.4
+- [ ] **T6.6.4 Open a story** — card → `/story?date=YYYY-MM-DD` loads that pack via `GET /api/story?date=` and reuses the Story view (§3.2). _Dep:_ T6.6.3, T3.1, T6.4
+- [ ] **T6.6.5 Filter/search (optional)** — client-side genre filter + title search over the loaded metadata pages. _Dep:_ T6.6.3
 - **Acceptance:** the library lists all packs newest-first without loading full stories; paging works past one page; clicking any card loads that date’s story, vocab, and quiz.
 
 ### M7 — Polish
-- [ ] **T7.1 Read-aloud** — SpeechSynthesis controls on story/WOTD; play/pause/stop. *Dep:* T3.1
-- [ ] **T7.2 Theme + fonts** — light/dark toggle (persisted); dyslexia-friendly font option (§9). *Dep:* T2.3
-- [ ] **T7.3 Accessibility pass** — keyboard nav, focus states, ARIA, contrast; Playwright + axe checks. *Dep:* M2–M6.5 UI
-- [ ] **T7.4 Dockerfile + deploy** — §12.2 Dockerfile; §12 one-time Azure setup; `deploy.yml` (OIDC → ACR → `containerapp update`); run the §12.6 checklist. *Dep:* T6.5.4, T0.7
+
+- [ ] **T7.1 Read-aloud** — SpeechSynthesis controls on story/WOTD; play/pause/stop. _Dep:_ T3.1
+- [ ] **T7.2 Theme + fonts** — light/dark toggle (persisted); dyslexia-friendly font option (§9). _Dep:_ T2.3
+- [ ] **T7.3 Accessibility pass** — keyboard nav, focus states, ARIA, contrast; Playwright + axe checks. _Dep:_ M2–M6.5 UI
+- [ ] **T7.4 Dockerfile + deploy** — §12.2 Dockerfile; §12 one-time Azure setup; `deploy.yml` (OIDC → ACR → `containerapp update`); run the §12.6 checklist. _Dep:_ T6.5.4, T0.7
 - **Acceptance:** deployed to ACA on a custom domain; §12.6 checklist fully green.
 
 ### M8 — Teacher mode (PDF)
-- [ ] **T8.1 Printable route** — `/print/[date]` server-rendered, print-optimized layout: story + vocabulary + Q&A **with answer key**. *Dep:* T6.4
-- [ ] **T8.2 PDF export** — print CSS (`@media print`) for browser “Save as PDF”; if fidelity needs more, a server route rendering via headless Chromium. Decide based on T8.1 output. *Dep:* T8.1
-- [ ] **T8.3 Teacher entry point** — a discreet “Print today’s pack” action. *Dep:* T8.1
+
+- [ ] **T8.1 Printable route** — `/print/[date]` server-rendered, print-optimized layout: story + vocabulary + Q&A **with answer key**. _Dep:_ T6.4
+- [ ] **T8.2 PDF export** — print CSS (`@media print`) for browser “Save as PDF”; if fidelity needs more, a server route rendering via headless Chromium. Decide based on T8.1 output. _Dep:_ T8.1
+- [ ] **T8.3 Teacher entry point** — a discreet “Print today’s pack” action. _Dep:_ T8.1
 - **Acceptance:** a clean one-to-two-page PDF for any cached date, answer key included.
 
 ### Cross-cutting (do alongside, not last)
-- [ ] **X.1 Telemetry** — persist grader-agreement / judged / token-usage counters; a Log Analytics saved query. *Dep:* T5.7, T7.4
-- [ ] **X.2 Error contract** — consistent `{ ok:false, step, error }` shape across generation + grading (§6.1 error handling). *Dep:* T1.3, T5.7
-- [ ] **X.3 Rate limiting** — shared limiter for `/api/generate` and `/api/grade`. *Dep:* T5.7, T6.3
-- [ ] **X.4 Content safety review** — spot-check a week of generated packs before public launch. *Dep:* T6.3, T6.5.3
+
+- [ ] **X.1 Telemetry** — persist grader-agreement / judged / token-usage counters; a Log Analytics saved query. _Dep:_ T5.7, T7.4
+- [ ] **X.2 Error contract** — consistent `{ ok:false, step, error }` shape across generation + grading (§6.1 error handling). _Dep:_ T1.3, T5.7
+- [ ] **X.3 Rate limiting** — shared limiter for `/api/generate` and `/api/grade`. _Dep:_ T5.7, T6.3
+- [ ] **X.4 Content safety review** — spot-check a week of generated packs before public launch. _Dep:_ T6.3, T6.5.3
 
 ---
 

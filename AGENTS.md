@@ -13,7 +13,7 @@ Guidance for AI coding agents working in this repository. Human contributors sho
 - **Small, focused modules.** One responsibility per file. Keep functions short and named for intent.
 - **Don't add error handling for impossible states.** Validate only at real boundaries (I/O, LLM output, request input).
 - **Match existing patterns.** Consistency beats cleverness.
-- **No comments that restate the code.** Comment only non-obvious *why*, never the *what*.
+- **No comments that restate the code.** Comment only non-obvious _why_, never the _what_.
 
 If a task tempts you to add something "just in case," stop and leave it out.
 
