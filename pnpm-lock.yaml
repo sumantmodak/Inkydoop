@@ -8,6 +8,12 @@ importers:
 
   .:
     dependencies:
+      '@azure/data-tables':
+        specifier: ^13.3.2
+        version: 13.3.2
+      '@azure/identity':
+        specifier: ^4.13.1
+        version: 4.13.1
       next:
         specifier: 16.2.10
         version: 16.2.10(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.61.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -142,9 +148,21 @@ packages:
     resolution: {integrity: sha1-bf8v9tPJxkMMb007PmXeUx8Quv4=, tarball: https://ms-feed-2.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@azure/core-util/-/core-util-1.13.1.tgz}
     engines: {node: '>=20.0.0'}
 
+  '@azure/core-xml@1.5.1':
+    resolution: {integrity: sha1-VSiu+OVh7pfGBdAIC4gDoh0r54M=, tarball: https://ms-feed-12.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@azure/core-xml/-/core-xml-1.5.1.tgz}
+    engines: {node: '>=20.0.0'}
+
+  '@azure/data-tables@13.3.2':
+    resolution: {integrity: sha1-M1EoyTt8c7+b//PbKRF+x3i0oS0=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@azure/data-tables/-/data-tables-13.3.2.tgz}
+    engines: {node: '>=20.0.0'}
+
   '@azure/identity@3.4.2':
     resolution: {integrity: sha1-awFyTJyqx8ratrY8dlhDRb2o4t4=, tarball: https://ms-feed-12.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@azure/identity/-/identity-3.4.2.tgz}
     engines: {node: '>=14.0.0'}
+
+  '@azure/identity@4.13.1':
+    resolution: {integrity: sha1-vcCRZYuqWaR+6furSHpLsBhym8M=, tarball: https://ms-feed-12.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@azure/identity/-/identity-4.13.1.tgz}
+    engines: {node: '>=20.0.0'}
 
   '@azure/keyvault-common@2.1.0':
     resolution: {integrity: sha1-Zw50FKK/aDcbCz0fmByboCeLd90=, tarball: https://ms-feed-2.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@azure/keyvault-common/-/keyvault-common-2.1.0.tgz}
@@ -166,13 +184,25 @@ packages:
     resolution: {integrity: sha1-iHxEF3ENN1UGvgQVVkmaDZL8YuA=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@azure/msal-browser/-/msal-browser-3.30.0.tgz}
     engines: {node: '>=0.8.0'}
 
+  '@azure/msal-browser@5.17.0':
+    resolution: {integrity: sha1-Sx+NQg74G72JRylZkK4GCbCLodw=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@azure/msal-browser/-/msal-browser-5.17.0.tgz}
+    engines: {node: '>=0.8.0'}
+
   '@azure/msal-common@14.16.1':
     resolution: {integrity: sha1-0j7M5AgjpNA610Fg3IGdYuDAp4c=, tarball: https://ms-feed-12.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@azure/msal-common/-/msal-common-14.16.1.tgz}
+    engines: {node: '>=0.8.0'}
+
+  '@azure/msal-common@16.11.1':
+    resolution: {integrity: sha1-/Bx317GbKOoLkGGKg+D3+WfpEOk=, tarball: https://ms-feed-12.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@azure/msal-common/-/msal-common-16.11.1.tgz}
     engines: {node: '>=0.8.0'}
 
   '@azure/msal-node@2.16.3':
     resolution: {integrity: sha1-i4BRUq14CwSNbCszsdTibXtGM2g=, tarball: https://ms-feed-12.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@azure/msal-node/-/msal-node-2.16.3.tgz}
     engines: {node: '>=16'}
+
+  '@azure/msal-node@5.4.0':
+    resolution: {integrity: sha1-H+WD78vMBb/uw7aUUCrwowFvIwE=, tarball: https://ms-feed-2.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@azure/msal-node/-/msal-node-5.4.0.tgz}
+    engines: {node: '>=20'}
 
   '@azure/opentelemetry-instrumentation-azure-sdk@1.0.0':
     resolution: {integrity: sha1-jq6h9ZGcvym6g/L6yZ2JRDbhfco=, tarball: https://ms-feed-12.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@azure/opentelemetry-instrumentation-azure-sdk/-/opentelemetry-instrumentation-azure-sdk-1.0.0.tgz}
@@ -560,7 +590,7 @@ packages:
     resolution: {integrity: sha1-a7eIspAuSL9dRgw4xrt/7daG3dc=, tarball: https://ms-feed-2.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@microsoft/applicationinsights-web-snippet/-/applicationinsights-web-snippet-1.0.1.tgz}
 
   '@napi-rs/wasm-runtime@1.1.6':
-    resolution: {integrity: sha1-7TOAbQ+b6Y3HbQw9T9hy/acBtdU=, tarball: https://ms-feed-2.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@napi-rs/wasm-runtime/-/wasm-runtime-1.1.6.tgz}
+    resolution: {integrity: sha1-7TOAbQ+b6Y3HbQw9T9hy/acBtdU=, tarball: https://ms-feed-12.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@napi-rs/wasm-runtime/-/wasm-runtime-1.1.6.tgz}
     peerDependencies:
       '@emnapi/core': ^1.7.1
       '@emnapi/runtime': ^1.7.1
@@ -622,6 +652,9 @@ packages:
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [win32]
+
+  '@nodable/entities@2.2.0':
+    resolution: {integrity: sha1-odRamSsCJZGxwrA6d5Nck5N1tkI=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@nodable/entities/-/entities-2.2.0.tgz}
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha1-dhnC6yGyVIP20WdUi0z9WnSIw9U=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@nodelib/fs.scandir/-/fs.scandir-2.1.5.tgz}
@@ -946,7 +979,7 @@ packages:
     resolution: {integrity: sha1-AVy6np3UfOFNA9KoxdVHv7FpZl0=, tarball: https://ms-feed-12.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@tybys/wasm-util/-/wasm-util-0.10.3.tgz}
 
   '@types/aria-query@5.0.4':
-    resolution: {integrity: sha1-GjHD03iFDSd42rtjdNA23LpLpwg=, tarball: https://ms-feed-12.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@types/aria-query/-/aria-query-5.0.4.tgz}
+    resolution: {integrity: sha1-GjHD03iFDSd42rtjdNA23LpLpwg=, tarball: https://ms-feed-2.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@types/aria-query/-/aria-query-5.0.4.tgz}
 
   '@types/chai@5.2.3':
     resolution: {integrity: sha1-jpzZ4cNYH6azQaWu1ViOsoW+C0o=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@types/chai/-/chai-5.2.3.tgz}
@@ -1245,7 +1278,7 @@ packages:
     resolution: {integrity: sha1-B+mCx0YmFnqnoklcU4F4ktcTlJI=, tarball: https://ms-feed-12.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/ajv/-/ajv-6.15.0.tgz}
 
   ansi-regex@5.0.1:
-    resolution: {integrity: sha1-CCyyyJyf6GWaMRpTvWpNxTAdswQ=, tarball: https://ms-feed-12.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/ansi-regex/-/ansi-regex-5.0.1.tgz}
+    resolution: {integrity: sha1-CCyyyJyf6GWaMRpTvWpNxTAdswQ=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/ansi-regex/-/ansi-regex-5.0.1.tgz}
     engines: {node: '>=8'}
 
   ansi-styles@3.2.1:
@@ -1257,8 +1290,11 @@ packages:
     engines: {node: '>=8'}
 
   ansi-styles@5.2.0:
-    resolution: {integrity: sha1-B0SWkK1Fd30ZJKwquy/IiV26g2s=, tarball: https://ms-feed-12.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/ansi-styles/-/ansi-styles-5.2.0.tgz}
+    resolution: {integrity: sha1-B0SWkK1Fd30ZJKwquy/IiV26g2s=, tarball: https://ms-feed-2.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/ansi-styles/-/ansi-styles-5.2.0.tgz}
     engines: {node: '>=10'}
+
+  anynum@1.0.1:
+    resolution: {integrity: sha1-KqwA4I3603JsHUYuYNvC+DFlmkQ=, tarball: https://ms-feed-2.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/anynum/-/anynum-1.0.1.tgz}
 
   applicationinsights@2.9.8:
     resolution: {integrity: sha1-Pi3iTmBrgfkhUPIDixm43e0sk9c=, tarball: https://ms-feed-2.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/applicationinsights/-/applicationinsights-2.9.8.tgz}
@@ -1420,6 +1456,10 @@ packages:
 
   buffer@6.0.3:
     resolution: {integrity: sha1-Ks5XhFnMj74qcKqo9S7mO2p0xsY=, tarball: https://ms-feed-12.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/buffer/-/buffer-6.0.3.tgz}
+
+  bundle-name@4.1.0:
+    resolution: {integrity: sha1-87lrNBYNZDGhnXaIE1r3z7h5eIk=, tarball: https://ms-feed-2.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/bundle-name/-/bundle-name-4.1.0.tgz}
+    engines: {node: '>=18'}
 
   bytes@3.1.2:
     resolution: {integrity: sha1-iwvuuYYFrfGxKPpDhkA8AJ4CIaU=, tarball: https://ms-feed-12.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/bytes/-/bytes-3.1.2.tgz}
@@ -1594,6 +1634,14 @@ packages:
   deep-is@0.1.4:
     resolution: {integrity: sha1-pvLc5hL63S7x9Rm3NVHxfoUZmDE=, tarball: https://ms-feed-2.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/deep-is/-/deep-is-0.1.4.tgz}
 
+  default-browser-id@5.0.1:
+    resolution: {integrity: sha1-96fMuPUQS/jg9xujscz6Xq/bIeg=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/default-browser-id/-/default-browser-id-5.0.1.tgz}
+    engines: {node: '>=18'}
+
+  default-browser@5.5.0:
+    resolution: {integrity: sha1-J5LohvJCKJRUWUfMgOGkRElsWXY=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/default-browser/-/default-browser-5.5.0.tgz}
+    engines: {node: '>=18'}
+
   define-data-property@1.1.4:
     resolution: {integrity: sha1-iU3BQbt9MGCuQ2b2oBB+aPvkjF4=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/define-data-property/-/define-data-property-1.1.4.tgz}
     engines: {node: '>= 0.4'}
@@ -1601,6 +1649,10 @@ packages:
   define-lazy-prop@2.0.0:
     resolution: {integrity: sha1-P3rkIRKbyqrJvHSQXJigAJ7J7n8=, tarball: https://ms-feed-2.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/define-lazy-prop/-/define-lazy-prop-2.0.0.tgz}
     engines: {node: '>=8'}
+
+  define-lazy-prop@3.0.0:
+    resolution: {integrity: sha1-27Ga37dG1/xtc0oGty9KANAhJV8=, tarball: https://ms-feed-12.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/define-lazy-prop/-/define-lazy-prop-3.0.0.tgz}
+    engines: {node: '>=12'}
 
   define-properties@1.2.1:
     resolution: {integrity: sha1-EHgcxhbrlRqAoDS6/Kpzd/avK2w=, tarball: https://ms-feed-12.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/define-properties/-/define-properties-1.2.1.tgz}
@@ -1619,7 +1671,7 @@ packages:
     engines: {node: '>= 0.8'}
 
   dequal@2.0.3:
-    resolution: {integrity: sha1-JkQhTxmX057Q7g7OcjNUkKesZ74=, tarball: https://ms-feed-12.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/dequal/-/dequal-2.0.3.tgz}
+    resolution: {integrity: sha1-JkQhTxmX057Q7g7OcjNUkKesZ74=, tarball: https://ms-feed-2.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/dequal/-/dequal-2.0.3.tgz}
     engines: {node: '>=6'}
 
   destroy@1.2.0:
@@ -1643,7 +1695,7 @@ packages:
     engines: {node: '>=0.10.0'}
 
   dom-accessibility-api@0.5.16:
-    resolution: {integrity: sha1-WnQp5gZus2ZNkR4z+w5F3o6whFM=, tarball: https://ms-feed-2.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/dom-accessibility-api/-/dom-accessibility-api-0.5.16.tgz}
+    resolution: {integrity: sha1-WnQp5gZus2ZNkR4z+w5F3o6whFM=, tarball: https://ms-feed-12.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/dom-accessibility-api/-/dom-accessibility-api-0.5.16.tgz}
 
   dom-accessibility-api@0.6.3:
     resolution: {integrity: sha1-mT6SXMHXPyxmLn113VpURSWaj9g=, tarball: https://ms-feed-2.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/dom-accessibility-api/-/dom-accessibility-api-0.6.3.tgz}
@@ -1899,6 +1951,13 @@ packages:
 
   fast-levenshtein@2.0.6:
     resolution: {integrity: sha1-PYpcZog6FqMMqGQ+hR8Zuqd5eRc=, tarball: https://ms-feed-12.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/fast-levenshtein/-/fast-levenshtein-2.0.6.tgz}
+
+  fast-xml-builder@1.2.1:
+    resolution: {integrity: sha1-mn5ut215SVej47PTNOxPzZJgmAM=, tarball: https://ms-feed-12.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/fast-xml-builder/-/fast-xml-builder-1.2.1.tgz}
+
+  fast-xml-parser@5.9.3:
+    resolution: {integrity: sha1-nbem26esb43B7pJNaVR7LUdQ1gw=, tarball: https://ms-feed-2.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/fast-xml-parser/-/fast-xml-parser-5.9.3.tgz}
+    hasBin: true
 
   fastq@1.20.1:
     resolution: {integrity: sha1-ynUKENySW8ixiDn9ID4+9LPO1nU=, tarball: https://ms-feed-12.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/fastq/-/fastq-1.20.1.tgz}
@@ -2207,6 +2266,11 @@ packages:
     engines: {node: '>=8'}
     hasBin: true
 
+  is-docker@3.0.0:
+    resolution: {integrity: sha1-kAk6oxBid9inelkQ265xdH4VogA=, tarball: https://ms-feed-2.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/is-docker/-/is-docker-3.0.0.tgz}
+    engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
+    hasBin: true
+
   is-document.all@1.0.0:
     resolution: {integrity: sha1-FjpL+zYsbtexGM5GzezE433uMZU=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/is-document.all/-/is-document.all-1.0.0.tgz}
     engines: {node: '>= 0.4'}
@@ -2226,6 +2290,11 @@ packages:
   is-glob@4.0.3:
     resolution: {integrity: sha1-ZPYeQsu7LuwgcanawLKLoeZdUIQ=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/is-glob/-/is-glob-4.0.3.tgz}
     engines: {node: '>=0.10.0'}
+
+  is-inside-container@1.0.0:
+    resolution: {integrity: sha1-6B+6aZZi6zHb2vJnZqYdSBRxfqQ=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/is-inside-container/-/is-inside-container-1.0.0.tgz}
+    engines: {node: '>=14.16'}
+    hasBin: true
 
   is-map@2.0.3:
     resolution: {integrity: sha1-7elrf+HicLPERl46RlZYdkkm1i4=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/is-map/-/is-map-2.0.3.tgz}
@@ -2277,6 +2346,9 @@ packages:
     resolution: {integrity: sha1-S/tKRbYc7oOlpG+6d45OjVnAzgs=, tarball: https://ms-feed-2.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/is-typed-array/-/is-typed-array-1.1.15.tgz}
     engines: {node: '>= 0.4'}
 
+  is-unsafe@1.0.1:
+    resolution: {integrity: sha1-zom1XewANDZPW+2kHhBIHvqPoxc=, tarball: https://ms-feed-2.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/is-unsafe/-/is-unsafe-1.0.1.tgz}
+
   is-weakmap@2.0.2:
     resolution: {integrity: sha1-v3JhXWSd/l9pkHnFS4PkfRrhnP0=, tarball: https://ms-feed-12.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/is-weakmap/-/is-weakmap-2.0.2.tgz}
     engines: {node: '>= 0.4'}
@@ -2292,6 +2364,10 @@ packages:
   is-wsl@2.2.0:
     resolution: {integrity: sha1-dKTHbnfKn9P5MvKQwX6jJs0VcnE=, tarball: https://ms-feed-12.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/is-wsl/-/is-wsl-2.2.0.tgz}
     engines: {node: '>=8'}
+
+  is-wsl@3.1.1:
+    resolution: {integrity: sha1-MniXsmgyo+sRfabCdJLQTKEyWU8=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/is-wsl/-/is-wsl-3.1.1.tgz}
+    engines: {node: '>=16'}
 
   isarray@1.0.0:
     resolution: {integrity: sha1-u5NdSFgsuhaMBoNJV6VKPgcSTxE=, tarball: https://ms-feed-2.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/isarray/-/isarray-1.0.0.tgz}
@@ -2524,7 +2600,7 @@ packages:
     engines: {bun: '>=1.0.0', deno: '>=1.30.0', node: '>=8.0.0'}
 
   lz-string@1.5.0:
-    resolution: {integrity: sha1-watQ93iHtxJiEgG6n9Tjpu0JmUE=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/lz-string/-/lz-string-1.5.0.tgz}
+    resolution: {integrity: sha1-watQ93iHtxJiEgG6n9Tjpu0JmUE=, tarball: https://ms-feed-2.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/lz-string/-/lz-string-1.5.0.tgz}
     hasBin: true
 
   magic-string@0.30.21:
@@ -2721,6 +2797,10 @@ packages:
   one-time@1.0.0:
     resolution: {integrity: sha1-4GvBdK7SFO1Y7e3lc7Qzu/gny0U=, tarball: https://ms-feed-12.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/one-time/-/one-time-1.0.0.tgz}
 
+  open@10.2.0:
+    resolution: {integrity: sha1-udhVvgB2IOgLb7BfrJgUH+Yttzw=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/open/-/open-10.2.0.tgz}
+    engines: {node: '>=18'}
+
   open@8.4.2:
     resolution: {integrity: sha1-W1/+Ko95Pc0qrXPlUMuHtZywhPk=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/open/-/open-8.4.2.tgz}
     engines: {node: '>=12'}
@@ -2755,6 +2835,10 @@ packages:
   path-exists@4.0.0:
     resolution: {integrity: sha1-UTvb4tO5XXdi6METfvoZXGxhtbM=, tarball: https://ms-feed-12.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/path-exists/-/path-exists-4.0.0.tgz}
     engines: {node: '>=8'}
+
+  path-expression-matcher@1.6.2:
+    resolution: {integrity: sha1-VnxzwHGX6dzvJOkO3NxXEFZZkWg=, tarball: https://ms-feed-2.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/path-expression-matcher/-/path-expression-matcher-1.6.2.tgz}
+    engines: {node: '>=14.0.0'}
 
   path-is-absolute@1.0.1:
     resolution: {integrity: sha1-F0uSaHNVNP+8es5r9TpanhtcX18=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/path-is-absolute/-/path-is-absolute-1.0.1.tgz}
@@ -2819,7 +2903,7 @@ packages:
     hasBin: true
 
   pretty-format@27.5.1:
-    resolution: {integrity: sha1-IYGHn96lGnpYUfs52SD6pj8B2I4=, tarball: https://ms-feed-2.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/pretty-format/-/pretty-format-27.5.1.tgz}
+    resolution: {integrity: sha1-IYGHn96lGnpYUfs52SD6pj8B2I4=, tarball: https://ms-feed-12.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/pretty-format/-/pretty-format-27.5.1.tgz}
     engines: {node: ^10.13.0 || ^12.13.0 || ^14.15.0 || >=15.0.0}
 
   process-nextick-args@2.0.1:
@@ -2867,7 +2951,7 @@ packages:
     resolution: {integrity: sha1-eJcppNw23imZ3BVt1sHZwYzqVqQ=, tarball: https://ms-feed-12.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/react-is/-/react-is-16.13.1.tgz}
 
   react-is@17.0.2:
-    resolution: {integrity: sha1-5pHUqOnHiTZWVVOas3J2Kw77VPA=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/react-is/-/react-is-17.0.2.tgz}
+    resolution: {integrity: sha1-5pHUqOnHiTZWVVOas3J2Kw77VPA=, tarball: https://ms-feed-12.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/react-is/-/react-is-17.0.2.tgz}
 
   react@19.2.4:
     resolution: {integrity: sha1-Q45XuqGbd8sjqrUWz2Nc0Fee4Jo=, tarball: https://ms-feed-12.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/react/-/react-19.2.4.tgz}
@@ -2929,9 +3013,13 @@ packages:
     hasBin: true
 
   rolldown@1.1.5:
-    resolution: {integrity: sha1-M5quJQhENR/FW3TiZS0+vW+6OJ0=, tarball: https://ms-feed-12.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/rolldown/-/rolldown-1.1.5.tgz}
+    resolution: {integrity: sha1-M5quJQhENR/FW3TiZS0+vW+6OJ0=, tarball: https://ms-feed-2.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/rolldown/-/rolldown-1.1.5.tgz}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
+
+  run-applescript@7.1.0:
+    resolution: {integrity: sha1-Lp5UxGZOwxBsW1Yw4knT1llcSRE=, tarball: https://ms-feed-2.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/run-applescript/-/run-applescript-7.1.0.tgz}
+    engines: {node: '>=18'}
 
   run-parallel@1.2.0:
     resolution: {integrity: sha1-ZtE2jae9+SHrnZW9GpIp5/IaQ+4=, tarball: https://ms-feed-2.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/run-parallel/-/run-parallel-1.2.0.tgz}
@@ -3157,6 +3245,9 @@ packages:
   strip-json-comments@3.1.1:
     resolution: {integrity: sha1-MfEoGzgyYwQ0gxwxDAHMzajL4AY=, tarball: https://ms-feed-12.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/strip-json-comments/-/strip-json-comments-3.1.1.tgz}
     engines: {node: '>=8'}
+
+  strnum@2.4.1:
+    resolution: {integrity: sha1-hUF/aDETut6g/n4XInZ2+In/flg=, tarball: https://ms-feed-2.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/strnum/-/strnum-2.4.1.tgz}
 
   styled-jsx@5.1.6:
     resolution: {integrity: sha1-g7kMB35saoD39eh4HQ8xGy/kFJk=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/styled-jsx/-/styled-jsx-5.1.6.tgz}
@@ -3511,9 +3602,17 @@ packages:
   wrappy@1.0.2:
     resolution: {integrity: sha1-tSQ9jz7BqjXxNkYFvA0QNuMKtp8=, tarball: https://ms-feed-12.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/wrappy/-/wrappy-1.0.2.tgz}
 
+  wsl-utils@0.1.0:
+    resolution: {integrity: sha1-h4PU32cdTVA2W+LuTHGRegVXuqs=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/wsl-utils/-/wsl-utils-0.1.0.tgz}
+    engines: {node: '>=18'}
+
   xml-name-validator@5.0.0:
     resolution: {integrity: sha1-gr6blX96/az5YeWYDxvyJ8C/dnM=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/xml-name-validator/-/xml-name-validator-5.0.0.tgz}
     engines: {node: '>=18'}
+
+  xml-naming@0.1.0:
+    resolution: {integrity: sha1-ircQbFuNI8qi+rrByt8XE2N5+9g=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/xml-naming/-/xml-naming-0.1.0.tgz}
+    engines: {node: '>=16.0.0'}
 
   xml2js@0.4.23:
     resolution: {integrity: sha1-oMaVFnUkIesqx1juTUzPWIQ+rGY=, tarball: https://ms-feed-2.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/xml2js/-/xml2js-0.4.23.tgz}
@@ -3669,6 +3768,25 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@azure/core-xml@1.5.1':
+    dependencies:
+      fast-xml-parser: 5.9.3
+      tslib: 2.8.1
+
+  '@azure/data-tables@13.3.2':
+    dependencies:
+      '@azure/core-auth': 1.10.1
+      '@azure/core-client': 1.10.2
+      '@azure/core-paging': 1.6.2
+      '@azure/core-rest-pipeline': 1.24.0
+      '@azure/core-tracing': 1.3.1
+      '@azure/core-util': 1.13.1
+      '@azure/core-xml': 1.5.1
+      '@azure/logger': 1.3.0
+      tslib: 2.8.1
+    transitivePeerDependencies:
+      - supports-color
+
   '@azure/identity@3.4.2':
     dependencies:
       '@azure/abort-controller': 1.1.0
@@ -3684,6 +3802,22 @@ snapshots:
       jws: 4.0.1
       open: 8.4.2
       stoppable: 1.1.0
+      tslib: 2.8.1
+    transitivePeerDependencies:
+      - supports-color
+
+  '@azure/identity@4.13.1':
+    dependencies:
+      '@azure/abort-controller': 2.1.2
+      '@azure/core-auth': 1.10.1
+      '@azure/core-client': 1.10.2
+      '@azure/core-rest-pipeline': 1.24.0
+      '@azure/core-tracing': 1.3.1
+      '@azure/core-util': 1.13.1
+      '@azure/logger': 1.3.0
+      '@azure/msal-browser': 5.17.0
+      '@azure/msal-node': 5.4.0
+      open: 10.2.0
       tslib: 2.8.1
     transitivePeerDependencies:
       - supports-color
@@ -3742,13 +3876,24 @@ snapshots:
     dependencies:
       '@azure/msal-common': 14.16.1
 
+  '@azure/msal-browser@5.17.0':
+    dependencies:
+      '@azure/msal-common': 16.11.1
+
   '@azure/msal-common@14.16.1': {}
+
+  '@azure/msal-common@16.11.1': {}
 
   '@azure/msal-node@2.16.3':
     dependencies:
       '@azure/msal-common': 14.16.1
       jsonwebtoken: 9.0.3
       uuid: 8.3.2
+
+  '@azure/msal-node@5.4.0':
+    dependencies:
+      '@azure/msal-common': 16.11.1
+      jsonwebtoken: 9.0.3
 
   '@azure/opentelemetry-instrumentation-azure-sdk@1.0.0':
     dependencies:
@@ -4164,6 +4309,8 @@ snapshots:
 
   '@next/swc-win32-x64-msvc@16.2.10':
     optional: true
+
+  '@nodable/entities@2.2.0': {}
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
@@ -4718,6 +4865,8 @@ snapshots:
 
   ansi-styles@5.2.0: {}
 
+  anynum@1.0.1: {}
+
   applicationinsights@2.9.8:
     dependencies:
       '@azure/core-auth': 1.7.2
@@ -4967,6 +5116,10 @@ snapshots:
       base64-js: 1.5.1
       ieee754: 1.2.1
 
+  bundle-name@4.1.0:
+    dependencies:
+      run-applescript: 7.1.0
+
   bytes@3.1.2: {}
 
   call-bind-apply-helpers@1.0.2:
@@ -5125,6 +5278,13 @@ snapshots:
 
   deep-is@0.1.4: {}
 
+  default-browser-id@5.0.1: {}
+
+  default-browser@5.5.0:
+    dependencies:
+      bundle-name: 4.1.0
+      default-browser-id: 5.0.1
+
   define-data-property@1.1.4:
     dependencies:
       es-define-property: 1.0.1
@@ -5132,6 +5292,8 @@ snapshots:
       gopd: 1.2.0
 
   define-lazy-prop@2.0.0: {}
+
+  define-lazy-prop@3.0.0: {}
 
   define-properties@1.2.1:
     dependencies:
@@ -5599,6 +5761,20 @@ snapshots:
 
   fast-levenshtein@2.0.6: {}
 
+  fast-xml-builder@1.2.1:
+    dependencies:
+      path-expression-matcher: 1.6.2
+      xml-naming: 0.1.0
+
+  fast-xml-parser@5.9.3:
+    dependencies:
+      '@nodable/entities': 2.2.0
+      fast-xml-builder: 1.2.1
+      is-unsafe: 1.0.1
+      path-expression-matcher: 1.6.2
+      strnum: 2.4.1
+      xml-naming: 0.1.0
+
   fastq@1.20.1:
     dependencies:
       reusify: 1.1.0
@@ -5923,6 +6099,8 @@ snapshots:
 
   is-docker@2.2.1: {}
 
+  is-docker@3.0.0: {}
+
   is-document.all@1.0.0:
     dependencies:
       call-bound: 1.0.4
@@ -5944,6 +6122,10 @@ snapshots:
   is-glob@4.0.3:
     dependencies:
       is-extglob: 2.1.1
+
+  is-inside-container@1.0.0:
+    dependencies:
+      is-docker: 3.0.0
 
   is-map@2.0.3: {}
 
@@ -5990,6 +6172,8 @@ snapshots:
     dependencies:
       which-typed-array: 1.1.22
 
+  is-unsafe@1.0.1: {}
+
   is-weakmap@2.0.2: {}
 
   is-weakref@1.1.1:
@@ -6004,6 +6188,10 @@ snapshots:
   is-wsl@2.2.0:
     dependencies:
       is-docker: 2.2.1
+
+  is-wsl@3.1.1:
+    dependencies:
+      is-inside-container: 1.0.0
 
   isarray@1.0.0: {}
 
@@ -6417,6 +6605,13 @@ snapshots:
     dependencies:
       fn.name: 1.1.0
 
+  open@10.2.0:
+    dependencies:
+      default-browser: 5.5.0
+      define-lazy-prop: 3.0.0
+      is-inside-container: 1.0.0
+      wsl-utils: 0.1.0
+
   open@8.4.2:
     dependencies:
       define-lazy-prop: 2.0.0
@@ -6457,6 +6652,8 @@ snapshots:
   parseurl@1.3.3: {}
 
   path-exists@4.0.0: {}
+
+  path-expression-matcher@1.6.2: {}
 
   path-is-absolute@1.0.1: {}
 
@@ -6655,6 +6852,8 @@ snapshots:
       '@rolldown/binding-wasm32-wasi': 1.1.5
       '@rolldown/binding-win32-arm64-msvc': 1.1.5
       '@rolldown/binding-win32-x64-msvc': 1.1.5
+
+  run-applescript@7.1.0: {}
 
   run-parallel@1.2.0:
     dependencies:
@@ -6939,6 +7138,10 @@ snapshots:
       min-indent: 1.0.1
 
   strip-json-comments@3.1.1: {}
+
+  strnum@2.4.1:
+    dependencies:
+      anynum: 1.0.1
 
   styled-jsx@5.1.6(@babel/core@7.29.7)(react@19.2.4):
     dependencies:
@@ -7296,7 +7499,13 @@ snapshots:
 
   wrappy@1.0.2: {}
 
+  wsl-utils@0.1.0:
+    dependencies:
+      is-wsl: 3.1.1
+
   xml-name-validator@5.0.0: {}
+
+  xml-naming@0.1.0: {}
 
   xml2js@0.4.23:
     dependencies:

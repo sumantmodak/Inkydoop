@@ -1,10 +1,14 @@
 import Link from "next/link";
 import { QuizClient, type PublicQuestion } from "@/components/quiz-client";
-import { FALLBACK_QUESTIONS } from "@/lib/fallback";
+import { FreshnessBanner } from "@/components/freshness-banner";
+import { getServedPack } from "@/lib/store/read";
 
-export default function QuizPage() {
+export const dynamic = "force-dynamic";
+
+export default async function QuizPage() {
+  const { pack, meta } = await getServedPack();
   // Strip the rubric before sending questions to the client.
-  const questions: PublicQuestion[] = FALLBACK_QUESTIONS.map((q) => ({
+  const questions: PublicQuestion[] = pack.questions.map((q) => ({
     id: q.id,
     type: q.type,
     question: q.question,
@@ -15,6 +19,7 @@ export default function QuizPage() {
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6 sm:py-10">
+      <FreshnessBanner meta={meta} />
       <Link
         href="/vocabulary"
         className="font-display inline-flex items-center gap-1 rounded-full bg-surface px-4 py-1.5 text-sm font-semibold text-brand shadow-sm transition-transform hover:-translate-x-0.5 focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none"
@@ -28,7 +33,7 @@ export default function QuizPage() {
       <p className="mt-1 text-muted">Answer the questions about the story.</p>
 
       <div className="mt-6">
-        <QuizClient questions={questions} />
+        <QuizClient questions={questions} date={meta.servedDate} />
       </div>
     </div>
   );

@@ -1,15 +1,20 @@
 import Link from "next/link";
 import { StoryBody } from "@/components/story-body";
 import { StoryImage } from "@/components/story-image";
-import { FALLBACK_STORY, FALLBACK_VOCABULARY } from "@/lib/fallback";
+import { FreshnessBanner } from "@/components/freshness-banner";
+import { getServedPack } from "@/lib/store/read";
 
-export default function StoryPage() {
-  const story = FALLBACK_STORY;
-  const vocabulary = FALLBACK_VOCABULARY;
+export const dynamic = "force-dynamic";
+
+export default async function StoryPage() {
+  const { pack, meta } = await getServedPack();
+  const story = pack.story;
+  const vocabulary = pack.vocabulary;
   const cover = story.images.find((img) => img.role === "cover");
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6 sm:py-10">
+      <FreshnessBanner meta={meta} />
       <Link
         href="/"
         className="font-display inline-flex items-center gap-1 rounded-full bg-surface px-4 py-1.5 text-sm font-semibold text-brand shadow-sm transition-transform hover:-translate-x-0.5 focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none"

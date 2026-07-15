@@ -1,4 +1,10 @@
-import type { FrontPage, Question, Story, VocabularyItem } from "@/lib/schemas";
+import type {
+  DailyPack,
+  FrontPage,
+  Question,
+  Story,
+  VocabularyItem,
+} from "@/lib/schemas";
 
 /** Safe, static front-page content so the page never renders empty (§6.3). */
 export const FALLBACK_FRONT_PAGE: FrontPage = {
@@ -176,3 +182,13 @@ export const FALLBACK_QUESTIONS: Question[] = [
     },
   },
 ];
+
+/** A complete sample pack used when no generated pack exists yet. */
+export const FALLBACK_PACK: DailyPack = {
+  date: "2026-07-15",
+  wordOfTheDay: FALLBACK_FRONT_PAGE.wordOfTheDay,
+  interestingSentences: FALLBACK_FRONT_PAGE.interestingSentences,
+  story: FALLBACK_STORY,
+  vocabulary: FALLBACK_VOCABULARY,
+  questions: FALLBACK_QUESTIONS,
+};

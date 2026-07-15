@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { FALLBACK_QUESTIONS, FALLBACK_STORY } from "@/lib/fallback";
 import { gradeAnswer } from "@/lib/grade/pipeline";
 import { rateLimit } from "@/lib/rate-limit";
+import { getServedPack } from "@/lib/store/read";
 
 export const dynamic = "force-dynamic";
 
 const BodySchema = z.object({
   questionId: z.string(),
   answer: z.string().max(1000),
+  date: z.string().optional(),
 });
 
 function clientIp(req: NextRequest): string {
@@ -28,7 +29,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "invalid body" }, { status: 400 });
   }
 
-  const question = FALLBACK_QUESTIONS.find((q) => q.id === body.questionId);
+  const { pack } = await getServedPack(body.date);
+  const question = pack.questions.find((q) => q.id === body.questionId);
   if (!question) {
     return NextResponse.json({ error: "unknown question" }, { status: 404 });
   }
@@ -37,7 +39,7 @@ export async function POST(req: NextRequest) {
     const result = await gradeAnswer(
       question,
       body.answer,
-      FALLBACK_STORY.paragraphs.join("\n\n"),
+      pack.story.paragraphs.join("\n\n"),
     );
     return NextResponse.json(result);
   } catch (err) {

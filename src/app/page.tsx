@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Mascot } from "@/components/mascot";
-import { FALLBACK_FRONT_PAGE } from "@/lib/fallback";
+import { FreshnessBanner } from "@/components/freshness-banner";
+import { getServedPack } from "@/lib/store/read";
+
+export const dynamic = "force-dynamic";
 
 const SENTENCE_PILLS = [
   "bg-sunny/25 text-amber-800 dark:text-amber-200",
@@ -18,8 +21,9 @@ const SENTENCE_SPANS = [
   "sm:col-span-4",
 ];
 
-export default function Home() {
-  const { wordOfTheDay, interestingSentences } = FALLBACK_FRONT_PAGE;
+export default async function Home() {
+  const { pack, meta } = await getServedPack();
+  const { wordOfTheDay, interestingSentences } = pack;
 
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:py-10">
@@ -32,6 +36,8 @@ export default function Home() {
         </div>
         <ThemeToggle />
       </header>
+
+      <FreshnessBanner meta={meta} />
 
       <main className="grid grid-cols-1 gap-4 sm:grid-cols-6">
         <Link

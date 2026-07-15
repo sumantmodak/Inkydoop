@@ -29,9 +29,10 @@ const GRADE_BADGE: Record<Grade, { label: string; cls: string }> = {
 
 interface QuizClientProps {
   questions: PublicQuestion[];
+  date: string;
 }
 
-export function QuizClient({ questions }: QuizClientProps) {
+export function QuizClient({ questions, date }: QuizClientProps) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [results, setResults] = useState<Record<string, GradeResult>>({});
   const [loading, setLoading] = useState<Record<string, boolean>>({});
@@ -45,7 +46,7 @@ export function QuizClient({ questions }: QuizClientProps) {
       const res = await fetch("/api/grade", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ questionId: q.id, answer }),
+        body: JSON.stringify({ questionId: q.id, answer, date }),
       });
       const data = await res.json();
       if (res.ok) {
