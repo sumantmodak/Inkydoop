@@ -4,6 +4,7 @@ import { generateStory } from "./story";
 import { generateVocabulary } from "./vocab";
 import { generateQuestions } from "./quiz";
 import { generateFrontPage } from "./frontpage";
+import { renderImages } from "./images";
 import { countWords, checkSafety } from "./validators";
 import { getPack, upsertPack } from "@/lib/store/tableStore";
 
@@ -47,6 +48,9 @@ export async function generateAndStore(input: {
   );
   const frontPage = await generateFrontPage({ signal });
 
+  // Render illustrations (non-blocking: failures yield fewer/no images).
+  const images = await renderImages(gen, date, { signal });
+
   const story: Story = {
     title: gen.title,
     genre: gen.genre,
@@ -55,7 +59,7 @@ export async function generateAndStore(input: {
     readingTimeMin: Math.ceil(countWords(gen.paragraphs) / 150),
     targetWords: gen.candidateVocab,
     artDirection: gen.artDirection,
-    images: [], // M6.5 renders and fills these
+    images,
   };
 
   const pack: DailyPack = {

@@ -52,6 +52,10 @@ async function getClient(): Promise<TableClient> {
       });
       return client;
     })();
+    // Don't cache a failed init — allow the next call to retry.
+    clientPromise.catch(() => {
+      clientPromise = null;
+    });
   }
   return clientPromise;
 }

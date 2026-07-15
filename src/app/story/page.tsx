@@ -26,6 +26,7 @@ export default async function StoryPage() {
         {cover && (
           <StoryImage
             alt={cover.alt}
+            blobPath={cover.blobPath}
             className="animate-pop-in mb-6 h-56 w-full rounded-3xl shadow-md"
           />
         )}

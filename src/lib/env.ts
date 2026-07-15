@@ -17,9 +17,9 @@ const EnvSchema = z
     OPENROUTER_MODEL_GRADER: z.string().default("openai/gpt-4o-mini"),
     OPENROUTER_MODEL_JUDGE: z.string().default("openai/gpt-4o"),
 
-    // Image generation (OpenAI Images API)
+    // Image generation (via OpenRouter chat completions with image modality)
     IMAGE_API_KEY: z.string().min(1, "IMAGE_API_KEY is required"),
-    IMAGE_MODEL: z.string().default("gpt-image-1"),
+    IMAGE_MODEL: z.string().default("google/gemini-2.5-flash-image"),
 
     // Azure Storage — dev uses the connection string, prod uses Managed Identity + account name
     AZURE_STORAGE_CONNECTION_STRING: z.string().optional(),

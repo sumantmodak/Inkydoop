@@ -1,10 +1,22 @@
 interface StoryImageProps {
   alt: string;
+  blobPath?: string;
   className?: string;
 }
 
-// Placeholder image slot. M6.5 (T6.5.4) resolves blobPath -> real image src.
-export function StoryImage({ alt, className }: StoryImageProps) {
+// Renders a story image from Blob storage, or a friendly placeholder when the
+// illustration is missing (§6.1 Step 4.5).
+export function StoryImage({ alt, blobPath, className }: StoryImageProps) {
+  if (blobPath) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={`/api/image?path=${encodeURIComponent(blobPath)}`}
+        alt={alt}
+        className={`object-cover ${className ?? ""}`}
+      />
+    );
+  }
   return (
     <div
       role="img"

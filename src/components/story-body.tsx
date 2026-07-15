@@ -138,6 +138,7 @@ export function StoryBody({ paragraphs, images, vocabulary }: StoryBodyProps) {
               <StoryImage
                 key={`img-${i}-${j}`}
                 alt={img.alt}
+                blobPath={img.blobPath}
                 className="h-48 w-full rounded-2xl shadow-sm"
               />
             ))}
