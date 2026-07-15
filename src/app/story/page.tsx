@@ -20,12 +20,20 @@ export default async function StoryPage({
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6 sm:py-8">
-      <Link
-        href="/"
-        className="font-display inline-flex items-center gap-1 rounded-full bg-surface px-4 py-1.5 text-sm font-semibold text-brand shadow-sm transition-transform hover:-translate-x-0.5 focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none"
-      >
-        ← Back
-      </Link>
+      <div className="flex items-center justify-between gap-3">
+        <Link
+          href="/"
+          className="font-display inline-flex items-center gap-1 rounded-full bg-surface px-4 py-1.5 text-sm font-semibold text-brand shadow-sm transition-transform hover:-translate-x-0.5 focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none"
+        >
+          ← Back
+        </Link>
+        <Link
+          href={`/print/${meta.servedDate}`}
+          className="font-display inline-flex items-center gap-1 rounded-full bg-surface px-4 py-1.5 text-sm font-semibold text-brand shadow-sm transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none"
+        >
+          🖨 Teacher&apos;s Pack
+        </Link>
+      </div>
 
       {cover?.blobPath ? (
         <div className="animate-pop-in group relative mt-4 overflow-hidden rounded-3xl shadow-md">

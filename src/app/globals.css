@@ -165,3 +165,12 @@ body {
     opacity: 1;
   }
 }
+
+/* Print / PDF: force clean white paper, drop the dotted background. */
+@media print {
+  body {
+    background: #fff !important;
+    background-image: none !important;
+    color: #000 !important;
+  }
+}

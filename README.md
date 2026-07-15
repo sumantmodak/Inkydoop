@@ -855,9 +855,9 @@ Task-by-task plan grouped by milestone. Each task lists **outputs** and **depend
 
 ### M8 — Teacher mode (PDF)
 
-- [ ] **T8.1 Printable route** — `/print/[date]` server-rendered, print-optimized layout: story + vocabulary + Q&A **with answer key**. _Dep:_ T6.4
-- [ ] **T8.2 PDF export** — print CSS (`@media print`) for browser “Save as PDF”; if fidelity needs more, a server route rendering via headless Chromium. Decide based on T8.1 output. _Dep:_ T8.1
-- [ ] **T8.3 Teacher entry point** — a discreet “Print today’s pack” action. _Dep:_ T8.1
+- [x] **T8.1 Printable route** — `/print/[date]` server-rendered, print-optimized layout: story + vocabulary + Q&A **with answer key**. _Dep:_ T6.4
+- [x] **T8.2 PDF export** — print CSS (`@media print`) for browser “Save as PDF”; if fidelity needs more, a server route rendering via headless Chromium. Decide based on T8.1 output. _Dep:_ T8.1
+- [x] **T8.3 Teacher entry point** — a discreet “Print today’s pack” action. _Dep:_ T8.1
 - **Acceptance:** a clean one-to-two-page PDF for any cached date, answer key included.
 
 ### Cross-cutting (do alongside, not last)
