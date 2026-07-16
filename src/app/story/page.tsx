@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { StoryBody } from "@/components/story-body";
 import { StoryImage } from "@/components/story-image";
-import { FreshnessBanner } from "@/components/freshness-banner";
 import { getServedPack } from "@/lib/store/read";
 
 export const dynamic = "force-dynamic";
@@ -69,11 +68,7 @@ export default async function StoryPage({
         </div>
       )}
 
-      <div className="mt-6">
-        <FreshnessBanner meta={meta} />
-      </div>
-
-      <article className="mt-2">
+      <article className="mt-6">
         <StoryBody
           paragraphs={story.paragraphs}
           images={story.images}

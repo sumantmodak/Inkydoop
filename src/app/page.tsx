@@ -2,7 +2,6 @@ import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Mascot } from "@/components/mascot";
 import { StoryImage } from "@/components/story-image";
-import { FreshnessBanner } from "@/components/freshness-banner";
 import { getServedPack } from "@/lib/store/read";
 
 export const dynamic = "force-dynamic";
@@ -23,7 +22,7 @@ const SENTENCE_SPANS = [
 ];
 
 export default async function Home() {
-  const { pack, meta } = await getServedPack();
+  const { pack } = await getServedPack();
   const { wordOfTheDay, interestingSentences } = pack;
   const story = pack.story;
   const cover = story.images.find((img) => img.role === "cover");
@@ -47,8 +46,6 @@ export default async function Home() {
           <ThemeToggle />
         </div>
       </header>
-
-      <FreshnessBanner meta={meta} />
 
       <main className="grid grid-cols-1 gap-4 sm:grid-cols-6">
         <Link
