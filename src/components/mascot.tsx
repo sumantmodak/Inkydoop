@@ -32,12 +32,14 @@ export function Mascot({ className }: MascotProps) {
       <circle cx="60" cy="123" r="5" fill="#5b3fd6" />
       <circle cx="40" cy="76" r="6" fill="#ff8fd0" opacity="0.6" />
       <circle cx="80" cy="76" r="6" fill="#ff8fd0" opacity="0.6" />
-      <ellipse cx="47" cy="60" rx="11" ry="13" fill="#ffffff" />
-      <ellipse cx="73" cy="60" rx="11" ry="13" fill="#ffffff" />
-      <circle cx="49" cy="62" r="5.5" fill="#2b2d52" />
-      <circle cx="71" cy="62" r="5.5" fill="#2b2d52" />
-      <circle cx="51" cy="60" r="1.8" fill="#ffffff" />
-      <circle cx="73" cy="60" r="1.8" fill="#ffffff" />
+      <g className="inky-eyes">
+        <ellipse cx="47" cy="60" rx="11" ry="13" fill="#ffffff" />
+        <ellipse cx="73" cy="60" rx="11" ry="13" fill="#ffffff" />
+        <circle cx="49" cy="62" r="5.5" fill="#2b2d52" />
+        <circle cx="71" cy="62" r="5.5" fill="#2b2d52" />
+        <circle cx="51" cy="60" r="1.8" fill="#ffffff" />
+        <circle cx="73" cy="60" r="1.8" fill="#ffffff" />
+      </g>
       <path
         d="M50 82Q60 92 70 82"
         fill="none"

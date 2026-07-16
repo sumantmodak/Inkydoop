@@ -84,6 +84,7 @@ describe("DailyPackSchema", () => {
 describe("PackSummarySchema", () => {
   it("allows a null cover", () => {
     const summary = {
+      id: "79739284-8200000000000-ab",
       date: "2026-07-15",
       title: "The Attic Light",
       genre: "mystery",

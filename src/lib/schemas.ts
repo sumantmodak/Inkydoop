@@ -121,6 +121,7 @@ export const FrontPageSchema = z.object({
 
 /** Metadata-only projection for the Story Library (§3.5). */
 export const PackSummarySchema = z.object({
+  id: z.string(),
   date: DateSchema,
   title: z.string(),
   genre: z.string(),

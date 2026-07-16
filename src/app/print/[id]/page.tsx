@@ -9,18 +9,17 @@ export const dynamic = "force-dynamic";
 export default async function PrintPage({
   params,
 }: {
-  params: Promise<{ date: string }>;
+  params: Promise<{ id: string }>;
 }) {
-  const { date } = await params;
-  const validDate = /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : undefined;
-  const { pack, meta } = await getServedPack(validDate);
+  const { id } = await params;
+  const { pack, id: packId, date } = await getServedPack(id);
   const { story, vocabulary, questions } = pack;
 
   return (
     <div className="mx-auto max-w-3xl bg-white p-8 text-black print:p-0">
       <div className="mb-6 flex items-center justify-between print:hidden">
         <Link
-          href={`/story?date=${meta.servedDate}`}
+          href={`/story?id=${packId}`}
           className="font-display inline-flex items-center gap-1 rounded-full bg-surface px-4 py-1.5 text-sm font-semibold text-brand shadow-sm transition-transform hover:-translate-x-0.5 focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none"
         >
           ← Back to story
@@ -30,7 +29,7 @@ export default async function PrintPage({
 
       <header className="border-b-2 border-black/10 pb-4">
         <p className="text-xs tracking-wide text-black/50 uppercase">
-          Inkydoop · Daily Reading · {meta.servedDate}
+          Inkydoop · Daily Reading · {date}
         </p>
         <h1 className="mt-1 text-3xl font-bold">{story.title}</h1>
         <p className="mt-1 text-sm text-black/60 capitalize">

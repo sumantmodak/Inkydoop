@@ -22,6 +22,7 @@ describe("clampListLimit", () => {
 
 describe("entityToSummary", () => {
   const base = {
+    rowKey: "79739284-8200000000000-ab",
     date: "2026-07-15",
     title: "The Sky Garden Promise",
     genre: "adventure",
@@ -29,9 +30,14 @@ describe("entityToSummary", () => {
     readingTimeMin: 6,
   };
 
-  it("maps metadata columns and treats an empty cover as null", () => {
+  it("maps metadata columns, uses rowKey as id, and treats an empty cover as null", () => {
     expect(entityToSummary({ ...base, coverBlobPath: "" })).toEqual({
-      ...base,
+      id: "79739284-8200000000000-ab",
+      date: "2026-07-15",
+      title: "The Sky Garden Promise",
+      genre: "adventure",
+      theme: "growth",
+      readingTimeMin: 6,
       coverBlobPath: null,
     });
   });

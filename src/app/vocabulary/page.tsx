@@ -27,15 +27,20 @@ function buildQuestions(items: VocabularyItem[]): VocabQuestion[] {
   });
 }
 
-export default async function VocabularyPage() {
-  const { pack } = await getServedPack();
+export default async function VocabularyPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ id?: string }>;
+}) {
+  const { id } = await searchParams;
+  const { pack, id: packId } = await getServedPack(id);
   const vocabulary = pack.vocabulary;
   const questions = buildQuestions(vocabulary);
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6 sm:py-10">
       <Link
-        href="/story"
+        href={`/story?id=${packId}`}
         className="font-display inline-flex items-center gap-1 rounded-full bg-surface px-4 py-1.5 text-sm font-semibold text-brand shadow-sm transition-transform hover:-translate-x-0.5 focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none"
       >
         ← Story
@@ -97,7 +102,7 @@ export default async function VocabularyPage() {
       </section>
 
       <Link
-        href="/quiz"
+        href={`/quiz?id=${packId}`}
         className="hover-pop mt-8 flex items-center justify-between gap-4 rounded-3xl bg-gradient-to-br from-brand to-grape p-5 text-white shadow-md focus-visible:ring-4 focus-visible:ring-brand/40 focus-visible:outline-none"
       >
         <span>

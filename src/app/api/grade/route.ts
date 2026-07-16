@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 const BodySchema = z.object({
   questionId: z.string(),
   answer: z.string().max(1000),
-  date: z.string().optional(),
+  id: z.string().optional(),
 });
 
 function clientIp(req: NextRequest): string {
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "invalid body" }, { status: 400 });
   }
 
-  const { pack } = await getServedPack(body.date);
+  const { pack } = await getServedPack(body.id);
   const question = pack.questions.find((q) => q.id === body.questionId);
   if (!question) {
     return NextResponse.json({ error: "unknown question" }, { status: 404 });

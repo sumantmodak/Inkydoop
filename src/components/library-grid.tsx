@@ -56,9 +56,9 @@ export function LibraryGrid({ initialItems, initialCursor }: LibraryGridProps) {
     <>
       <ul className="gap-4 sm:columns-2 lg:columns-3">
         {items.map((s, i) => (
-          <li key={s.date} className="mb-4 break-inside-avoid">
+          <li key={s.id} className="mb-4 break-inside-avoid">
             <Link
-              href={`/story?date=${s.date}`}
+              href={`/story?id=${s.id}`}
               className="hover-pop group block overflow-hidden rounded-3xl border-2 border-surface-border bg-surface shadow-sm focus-visible:ring-4 focus-visible:ring-brand/30 focus-visible:outline-none"
             >
               <div

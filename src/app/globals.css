@@ -78,6 +78,29 @@ body {
   }
 }
 
+/* The mascot blinks now and then. */
+@keyframes inky-blink {
+  0%,
+  90%,
+  100% {
+    transform: scaleY(1);
+  }
+  95% {
+    transform: scaleY(0.1);
+  }
+}
+
+/* A lively idle bob + occasional tilt for the logo. */
+@keyframes inky-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-3deg);
+  }
+  50% {
+    transform: translateY(-4px) rotate(3deg);
+  }
+}
+
 /* Torn-paper edge for a playful, scrapbook feel on story art. */
 .torn {
   clip-path: polygon(
@@ -156,6 +179,17 @@ body {
     transform: translateY(-4px) scale(1.02);
   }
   .hover-wiggle:hover {
+    animation: wiggle 0.4s ease-in-out;
+  }
+  .inky-eyes {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: inky-blink 6s ease-in-out infinite;
+  }
+  .animate-bob {
+    animation: inky-bob 3.5s ease-in-out infinite;
+  }
+  .animate-bob:hover {
     animation: wiggle 0.4s ease-in-out;
   }
 }

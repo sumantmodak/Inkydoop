@@ -6,35 +6,22 @@ import { generateQuestions } from "./quiz";
 import { generateFrontPage } from "./frontpage";
 import { renderImages } from "./images";
 import { countWords, checkSafety } from "./validators";
-import { getPack, upsertPack } from "@/lib/store/tableStore";
+import { insertPack } from "@/lib/store/tableStore";
 
 export interface GenerateResult {
+  id: string;
   date: string;
   generated: boolean;
-  reason?: string;
   durationMs: number;
 }
 
 /** Run the full daily generation pipeline and persist the pack (§6.1 Step 5). */
 export async function generateAndStore(input: {
   date: string;
-  force: boolean;
   signal?: AbortSignal;
 }): Promise<GenerateResult> {
-  const { date, force, signal } = input;
+  const { date, signal } = input;
   const start = Date.now();
-
-  if (!force) {
-    const existing = await getPack(date);
-    if (existing) {
-      return {
-        date,
-        generated: false,
-        reason: "exists",
-        durationMs: Date.now() - start,
-      };
-    }
-  }
 
   const seed = seedForDate(date);
   const gen = await generateStory(seed, { signal });
@@ -83,6 +70,6 @@ export async function generateAndStore(input: {
     throw new Error(`Safety filter tripped: ${flagged.join(", ")}`);
   }
 
-  await upsertPack(date, pack);
-  return { date, generated: true, durationMs: Date.now() - start };
+  const { id } = await insertPack(date, pack);
+  return { id, date, generated: true, durationMs: Date.now() - start };
 }

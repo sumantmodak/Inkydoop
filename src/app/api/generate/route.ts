@@ -6,7 +6,9 @@ import { rateLimit } from "@/lib/rate-limit";
 import { todayUtc } from "@/lib/store/read";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 300;
+// Generation can take several minutes (the story model dominates). Allow ample
+// headroom so slow models aren't cut off mid-pipeline.
+export const maxDuration = 800;
 
 function authorized(req: NextRequest): boolean {
   const provided =
@@ -33,18 +35,17 @@ export async function POST(req: NextRequest) {
 
   const url = new URL(req.url);
   const date = url.searchParams.get("date") ?? todayUtc();
-  const force = url.searchParams.get("force") === "true";
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return NextResponse.json({ error: "invalid date" }, { status: 400 });
   }
 
   try {
-    const result = await generateAndStore({ date, force });
+    const result = await generateAndStore({ date });
     console.log(
       JSON.stringify({
         event: "generate",
+        id: result.id,
         date,
-        generated: result.generated,
         durationMs: result.durationMs,
         ip,
       }),

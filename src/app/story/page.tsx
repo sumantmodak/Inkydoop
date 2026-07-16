@@ -8,11 +8,10 @@ export const dynamic = "force-dynamic";
 export default async function StoryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ date?: string }>;
+  searchParams: Promise<{ id?: string }>;
 }) {
-  const { date } = await searchParams;
-  const validDate = /^\d{4}-\d{2}-\d{2}$/.test(date ?? "") ? date : undefined;
-  const { pack, meta } = await getServedPack(validDate);
+  const { id } = await searchParams;
+  const { pack, id: packId } = await getServedPack(id);
   const story = pack.story;
   const vocabulary = pack.vocabulary;
   const cover = story.images.find((img) => img.role === "cover");
@@ -27,7 +26,7 @@ export default async function StoryPage({
           ← Back
         </Link>
         <Link
-          href={`/print/${meta.servedDate}`}
+          href={`/print/${packId}`}
           className="font-display inline-flex items-center gap-1 rounded-full bg-surface px-4 py-1.5 text-sm font-semibold text-brand shadow-sm transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none"
         >
           🖨 Teacher&apos;s Pack
@@ -76,7 +75,7 @@ export default async function StoryPage({
         />
 
         <Link
-          href="/vocabulary"
+          href={`/vocabulary?id=${packId}`}
           className="hover-pop mt-8 flex items-center justify-between gap-4 rounded-3xl bg-gradient-to-br from-mint to-sky p-5 text-white shadow-md focus-visible:ring-4 focus-visible:ring-mint/40 focus-visible:outline-none"
         >
           <span>

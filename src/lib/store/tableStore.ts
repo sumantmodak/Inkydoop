@@ -9,11 +9,18 @@ import {
 
 const PARTITION = "daily";
 
-/** Inverted date so an ascending RowKey scan is newest-first (§5.4). */
-function invertedRowKey(date: string): string {
-  return (99999999 - Number(date.replaceAll("-", "")))
-    .toString()
-    .padStart(8, "0");
+function pad(n: number, len: number): string {
+  return n.toString().padStart(len, "0");
+}
+
+// Unique, sortable pack id used as the RowKey. An ascending scan is
+// newest-first: newest date first, and within a date the newest generation
+// first. Multiple packs can coexist for the same date (§5.4).
+function newPackId(date: string, createdMs: number): string {
+  const invDate = pad(99999999 - Number(date.replaceAll("-", "")), 8);
+  const invMs = pad(9999999999999 - createdMs, 13);
+  const rand = Math.random().toString(36).slice(2, 6);
+  return `${invDate}-${invMs}-${rand}`;
 }
 
 interface PackEntity {
@@ -27,6 +34,12 @@ interface PackEntity {
   theme: string;
   coverBlobPath: string;
   readingTimeMin: number;
+}
+
+export interface StoredPack {
+  id: string;
+  date: string;
+  pack: DailyPack;
 }
 
 let clientPromise: Promise<TableClient> | null = null;
@@ -68,55 +81,56 @@ function parsePack(entity: PackEntity): DailyPack {
   return DailyPackSchema.parse(JSON.parse(entity.packJson));
 }
 
-/** Point-read a pack by exact date. */
-export async function getPack(date: string): Promise<DailyPack | null> {
+/** Point-read a pack by its unique id. */
+export async function getPackById(id: string): Promise<StoredPack | null> {
   const client = await getClient();
   try {
-    const entity = await client.getEntity<PackEntity>(
-      PARTITION,
-      invertedRowKey(date),
-    );
-    return parsePack(entity);
+    const entity = await client.getEntity<PackEntity>(PARTITION, id);
+    return { id: entity.rowKey, date: entity.date, pack: parsePack(entity) };
   } catch (err) {
     if ((err as { statusCode?: number }).statusCode === 404) return null;
     throw err;
   }
 }
 
-/** Most recent pack on or before a date (§6.3 fallback). */
-export async function getLatestPack(
-  onOrBefore: string,
-): Promise<{ date: string; pack: DailyPack } | null> {
+/** The most recently generated pack (newest date, newest generation). */
+export async function getLatestPack(): Promise<StoredPack | null> {
   const client = await getClient();
-  const floor = invertedRowKey(onOrBefore);
   const iter = client.listEntities<PackEntity>({
-    queryOptions: {
-      filter: odata`PartitionKey eq ${PARTITION} and RowKey ge ${floor}`,
-    },
+    queryOptions: { filter: odata`PartitionKey eq ${PARTITION}` },
   });
   for await (const entity of iter) {
-    return { date: entity.date, pack: parsePack(entity) };
+    return { id: entity.rowKey, date: entity.date, pack: parsePack(entity) };
   }
   return null;
 }
 
-/** Upsert a pack plus its denormalized metadata columns (§5.4). */
-export async function upsertPack(date: string, pack: DailyPack): Promise<void> {
+/**
+ * Insert a new pack under a unique id plus its denormalized metadata columns
+ * (§5.4). Never overwrites — multiple packs can coexist for the same date.
+ */
+export async function insertPack(
+  date: string,
+  pack: DailyPack,
+): Promise<{ id: string }> {
   const client = await getClient();
+  const createdMs = Date.now();
+  const id = newPackId(date, createdMs);
   const cover = pack.story.images.find((i) => i.role === "cover");
   const entity: PackEntity = {
     partitionKey: PARTITION,
-    rowKey: invertedRowKey(date),
+    rowKey: id,
     date,
     packJson: JSON.stringify(pack),
-    createdAt: new Date().toISOString(),
+    createdAt: new Date(createdMs).toISOString(),
     title: pack.story.title,
     genre: pack.story.genre,
     theme: pack.story.theme,
     coverBlobPath: cover?.blobPath ?? "",
     readingTimeMin: pack.story.readingTimeMin,
   };
-  await client.upsertEntity(entity, "Replace");
+  await client.createEntity(entity);
+  return { id };
 }
 
 const DEFAULT_LIST_LIMIT = 12;
@@ -125,7 +139,13 @@ const MAX_LIST_LIMIT = 50;
 /** Only the metadata columns projected for the Story Library (§5.4). */
 type PackMetaEntity = Pick<
   PackEntity,
-  "date" | "title" | "genre" | "theme" | "readingTimeMin" | "coverBlobPath"
+  | "rowKey"
+  | "date"
+  | "title"
+  | "genre"
+  | "theme"
+  | "readingTimeMin"
+  | "coverBlobPath"
 >;
 
 export function clampListLimit(limit?: number): number {
@@ -135,6 +155,7 @@ export function clampListLimit(limit?: number): number {
 
 export function entityToSummary(entity: PackMetaEntity): PackSummary {
   return {
+    id: entity.rowKey,
     date: entity.date,
     title: entity.title,
     genre: entity.genre,
@@ -156,6 +177,7 @@ export async function listPacks(opts?: {
       queryOptions: {
         filter: odata`PartitionKey eq ${PARTITION}`,
         select: [
+          "RowKey",
           "date",
           "title",
           "genre",
