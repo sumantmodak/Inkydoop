@@ -31,7 +31,7 @@ export default async function Home() {
     <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:py-10">
       <header className="mb-8 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Mascot className="animate-bob h-11 w-11" />
+          <Mascot className="animate-bob h-14 w-14 sm:h-16 sm:w-16" />
           <h1 className="font-display text-3xl font-bold text-brand sm:text-4xl">
             Inkydoop
           </h1>

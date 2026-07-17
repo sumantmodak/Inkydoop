@@ -32,7 +32,7 @@ function parseDataUrl(url: string): { ext: string; buffer: Buffer } | null {
 async function renderOne(
   gen: GeneratedStory,
   spec: ImageSpec,
-  date: string,
+  prefix: string,
   sceneIndex: number,
   signal?: AbortSignal,
 ): Promise<StoryImage | null> {
@@ -58,7 +58,7 @@ async function renderOne(
     if (!parsed) return null;
 
     const name = spec.role === "cover" ? "cover" : `scene-${sceneIndex}`;
-    const blobPath = `${date}/${name}.${parsed.ext}`;
+    const blobPath = `${prefix}/${name}.${parsed.ext}`;
     await uploadImage(blobPath, parsed.buffer, `image/${parsed.ext}`);
 
     return {
@@ -77,13 +77,13 @@ async function renderOne(
 /** Render the story's image specs to Blob storage (§6.1 Step 4.5). */
 export async function renderImages(
   gen: GeneratedStory,
-  date: string,
+  prefix: string,
   options: { signal?: AbortSignal } = {},
 ): Promise<StoryImage[]> {
   let sceneCounter = 0;
   const jobs = gen.images.map((spec) => {
     const sceneIndex = spec.role === "scene" ? ++sceneCounter : 0;
-    return renderOne(gen, spec, date, sceneIndex, options.signal);
+    return renderOne(gen, spec, prefix, sceneIndex, options.signal);
   });
   const results = await Promise.all(jobs);
   return results.filter((r): r is StoryImage => r !== null);

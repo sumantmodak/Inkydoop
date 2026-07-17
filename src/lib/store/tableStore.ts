@@ -16,11 +16,16 @@ function pad(n: number, len: number): string {
 // Unique, sortable pack id used as the RowKey. An ascending scan is
 // newest-first: newest date first, and within a date the newest generation
 // first. Multiple packs can coexist for the same date (§5.4).
-function newPackId(date: string, createdMs: number): string {
+function packRowKey(date: string, createdMs: number): string {
   const invDate = pad(99999999 - Number(date.replaceAll("-", "")), 8);
   const invMs = pad(9999999999999 - createdMs, 13);
   const rand = Math.random().toString(36).slice(2, 6);
   return `${invDate}-${invMs}-${rand}`;
+}
+
+/** Mint a fresh unique id for a pack generated now. */
+export function newPackId(date: string): string {
+  return packRowKey(date, Date.now());
 }
 
 interface PackEntity {
@@ -106,23 +111,23 @@ export async function getLatestPack(): Promise<StoredPack | null> {
 }
 
 /**
- * Insert a new pack under a unique id plus its denormalized metadata columns
- * (§5.4). Never overwrites — multiple packs can coexist for the same date.
+ * Insert a new pack under a caller-supplied unique id plus its denormalized
+ * metadata columns (§5.4). Never overwrites — multiple packs can coexist for
+ * the same date. The id also namespaces the pack's images in Blob storage.
  */
 export async function insertPack(
+  id: string,
   date: string,
   pack: DailyPack,
-): Promise<{ id: string }> {
+): Promise<void> {
   const client = await getClient();
-  const createdMs = Date.now();
-  const id = newPackId(date, createdMs);
   const cover = pack.story.images.find((i) => i.role === "cover");
   const entity: PackEntity = {
     partitionKey: PARTITION,
     rowKey: id,
     date,
     packJson: JSON.stringify(pack),
-    createdAt: new Date(createdMs).toISOString(),
+    createdAt: new Date().toISOString(),
     title: pack.story.title,
     genre: pack.story.genre,
     theme: pack.story.theme,
@@ -130,7 +135,6 @@ export async function insertPack(
     readingTimeMin: pack.story.readingTimeMin,
   };
   await client.createEntity(entity);
-  return { id };
 }
 
 const DEFAULT_LIST_LIMIT = 12;
