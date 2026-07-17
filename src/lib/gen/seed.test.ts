@@ -12,10 +12,9 @@ describe("seedForDate", () => {
     expect(a).not.toEqual(b);
   });
 
-  it("returns non-empty genre, theme, and setting", () => {
+  it("returns non-empty genre and theme", () => {
     const seed = seedForDate("2026-07-15");
     expect(seed.genre).toBeTruthy();
     expect(seed.theme).toBeTruthy();
-    expect(seed.setting).toBeTruthy();
   });
 });

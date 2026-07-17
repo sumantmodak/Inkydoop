@@ -7,13 +7,9 @@ import {
   type GraderOutput,
   type Question,
 } from "@/lib/schemas";
+import { JUDGE_SYSTEM } from "@/lib/prompts";
 
 const JudgeSchema = z.object({ score: GradeSchema });
-
-const SYSTEM = `You are the head teacher settling a disagreement between two graders on one elementary reading answer.
-You see the rubric, the answer, and each grader's structured result (scores and rubric hits) — not their reasoning. Re-decide the final score yourself from the rubric and the answer.
-Be forgiving: elementary answers are short. Score one of nailed_it | almost | lets_look_again.
-Return only JSON: { "score": "nailed_it"|"almost"|"lets_look_again" }.`;
 
 function userPrompt(
   question: Question,
@@ -48,7 +44,7 @@ export async function judge(
   const { score } = await chatJson(
     env.OPENROUTER_MODEL_JUDGE,
     [
-      { role: "system", content: SYSTEM },
+      { role: "system", content: JUDGE_SYSTEM },
       { role: "user", content: userPrompt(question, wrapped, a, b) },
     ],
     JudgeSchema,

@@ -2,11 +2,9 @@ import { z } from "zod";
 import { env } from "@/lib/env";
 import { chatJson } from "@/lib/ai/openrouter";
 import type { Grade, Question } from "@/lib/schemas";
+import { FEEDBACK_SYSTEM } from "@/lib/prompts";
 
 const FeedbackSchema = z.object({ feedback: z.string() });
-
-const SYSTEM = `You give one or two warm, encouraging sentences of feedback to an elementary student about their reading answer. Be specific and kind. Never say "wrong" — on a miss, offer a gentle hint about the story. Do not mention that you are an AI.
-Return only JSON: { "feedback": string }.`;
 
 /** Static, always-available feedback keyed on the grade. */
 export function staticFeedback(grade: Grade): string {
@@ -37,7 +35,7 @@ export async function generateFeedback(
     const { feedback } = await chatJson(
       env.OPENROUTER_MODEL_WOTD,
       [
-        { role: "system", content: SYSTEM },
+        { role: "system", content: FEEDBACK_SYSTEM },
         { role: "user", content: user },
       ],
       FeedbackSchema,

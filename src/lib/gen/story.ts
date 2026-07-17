@@ -20,31 +20,15 @@ import {
   validateStory,
   type StoryIssue,
 } from "./validators";
+import { STORY_SYSTEM, IMAGE_SPECS_SYSTEM } from "@/lib/prompts";
 
 const MAX_ATTEMPTS = 3; // 1 initial + 2 corrective retries
-
-const SYSTEM_PROMPT = `You write daily reading stories for elementary students in grades 3-5 (Lexile 500-800).
-Rules:
-- LENGTH IS A HARD LIMIT: the story MUST be between ${MIN_WORDS} and ${MAX_WORDS} words total (aim for ${TARGET_WORD_COUNT}). Never exceed ${MAX_WORDS} words. Count the words and trim before returning.
-- Short paragraphs, simple sentences, Tier 1-2 vocabulary.
-- Engaging and age-appropriate. No violence, scary content, romance, profanity, or politics.
-- You are also the art director: define a consistent visual style and character looks, then write 3 illustration prompts (1 cover + 2 scenes) that reuse those exact descriptions. Each scene's afterParagraph is the 0-based index of the paragraph it follows; the cover uses -1.
-Return only JSON with this shape:
-{
-  "title": string,
-  "genre": string,
-  "theme": string,
-  "paragraphs": string[],
-  "candidateVocab": string[],
-  "artDirection": { "style": string, "characters": [{ "name": string, "look": string }], "setting": string },
-  "images": [{ "role": "cover"|"scene", "afterParagraph": number, "prompt": string, "alt": string }]
-}`;
 
 function buildUserPrompt(seed: DaySeed, corrective: string): string {
   const lines = [
     `Genre: ${seed.genre}`,
     `Theme: ${seed.theme}`,
-    `Setting: ${seed.setting}`,
+    `Setting: invent a fresh, imaginative setting that fits this genre and theme. Don't default to the obvious — surprise the reader with a specific, vivid place.`,
   ];
   if (corrective) lines.push(`\nRevision note: ${corrective}`);
   return lines.join("\n");
@@ -60,8 +44,7 @@ async function regenerateImageSpecs(
   const messages: ChatMessage[] = [
     {
       role: "system",
-      content:
-        "You are an art director. Given a story and its visual style, write 3 illustration prompts (1 cover + 2 scenes) that reuse the character looks exactly. Return JSON { images: [{ role, afterParagraph, prompt, alt }] }.",
+      content: IMAGE_SPECS_SYSTEM,
     },
     {
       role: "user",
@@ -124,7 +107,7 @@ export async function generateStory(
     const draft = await chatJson(
       env.OPENROUTER_MODEL_STORY,
       [
-        { role: "system", content: SYSTEM_PROMPT },
+        { role: "system", content: STORY_SYSTEM },
         { role: "user", content: buildUserPrompt(seed, corrective) },
       ],
       StoryDraftSchema,

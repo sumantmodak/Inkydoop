@@ -1,10 +1,9 @@
 import { env } from "@/lib/env";
 import { uploadImage } from "@/lib/store/blobStore";
 import type { GeneratedStory, ImageSpec, StoryImage } from "@/lib/schemas";
+import { IMAGE_SAFE_SUFFIX } from "@/lib/prompts";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const SAFE_SUFFIX =
-  "Warm, friendly children's book illustration for ages 8-10. Cheerful and safe. No text, words, or letters in the image.";
 
 function buildPrompt(gen: GeneratedStory, spec: ImageSpec): string {
   const characters = gen.artDirection.characters
@@ -15,7 +14,7 @@ function buildPrompt(gen: GeneratedStory, spec: ImageSpec): string {
     `Setting: ${gen.artDirection.setting}.`,
     characters ? `Characters — ${characters}.` : "",
     `Scene: ${spec.prompt}`,
-    SAFE_SUFFIX,
+    IMAGE_SAFE_SUFFIX,
   ]
     .filter(Boolean)
     .join(" ");

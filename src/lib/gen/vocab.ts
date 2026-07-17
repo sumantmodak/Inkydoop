@@ -2,6 +2,7 @@ import { z } from "zod";
 import { env } from "@/lib/env";
 import { chatJson } from "@/lib/ai/openrouter";
 import { VocabularyItemSchema, type VocabularyItem } from "@/lib/schemas";
+import { vocabSystem } from "@/lib/prompts";
 
 const MAX_DEFINITION_CHARS = 140;
 const MAX_WORDS = 10;
@@ -9,11 +10,6 @@ const MAX_WORDS = 10;
 const VocabResponseSchema = z.object({
   vocabulary: z.array(VocabularyItemSchema),
 });
-
-const SYSTEM = `You extract vocabulary from a story for elementary students in grades 3-5.
-Pick 5-10 words that (a) actually appear in the story, (b) are appropriately challenging, and (c) are varied (no two near-synonyms).
-For each word provide: word, pos, a kid-friendly definition (<= ${MAX_DEFINITION_CHARS} characters), an exampleFromStory copied verbatim from the story text, synonyms, and antonyms.
-Return only JSON: { "vocabulary": [{ "word": string, "pos": string, "definition": string, "exampleFromStory": string, "synonyms": string[], "antonyms": string[] }] }.`;
 
 /**
  * Keep only vocabulary items whose example is a real substring of the story,
@@ -47,7 +43,7 @@ export async function generateVocabulary(
   const { vocabulary } = await chatJson(
     env.OPENROUTER_MODEL_VOCAB,
     [
-      { role: "system", content: SYSTEM },
+      { role: "system", content: vocabSystem(MAX_DEFINITION_CHARS) },
       { role: "user", content: user },
     ],
     VocabResponseSchema,
