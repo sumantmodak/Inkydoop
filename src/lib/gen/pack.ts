@@ -39,6 +39,7 @@ export async function generateAndStore(input: {
 
   const story: Story = {
     title: gen.title,
+    hook: gen.hook,
     genre: gen.genre,
     theme: gen.theme,
     paragraphs: gen.paragraphs,

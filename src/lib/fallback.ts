@@ -8,6 +8,7 @@ import type {
 /** Safe, static story + vocabulary so the story view renders before storage (§6.3). */
 export const FALLBACK_STORY: Story = {
   title: "The Lantern in the Attic",
+  hook: "A dusty lantern reveals a family secret waiting in the attic.",
   genre: "adventure",
   theme: "curiosity",
   paragraphs: [

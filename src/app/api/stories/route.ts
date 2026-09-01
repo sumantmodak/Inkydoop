@@ -28,9 +28,14 @@ export async function GET(req: NextRequest) {
   const tier = TIER_IDS.includes(tierRaw as TierId)
     ? (tierRaw as TierId)
     : undefined;
+  const genreRaw = req.nextUrl.searchParams.get("genre");
+  const genre =
+    genreRaw && /^[a-z][a-z /()-]{0,49}$/.test(genreRaw)
+      ? genreRaw
+      : undefined;
 
   try {
-    const page = await listPacks({ limit, cursor, tier });
+    const page = await listPacks({ limit, cursor, tier, genre });
     return NextResponse.json(ResponseSchema.parse(page));
   } catch {
     // Store unavailable — return an empty page rather than breaking browse.

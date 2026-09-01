@@ -5,11 +5,20 @@ import type { PackSummary } from "@/lib/schemas";
 
 export const dynamic = "force-dynamic";
 
-export default async function LibraryPage() {
+export default async function LibraryPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ genre?: string }>;
+}) {
+  const { genre: genreRaw } = await searchParams;
+  const genre =
+    genreRaw && /^[a-z][a-z /()-]{0,49}$/.test(genreRaw)
+      ? genreRaw
+      : undefined;
   let initialItems: PackSummary[] = [];
   let initialCursor: string | undefined;
   try {
-    const page = await listPacks({ limit: 12 });
+    const page = await listPacks({ limit: 12, genre });
     initialItems = page.items;
     initialCursor = page.nextCursor;
   } catch {
@@ -26,16 +35,26 @@ export default async function LibraryPage() {
       </Link>
 
       <h1 className="font-display mt-5 text-3xl font-bold text-brand sm:text-4xl">
-        Story Library
+        {genre ? `${genre} stories` : "Story Library"}
       </h1>
-      <p className="mt-1 text-muted">
-        Every story we&apos;ve made — newest first.
-      </p>
+      <div className="mt-1 flex flex-wrap items-center gap-3 text-muted">
+        <p>
+          {genre
+            ? `Explore every ${genre} story, newest first.`
+            : "Every story we've made — newest first."}
+        </p>
+        {genre && (
+          <Link href="/library" className="text-sm font-semibold text-brand hover:underline">
+            Clear filter
+          </Link>
+        )}
+      </div>
 
       <div className="mt-6">
         <LibraryGrid
           initialItems={initialItems}
           initialCursor={initialCursor}
+          genre={genre}
         />
       </div>
     </div>

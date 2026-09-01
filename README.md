@@ -17,6 +17,7 @@ The implemented application includes:
 - Manual comprehension self-review with answer and explanation reveal.
 - A printable teacher pack with an answer key.
 - A key-protected admin generation page and API.
+- A story-first landing page with recent stories, genre discovery, sharing, direct learning actions, and a teacher entry point.
 - Light and dark themes.
 - Azure Table and Blob Storage support, with Azurite for local development.
 - A server-side grading API that is implemented but not used by the current quiz UI.
@@ -42,13 +43,19 @@ The project uses Node.js 22 or newer and pnpm.
 
 ### Home
 
-The home page resolves the most recently generated pack for the saved reading tier and displays its cover, title, and story entry point. It also provides:
+The home page resolves the most recently generated pack for the saved reading tier and presents it as the featured story. It displays:
 
-- A three-tier reading-level selector.
-- A link to the Story Library.
-- A persisted light/dark theme toggle.
+- Cover art, a spoiler-free hook, tier, genre, theme, and reading time.
+- Exact links to read the story, practice its vocabulary, and review its questions.
+- Print and native share actions for the featured pack.
+- A tier-filtered shelf of recently added stories.
+- Genre shortcuts that open filtered Story Library views.
+- A teacher-focused entry point for printable packs.
+- The reading-level selector, Story Library link, and persisted theme toggle.
 
 If no matching tier exists, the app tries the latest pack from any tier. If storage is unavailable or contains no packs, it displays the bundled sample pack.
+
+The page labels a pack as "Today's story" only when it is a stored pack dated today; sample and older packs are labeled "Featured story."
 
 ### Story
 
@@ -90,7 +97,7 @@ The Story Library loads pack metadata without loading complete story JSON. It di
 - Reading time and generation date.
 - A link to the exact pack by immutable ID.
 
-The first 12 results are server-rendered. Additional pages load through a continuation cursor.
+The first 12 results are server-rendered. Additional pages load through a continuation cursor. The optional `genre` query parameter filters both the initial result and subsequent pages.
 
 ### Teacher Pack
 
@@ -123,15 +130,15 @@ Tier configuration lives in `src/lib/gen/tiers.ts`.
 
 ## Application Routes
 
-| Route                      | Behavior                                                                           |
-| -------------------------- | ---------------------------------------------------------------------------------- |
-| `/`                        | Latest story for the selected tier, tier selector, library link, and theme toggle. |
-| `/story?id=<pack-id>`      | Exact story pack when `id` is present; otherwise the latest resolved pack.         |
-| `/vocabulary?id=<pack-id>` | Vocabulary list and local multiple-choice activity for the resolved pack.          |
-| `/quiz?id=<pack-id>`       | Manual comprehension response and answer-reveal UI.                                |
-| `/library`                 | Newest-first, metadata-only story archive with cursor pagination.                  |
-| `/print/[id]`              | Print-oriented story, vocabulary, questions, and answer key.                       |
-| `/admin`                   | Manual, key-protected pack generation UI.                                          |
+| Route                      | Behavior                                                                                                                         |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `/`                        | Featured story, recent shelf, learning actions, genre discovery, teacher actions, tier selector, library link, and theme toggle. |
+| `/story?id=<pack-id>`      | Exact story pack when `id` is present; otherwise the latest resolved pack.                                                       |
+| `/vocabulary?id=<pack-id>` | Vocabulary list and local multiple-choice activity for the resolved pack.                                                        |
+| `/quiz?id=<pack-id>`       | Manual comprehension response and answer-reveal UI.                                                                              |
+| `/library?genre=<genre>`   | Newest-first, metadata-only archive with optional genre filtering and cursor pagination.                                         |
+| `/print/[id]`              | Print-oriented story, vocabulary, questions, and answer key.                                                                     |
+| `/admin`                   | Manual, key-protected pack generation UI.                                                                                        |
 
 All reader pages are dynamically rendered because they resolve current storage and cookie state.
 
@@ -180,6 +187,7 @@ Query parameters:
 | `limit`  | No       | Page size; defaults to 12 and is capped at 50.                |
 | `cursor` | No       | Azure Table continuation token returned by the previous page. |
 | `tier`   | No       | Optional exact tier filter.                                   |
+| `genre`  | No       | Optional lowercase genre filter, such as `mystery`.           |
 
 The endpoint is limited to 60 requests per minute per client IP within each running process. If storage is unavailable, it returns an empty `items` array.
 
@@ -263,7 +271,7 @@ flowchart TD
 
 The expected output contains:
 
-- Title, genre, and theme.
+- Title, spoiler-free preview hook, genre, and theme.
 - Story paragraphs.
 - Candidate vocabulary.
 - Art direction and character descriptions.
@@ -333,6 +341,7 @@ interface DailyPack {
   tier: "early" | "growing" | "middle";
   story: {
     title: string;
+    hook: string;
     genre: string;
     theme: string;
     paragraphs: string[];
@@ -396,6 +405,8 @@ Each entity stores:
 - Denormalized title, genre, theme, reading time, and cover path for archive queries.
 
 Exact story links use a point read by partition and row key. Archive queries project metadata only and use Azure continuation tokens.
+
+Archive queries can filter the denormalized `genre` column without loading `packJson`.
 
 ### Azure Blob Storage
 

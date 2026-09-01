@@ -9,6 +9,7 @@ import type { PackSummary } from "@/lib/schemas";
 interface LibraryGridProps {
   initialItems: PackSummary[];
   initialCursor?: string;
+  genre?: string;
 }
 
 // Varying aspect ratios give the masonry a playful, jagged photo-wall rhythm.
@@ -20,7 +21,11 @@ const ASPECTS = [
   "aspect-[4/3]",
 ];
 
-export function LibraryGrid({ initialItems, initialCursor }: LibraryGridProps) {
+export function LibraryGrid({
+  initialItems,
+  initialCursor,
+  genre,
+}: LibraryGridProps) {
   const [items, setItems] = useState(initialItems);
   const [cursor, setCursor] = useState(initialCursor);
   const [loading, setLoading] = useState(false);
@@ -29,9 +34,9 @@ export function LibraryGrid({ initialItems, initialCursor }: LibraryGridProps) {
     if (!cursor || loading) return;
     setLoading(true);
     try {
-      const res = await fetch(
-        `/api/stories?cursor=${encodeURIComponent(cursor)}`,
-      );
+      const params = new URLSearchParams({ cursor });
+      if (genre) params.set("genre", genre);
+      const res = await fetch(`/api/stories?${params}`);
       if (res.ok) {
         const data = (await res.json()) as {
           items: PackSummary[];
@@ -48,7 +53,9 @@ export function LibraryGrid({ initialItems, initialCursor }: LibraryGridProps) {
   if (items.length === 0) {
     return (
       <p className="rounded-3xl border-2 border-surface-border bg-surface p-6 text-center text-muted">
-        No stories yet — generate today&apos;s pack to get started!
+        {genre
+          ? `No ${genre} stories yet.`
+          : "No stories yet — generate today's pack to get started!"}
       </p>
     );
   }

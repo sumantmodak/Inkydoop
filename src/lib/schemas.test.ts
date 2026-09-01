@@ -56,6 +56,10 @@ describe("DailyPackSchema", () => {
     expect(() => DailyPackSchema.parse(validPack)).not.toThrow();
   });
 
+  it("defaults the story hook for legacy packs", () => {
+    expect(DailyPackSchema.parse(validPack).story.hook).toBe("");
+  });
+
   it("rejects a malformed date", () => {
     expect(() =>
       DailyPackSchema.parse({ ...validPack, date: "07-15-2026" }),

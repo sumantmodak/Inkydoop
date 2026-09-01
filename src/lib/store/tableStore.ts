@@ -181,12 +181,18 @@ export async function listPacks(opts?: {
   limit?: number;
   cursor?: string;
   tier?: TierId;
+  genre?: string;
 }): Promise<{ items: PackSummary[]; nextCursor?: string }> {
   const client = await getClient();
   const limit = clampListLimit(opts?.limit);
-  const filter = opts?.tier
-    ? odata`PartitionKey eq ${PARTITION} and tier eq ${opts.tier}`
-    : odata`PartitionKey eq ${PARTITION}`;
+  const filter =
+    opts?.tier && opts.genre
+      ? odata`PartitionKey eq ${PARTITION} and tier eq ${opts.tier} and genre eq ${opts.genre}`
+      : opts?.tier
+        ? odata`PartitionKey eq ${PARTITION} and tier eq ${opts.tier}`
+        : opts?.genre
+          ? odata`PartitionKey eq ${PARTITION} and genre eq ${opts.genre}`
+          : odata`PartitionKey eq ${PARTITION}`;
   const pages = client
     .listEntities<PackEntity>({
       queryOptions: {

@@ -24,6 +24,7 @@ export const StoryImageSchema = z.object({
 
 export const StorySchema = z.object({
   title: z.string(),
+  hook: z.string().default(""),
   genre: z.string(),
   theme: z.string(),
   paragraphs: z.array(z.string()),
@@ -50,6 +51,7 @@ export const ImageSpecSchema = z.object({
  */
 export const StoryDraftSchema = z.object({
   title: z.string(),
+  hook: z.string(),
   genre: z.string(),
   theme: z.string(),
   paragraphs: z.array(z.string()),

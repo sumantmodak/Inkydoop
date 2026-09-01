@@ -38,13 +38,16 @@ ILLUSTRATIONS (you are also the art director)
 Return only JSON with this shape:
 {
   "title": string,
+  "hook": string,
   "genre": string,
   "theme": string,
   "paragraphs": string[],
   "candidateVocab": string[],
   "artDirection": { "style": string, "characters": [{ "name": string, "look": string }], "setting": string },
   "images": [{ "role": "cover"|"scene", "afterParagraph": number, "prompt": string, "alt": string }]
-}`;
+}
+
+The hook is one intriguing, spoiler-free sentence for a story preview.`;
 }
 
 /** Fallback prompt: regenerate only the illustration specs from a finished draft. */
