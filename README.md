@@ -64,10 +64,9 @@ Each tier drives the story's target word count, reading-level band (Flesch–Kin
   - **Vocabulary in context**
   - **Theme / main idea**
 - Answers are **hidden by default**:
-  - User answers (free text or MC) → submit → app reveals correct answer + short explanation.
-  - “Show answer” button available but de‑emphasized.
-- **Free‑text answers are graded by a multi‑agent pipeline** (see §6.5): a friendly 3‑tier grade (`nailed_it` / `almost` / `lets_look_again`) plus one or two sentences of encouraging, specific feedback. MC and short literal answers are graded instantly by exact/fuzzy match — no LLM.
-- Optional score summary at the end.
+  - Readers answer using free text or multiple choice.
+  - “Show answer” reveals the answer and explanation for manual comparison.
+- The current quiz does not automatically check, grade, or score answers.
 
 ### 3.5 Story Library (browse the archive)
 
@@ -448,7 +447,9 @@ Return JSON: [{ "id", "type", "question", "answer", "explanation", "choices?" }]
 
 All LLM calls request **structured JSON** and are validated with a schema (e.g. Zod) before being cached.
 
-### 6.5 Answer Grading (multi‑agent)
+### 6.5 Answer Grading (implemented backend, not exposed in the current UI)
+
+The grading pipeline remains available for a future redesigned learning path. The current comprehension quiz is manual self-review and does not call it.
 
 Free‑text comprehension answers (inferential, theme, vocabulary‑in‑context) are graded by a small multi‑agent pipeline anchored on the **pre‑computed rubric** from §6.1 Step 3. MC and short literal answers never reach it. The design principle: **each agent gets the smallest slice of context that lets it do its one job well**, which makes grading measurably more reliable than one big prompt.
 
@@ -578,7 +579,7 @@ Optional later: `User`, `Progress` (persist `QuizAttempt` per user).
 | M2   | Front page                     | Today’s Story entry point, library navigation, tier selector, and theme toggle                                                                                             |
 | M3   | Story view                     | Renders story, tap‑a‑word definitions                                                                                                                                      |
 | M4   | Vocabulary builder             | Word list + 1 exercise type (MC)                                                                                                                                           |
-| M5   | Comprehension Q&A              | Questions with hidden answers, reveal on submit; multi‑agent grading of free‑text answers (§6.5)                                                                           |
+| M5   | Comprehension Q&A              | Questions with answer entry and optional manual answer reveal                                                                                                             |
 | M6   | Daily caching + generation API | `DailyPack` persistence; key‑protected `POST /api/generate` as the **only** generation path; read endpoints fall back to the latest available pack when today’s is missing |
 | M6.5 | Illustrations                  | 3 images/story (cover + 2 scenes) generated, moderated, stored in Blob; rendered inline + as cover                                                                         |
 | M6.6 | Story Library                  | Browse all packs (metadata‑only, paged, newest‑first); open any date to load its story (§3.5)                                                                              |
@@ -830,8 +831,8 @@ Task-by-task plan grouped by milestone. Each task lists **outputs** and **depend
 - [ ] **T5.5 Judge (Step 4)** — runs only on disagreement/low-confidence; structured inputs only; forgiving default on failure. _Dep:_ T5.4
 - [ ] **T5.6 Feedback (Step 5)** — kind, specific message; static template fallback. _Dep:_ T5.4
 - [ ] **T5.7 Grade API** — `POST /api/grade`: orchestrate Steps 1–5, return `{ grade, feedback, telemetry }`. Rate-limited. _Dep:_ T5.2–T5.6
-- [ ] **T5.8 Quiz UI** — questions with hidden answers, submit → reveal + feedback; de-emphasized “Show answer”; optional score summary. _Dep:_ T5.7, T2.1
-- **Acceptance:** MC/literal grade with zero LLM calls; an injection attempt is neutralized; grader-agreement + judged flags recorded.
+- [ ] **T5.8 Quiz UI** — questions with answer entry and de-emphasized manual “Show answer”; no automated checking, grading, or score summary. _Dep:_ T5.1, T2.1
+- **Acceptance:** readers can answer each question and reveal its answer and explanation for self-review without an API call.
 
 ### M6 — Daily caching + generation API
 

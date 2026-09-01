@@ -38,7 +38,7 @@ export default async function QuizPage({
       <p className="mt-1 text-muted">Answer the questions about the story.</p>
 
       <div className="mt-6">
-        <QuizClient questions={questions} packId={packId} />
+        <QuizClient questions={questions} />
       </div>
     </div>
   );
