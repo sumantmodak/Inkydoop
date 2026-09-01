@@ -1,9 +1,21 @@
+import { z } from "zod";
 import { env } from "@/lib/env";
 import { uploadImage } from "@/lib/store/blobStore";
 import type { GeneratedStory, ImageSpec, StoryImage } from "@/lib/schemas";
 import { IMAGE_SAFE_SUFFIX } from "@/lib/prompts";
 
-const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+const OPENROUTER_IMAGE_URL = "https://openrouter.ai/api/v1/images";
+
+const ImageResponseSchema = z.object({
+  data: z
+    .array(
+      z.object({
+        b64_json: z.string().min(1),
+        media_type: z.string().optional(),
+      }),
+    )
+    .min(1),
+});
 
 function buildPrompt(gen: GeneratedStory, spec: ImageSpec): string {
   const characters = gen.artDirection.characters
@@ -20,12 +32,20 @@ function buildPrompt(gen: GeneratedStory, spec: ImageSpec): string {
     .join(" ");
 }
 
-function parseDataUrl(url: string): { ext: string; buffer: Buffer } | null {
-  const match = /^data:image\/(png|jpeg|jpg|webp);base64,(.+)$/i.exec(url);
-  if (!match) return null;
-  const ext =
-    match[1].toLowerCase() === "jpg" ? "jpeg" : match[1].toLowerCase();
-  return { ext, buffer: Buffer.from(match[2], "base64") };
+function detectImage(buffer: Buffer): { ext: string; contentType: string } | null {
+  if (buffer.subarray(0, 4).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47]))) {
+    return { ext: "png", contentType: "image/png" };
+  }
+  if (buffer.subarray(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff]))) {
+    return { ext: "jpeg", contentType: "image/jpeg" };
+  }
+  if (
+    buffer.subarray(0, 4).toString("ascii") === "RIFF" &&
+    buffer.subarray(8, 12).toString("ascii") === "WEBP"
+  ) {
+    return { ext: "webp", contentType: "image/webp" };
+  }
+  return null;
 }
 
 async function renderOne(
@@ -36,7 +56,7 @@ async function renderOne(
   signal?: AbortSignal,
 ): Promise<StoryImage | null> {
   try {
-    const res = await fetch(OPENROUTER_URL, {
+    const res = await fetch(OPENROUTER_IMAGE_URL, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${env.IMAGE_API_KEY}`,
@@ -44,21 +64,23 @@ async function renderOne(
       },
       body: JSON.stringify({
         model: env.IMAGE_MODEL,
-        messages: [{ role: "user", content: buildPrompt(gen, spec) }],
-        modalities: ["image", "text"],
+        prompt: buildPrompt(gen, spec),
+        aspect_ratio: "16:9",
+        output_format: "webp",
+        n: 1,
       }),
       signal,
     });
     if (!res.ok) return null;
-    const body = await res.json();
-    const url = body?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-    if (typeof url !== "string") return null;
-    const parsed = parseDataUrl(url);
-    if (!parsed) return null;
+    const parsed = ImageResponseSchema.safeParse(await res.json());
+    if (!parsed.success) return null;
+    const buffer = Buffer.from(parsed.data.data[0].b64_json, "base64");
+    const image = detectImage(buffer);
+    if (!image) return null;
 
     const name = spec.role === "cover" ? "cover" : `scene-${sceneIndex}`;
-    const blobPath = `${prefix}/${name}.${parsed.ext}`;
-    await uploadImage(blobPath, parsed.buffer, `image/${parsed.ext}`);
+    const blobPath = `${prefix}/${name}.${image.ext}`;
+    await uploadImage(blobPath, buffer, image.contentType);
 
     return {
       role: spec.role,

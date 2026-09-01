@@ -73,7 +73,7 @@ Return only JSON: { "vocabulary": [{ "word": string, "pos": string, "definition"
 // ── Illustrations (§6.1 Step 4) ──────────────────────────────────────
 
 export const IMAGE_SAFE_SUFFIX =
-  "Style: richly detailed, soft painterly watercolor children's-book illustration with warm lighting, expressive faces, depth, and a cozy, magical feel — polished, publication-quality. Cheerful and friendly for ages 8-10. Safe and age-appropriate. No text, words, or letters in the image.";
+  "Compose as a wide 16:9 landscape scene. Keep important characters and story details comfortably inside the frame, away from the extreme edges. Style: richly detailed, soft painterly watercolor children's-book illustration with warm lighting, expressive faces, depth, and a cozy, magical feel — polished, publication-quality. Cheerful and friendly for ages 8-10. Safe and age-appropriate. No text, words, or letters in the image.";
 
 // ── Answer grading (§6.5) ────────────────────────────────────────────
 

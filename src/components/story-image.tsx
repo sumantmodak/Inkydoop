@@ -2,18 +2,24 @@ interface StoryImageProps {
   alt: string;
   blobPath?: string;
   className?: string;
+  fit?: "cover" | "contain";
 }
 
 // Renders a story image from Blob storage, or a friendly placeholder when the
 // illustration is missing (§6.1 Step 4).
-export function StoryImage({ alt, blobPath, className }: StoryImageProps) {
+export function StoryImage({
+  alt,
+  blobPath,
+  className,
+  fit = "cover",
+}: StoryImageProps) {
   if (blobPath) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
         src={`/api/image?path=${encodeURIComponent(blobPath)}`}
         alt={alt}
-        className={`object-cover ${className ?? ""}`}
+        className={`${fit === "contain" ? "object-contain" : "object-cover"} ${className ?? ""}`}
       />
     );
   }

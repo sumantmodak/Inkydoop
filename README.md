@@ -18,6 +18,7 @@ The implemented application includes:
 - A printable teacher pack with an answer key.
 - A key-protected admin generation page and API.
 - A story-first landing page with recent stories, genre discovery, sharing, direct learning actions, and a teacher entry point.
+- Immersive full-width story covers and inline scene illustrations that preserve their complete composition, with a constrained reading column.
 - Light and dark themes.
 - Azure Table and Blob Storage support, with Azurite for local development.
 - A server-side grading API that is implemented but not used by the current quiz UI.
@@ -61,10 +62,9 @@ The page labels a pack as "Today's story" only when it is a stored pack dated to
 
 The story page displays:
 
-- Cover art when available.
-- Title and estimated reading time.
-- Story paragraphs.
-- Scene illustrations placed after their configured paragraphs.
+- An immersive cover with the title, hook, genre, theme, and estimated reading time. The complete illustration is contained over a soft full-frame backdrop rather than cropped.
+- Story paragraphs constrained to a comfortable reading width.
+- Large scene illustrations that preserve the full image while expanding to the story canvas and remaining inline with their configured paragraphs.
 - Tap-a-word definitions.
 - Links to the vocabulary activity and printable teacher pack.
 
@@ -263,7 +263,7 @@ flowchart TD
 
 ### 1. Date Seed
 
-`seedForDate()` hashes the requested date and deterministically selects a genre and theme. Repeating a date keeps those two inputs stable, while the model can still create a different story.
+`seedForDate()` hashes the requested date and deterministically selects from broad, age-appropriate pools spanning mystery, fantasy, science, travel, family, school, arts, nature, character growth, relationships, and community. Repeating a date keeps its genre and theme stable for the current pool definitions, while the model can still create a different story.
 
 ### 2. Story Draft
 
@@ -306,10 +306,11 @@ Question filtering:
 
 ### 4. Illustrations
 
-`renderImages()` requests all image specifications concurrently through OpenRouter using `IMAGE_MODEL` and `IMAGE_API_KEY`.
+`renderImages()` requests all image specifications concurrently through OpenRouter's dedicated Image API using `IMAGE_MODEL` and `IMAGE_API_KEY`.
 
-- The prompt combines shared art direction, setting, character descriptions, scene instructions, and kid-safe prompt constraints.
-- Supported returned data URLs are PNG, JPEG, and WebP.
+- Requests specify a 16:9 landscape aspect ratio and prefer WebP output.
+- The prompt combines shared art direction, setting, character descriptions, scene instructions, landscape composition guidance, and kid-safe constraints.
+- Returned PNG, JPEG, and WebP bytes are detected from their file signatures rather than trusting response metadata.
 - Successful bytes are uploaded to `<pack-id>/cover.<ext>` or `<pack-id>/scene-N.<ext>`.
 - Individual image failures are logged and dropped; they do not prevent the text pack from being stored.
 
@@ -566,7 +567,7 @@ src/
 ## Current Operational Limitations
 
 - Image responses are not moderated after generation.
-- Returned PNG and JPEG images are stored as received; there is no WebP conversion or byte-size limit.
+- WebP is requested, but providers can return PNG or JPEG; those formats are stored as received. There is no local conversion or byte-size limit.
 - Content safety uses prompt constraints and a small banned-term filter, not a dedicated moderation service.
 - Generation is a synchronous HTTP operation and can take several minutes.
 - Rate limiting is in-memory and applies per running process, not across replicas.

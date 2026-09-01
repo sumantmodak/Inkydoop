@@ -102,7 +102,10 @@ export function StoryBody({ paragraphs, images, vocabulary }: StoryBodyProps) {
   function renderParagraph(text: string, pIndex: number) {
     const tokens = text.split(/(\s+)/);
     return (
-      <p key={`p-${pIndex}`} className="text-lg leading-relaxed">
+      <p
+        key={`p-${pIndex}`}
+        className="mx-auto w-full max-w-2xl text-lg leading-relaxed"
+      >
         {tokens.map((token, i) => {
           if (/^\s+$/.test(token) || token === "") return token;
           const key = normalize(token);
@@ -132,24 +135,27 @@ export function StoryBody({ paragraphs, images, vocabulary }: StoryBodyProps) {
 
   function sceneFigure(img: StoryImageType) {
     const idx = sceneOrder.get(img) ?? 0;
-    const left = idx % 2 === 0;
-    const frame = left ? "bg-sky" : "bg-bubble";
-    const tilt = left ? "sm:-rotate-2" : "sm:rotate-2";
     return (
       <figure
         key={`scene-${idx}`}
-        className={`animate-pop-in mx-auto w-full transition-transform duration-300 hover:rotate-0 sm:hover:scale-[1.02] ${tilt}`}
+        className="animate-pop-in mx-auto my-4 w-full overflow-hidden rounded-3xl bg-surface shadow-xl ring-4 ring-white dark:ring-surface"
       >
-        <div className={`torn p-2.5 shadow-xl ${frame}`}>
+        <div className="relative aspect-[4/3] overflow-hidden bg-black/10 sm:aspect-[16/9]">
+          <StoryImage
+            alt=""
+            blobPath={img.blobPath}
+            className="absolute inset-0 h-full w-full scale-110 opacity-75 blur-2xl"
+          />
           <StoryImage
             alt={img.alt}
             blobPath={img.blobPath}
-            className="torn aspect-[4/3] w-full"
+            fit="contain"
+            className="absolute inset-0 h-full w-full"
           />
         </div>
         <figcaption
           aria-hidden="true"
-          className="font-display mt-3 text-center text-sm text-muted italic"
+          className="font-display px-5 py-3 text-center text-sm text-muted italic"
         >
           {img.alt}
         </figcaption>

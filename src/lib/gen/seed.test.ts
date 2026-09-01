@@ -17,4 +17,16 @@ describe("seedForDate", () => {
     expect(seed.genre).toBeTruthy();
     expect(seed.theme).toBeTruthy();
   });
+
+  it("provides broad genre and theme variety across a year", () => {
+    const seeds = Array.from({ length: 365 }, (_, day) => {
+      const date = new Date(Date.UTC(2027, 0, day + 1));
+      return seedForDate(date.toISOString().slice(0, 10));
+    });
+    const genres = new Set(seeds.map((seed) => seed.genre));
+    const themes = new Set(seeds.map((seed) => seed.theme));
+
+    expect(genres.size).toBeGreaterThanOrEqual(55);
+    expect(themes.size).toBeGreaterThanOrEqual(70);
+  });
 });
