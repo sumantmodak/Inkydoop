@@ -16,7 +16,7 @@ const lexend = Lexend({
 export const metadata: Metadata = {
   title: "Inkydoop — daily reading for grades 3–5",
   description:
-    "A fresh word, an AI-generated story, vocabulary practice, and reading questions every day.",
+    "A fresh AI-generated story, vocabulary practice, and reading questions every day.",
 };
 
 // Applies the saved (or system) theme before paint to avoid a flash.

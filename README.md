@@ -1,6 +1,6 @@
 # Inkydoop
 
-An AI‑powered English Language Arts (ELA) web app for **elementary school students (grades 3–5)**. Every day brings a fresh word, a short AI‑generated story, vocabulary practice, and reading‑comprehension questions — all in a kid‑friendly UI.
+An AI‑powered English Language Arts (ELA) web app for **elementary school students (grades 3–5)**. Every day brings a short AI‑generated story, vocabulary practice, and reading‑comprehension questions — all in a kid‑friendly UI.
 
 ---
 
@@ -28,15 +28,9 @@ Each tier drives the story's target word count, reading-level band (Flesch–Kin
 
 ### 3.1 Front Page
 
-- **Word of the Day** card
-  - Word, pronunciation, part of speech
-  - Kid‑friendly definition
-  - 2–3 example sentences
-  - “Use it in a sentence” mini prompt
-- **Interesting Sentences** strip
-  - 3–5 vivid, well‑crafted sentences (mix of imagery, idiom, strong verbs)
-  - Each sentence tagged with what makes it interesting (e.g., _metaphor_, _strong verb_, _alliteration_)
 - **Today’s Story** entry point (cover image / title / 1‑line hook)
+- Story Library entry point
+- Persisted reading-tier selector
 - Theme toggle
 
 > The **cover image** is the first `story.images[]` entry (`role: cover`), served from Azure Blob Storage.
@@ -46,7 +40,7 @@ Each tier drives the story's target word count, reading-level band (Flesch–Kin
 - AI‑generated, **~1,000 words**, divided into short paragraphs/chapters.
 - Genre rotates daily (adventure, mystery, sci‑fi, friendship, fable, historical…).
 - Includes a small set of **target vocabulary** woven naturally into the prose.
-- **3 illustrations** per story — 1 cover + 2 inline scene images — generated to match the text and served from Azure Blob Storage (see §6.1 Step 4.5). Images are **non‑blocking**: a failed illustration never invalidates a valid text pack.
+- **3 illustrations** per story — 1 cover + 2 inline scene images — generated to match the text and served from Azure Blob Storage (see §6.1 Step 4). Images are **non‑blocking**: a failed illustration never invalidates a valid text pack.
 - Inline “tap‑a‑word” feature: tap any word → quick definition popup.
 - Estimated reading time displayed.
 
@@ -87,8 +81,6 @@ Each tier drives the story's target word count, reading-level band (Flesch–Kin
 
 ```
 Landing page
-  ├─ Word of the Day card
-  ├─ Interesting Sentences
   ├─ [Browse Library] ──▶ Story Library (all packs, newest‑first)
   │                         └─ pick a date ──▶ Story view (loads that pack)
   └─ [Read Today’s Story] ──▶ Story view
@@ -223,7 +215,7 @@ Determinism means a `force`/repeat generate for the same date picks the same gen
 
 - **Model:** `OPENROUTER_MODEL_STORY` (the strongest model — default `openai/gpt-5.5` via OpenRouter; it also emits the art bible + image prompts).
 - **Inputs:** genre, theme, **tier** (which sets target word count, Lexile/Flesch–Kincaid band, sentence complexity, and vocabulary difficulty — §2 / §6.1 Step 0), safety rules, and a small list of **seed words** we’d like woven in (optional — story can introduce its own too). The **setting is invented by the model**.
-- **Output (JSON):** the story author also emits an **“art bible”** (`artDirection`) and the **image specs** (`images`) in the same call, so the model that knows the characters/setting/pacing is the one that describes them for illustration — this is what keeps characters consistent across images (see §6.1 Step 4.5).
+- **Output (JSON):** the story author also emits an **“art bible”** (`artDirection`) and the **image specs** (`images`) in the same call, so the model that knows the characters/setting/pacing is the one that describes them for illustration — this is what keeps characters consistent across images (see §6.1 Step 4).
   ```json
   {
     "title": "...",
@@ -309,15 +301,7 @@ Why one call instead of chapter‑by‑chapter: keeps narrative coherence, costs
 - **Rubric (for grading, see §6.5):** every question also carries a **pre‑computed rubric** — frozen grading criteria written _before_ any student answer exists. `mustInclude` = concepts required for full credit; `niceToHave` = optional extras; `commonWrongPatterns` = known misconceptions to catch. Pre‑computing keeps grading consistent across all students, prevents answer‑influenced rubric drift, and lets an admin review criteria before they go live.
 - **Validation:** answer must be one of `choices` (when present); every `explanation` should reference something verifiable in the story (we cheaply check that key answer phrases appear in the text); each `mustInclude` bullet must be non‑empty. On failure → regenerate that question only.
 
-#### Step 4 — Generate front‑page extras (independent of the story)
-
-- **Model:** `OPENROUTER_MODEL_WOTD` (small model).
-- Two parallel sub‑calls:
-  1. **Word of the Day** — a word appropriate for grades 3–5 (not necessarily in the story), with pronunciation, kid‑friendly definition, 2–3 example sentences, and a one‑line “try using it” prompt.
-  2. **Interesting Sentences** — 3–5 vivid sentences, each tagged with the device that makes it interesting (`metaphor`, `simile`, `alliteration`, `strong verb`, `imagery`, `personification`).
-- These are **independent of the story** so the front page can refresh even if a story regeneration is in flight.
-
-#### Step 4.5 — Render illustrations (specs → images → Blob)
+#### Step 4 — Render illustrations (specs → images → Blob)
 
 The image **specs and art bible already exist** from Step 1 — this step is purely mechanical, no further story inference.
 
@@ -330,7 +314,7 @@ The image **specs and art bible already exist** from Step 1 — this step is pur
 #### Step 5 — Assemble, safety‑check, persist
 
 - Combine outputs into a single `DailyPack` (see §7).
-- Run the final **safety filter pass** over the whole pack (story + questions + WOTD + sentences + image alt text). If anything trips the filter at this stage, regenerate only the offending piece.
+- Run the final **safety filter pass** over the whole pack (story + questions + image alt text). If anything trips the filter at this stage, regenerate only the offending piece.
 - Compute `readingTimeMin` = `wordCount / 150` rounded up.
 - Persist image bytes to **Blob** and the JSON pack (with `story.images[]` blob paths) to **Table** with `UPSERT` on `date`; if `force=false` and a row exists, the endpoint returns `{ generated: false, reason: "exists" }` without calling any model.
 
@@ -341,9 +325,8 @@ The image **specs and art bible already exist** from Step 1 — this step is pur
 | 1 Story            | Large       | ~1.5k–2.5k                 |                                                           |
 | 2 Vocab            | Small       | ~300                       |                                                           |
 | 3 Quiz             | Small       | ~500                       |                                                           |
-| 4 WOTD + Sentences | Small       | ~250 (parallel)            |                                                           |
-| 4.5 Illustrations  | Image API   | 3 images                   | **New dominant cost** — ~1–4¢/image → ~3–12¢/day          |
-| **Total per day**  | —           | text ~2.5k–3.5k + 3 images | Text ≈ a few cents; images dominate but still ~$1–4/month |
+| 4 Illustrations    | Image API   | 3 images                   | **New dominant cost** — ~1–4¢/image → ~3–12¢/day          |
+| **Total per day**  | —           | text ~2.3k–3.3k + 3 images | Text ≈ a few cents; images dominate but still ~$1–4/month |
 
 A full daily generation is **one HTTP call to `/api/generate`** and typically completes in ~15–50s (image generation adds ~5–20s). This is fine — generation is a manual admin call, off the read path; reads serve cached blobs instantly.
 
@@ -412,7 +395,7 @@ export const GET = POST; // allow manual trigger
 
 **Manual trigger only.** Generation runs **exclusively** when someone calls `POST /api/generate` with the correct key. There is **no lazy fallback** and **no external scheduler**.
 
-- Read endpoints (story, vocab, quiz, front page) only read from the cache — they never call the LLM.
+- Reader pages only read from the cache — they never call the LLM.
 - **Browse the archive.** `GET /api/stories?limit=&cursor=` returns a metadata‑only, newest‑first page for the Story Library (§3.5): `{ items: PackSummary[], nextCursor? }`. It projects the denormalized metadata columns (§5.4) — no `packJson`, no LLM. `GET /api/story?date=YYYY-MM-DD` then loads a single full pack on demand.
 - **Fallback to latest available pack.** When a read endpoint is hit:
   1. Look up `DailyPack` for `today`.
@@ -493,7 +476,7 @@ Student answer
 
 **Step 4 — Judge** (`OPENROUTER_MODEL_JUDGE`, medium). Runs **only** when the two graders disagree, or either confidence is low. It sees the rubric + both graders' **structured outputs** (scores and rubric hits — _not_ their free‑text justifications, which cause anchoring) and re‑adjudicates. When graders agree with high confidence, the judge is skipped — that's the cost savings (~80% of answers). On judge failure → default to the **more forgiving** of the two grades.
 
-**Step 5 — Feedback** (`OPENROUTER_MODEL_WOTD`, small). Turns the final grade + rubric hits/misses into one or two encouraging, kid‑appropriate sentences. Kept **separate from grading** so “be kind” never inflates the score. Never says “wrong” — on a miss it offers a concrete hint (“Reread paragraph 3…”). On failure → fall back to a static template keyed on the grade.
+**Step 5 — Feedback** (`OPENROUTER_MODEL_FEEDBACK`, small). Turns the final grade + rubric hits/misses into one or two encouraging, kid‑appropriate sentences. Kept **separate from grading** so “be kind” never inflates the score. Never says “wrong” — on a miss it offers a concrete hint (“Reread paragraph 3…”). On failure → fall back to a static template keyed on the grade.
 
 **Grade scale.** Three tiers for grades 3–5: `nailed_it` / `almost` / `lets_look_again`. `almost` = 1+ `mustInclude` hits but not all. No numeric percentages — they pretend more precision than the graders have and demoralize kids.
 
@@ -505,8 +488,6 @@ Student answer
 DailyPack {
   date: string            // YYYY-MM-DD
   tier: 'early' | 'growing' | 'middle'   // reading tier (§2)
-  wordOfTheDay: { word, pos, pronunciation, definition, examples[] }
-  interestingSentences: { text, tag }[]
   story: {
     title, genre, paragraphs[], readingTimeMin, targetWords[],
     artDirection: { style: string, characters: { name: string, look: string }[], setting: string },
@@ -528,7 +509,7 @@ GenerationMeta {
   appVersion: string          // build / prompt version (e.g. git short sha)
   seed: { genre: string; theme: string; tier: string }
   models: {                   // model that ran each step
-    story: string; vocab: string; quiz: string; wotd: string; image: string
+    story: string; vocab: string; quiz: string; image: string
   }
   tokens: {
     byStep: {                 // per-LLM-call usage reported by OpenRouter
@@ -576,7 +557,7 @@ Optional later: `User`, `Progress` (persist `QuizAttempt` per user).
 - **Content guardrails** in the system prompt (no violence, romance, scary content, profanity, politics).
 - Post‑generation **filter pass** (regex + lightweight moderation model) before caching.
 - **Student‑input is untrusted.** The grading Guard agent (§6.5 Step 2) detects prompt‑injection and unsafe content in submitted answers and wraps them in `<student_answer>` tags so downstream graders treat them as data, never instructions.
-- **Image safety.** Every illustration prompt (§6.1 Step 4.5) carries kid‑safe constraints; each generated image passes a **moderation check** before it's uploaded to Blob, and `alt` text is mandatory (accessibility + a second content check).
+- **Image safety.** Every illustration prompt (§6.1 Step 4) carries kid‑safe constraints; each generated image passes a **moderation check** before it's uploaded to Blob, and `alt` text is mandatory (accessibility + a second content check).
 - Manual override: an admin can regenerate a day’s pack.
 - Reading‑level check (e.g. Flesch‑Kincaid) to verify story matches the grades 3–5 band; regenerate if off.
 
@@ -594,7 +575,7 @@ Optional later: `User`, `Progress` (persist `QuizAttempt` per user).
 | ---- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | M0   | Project scaffold               | Next.js + TS + Tailwind, env config, OpenRouter client                                                                                                                     |
 | M1   | Story generation               | API route returns a validated story JSON                                                                                                                                   |
-| M2   | Front page                     | Word of the Day + Interesting Sentences (static fallback + AI)                                                                                                             |
+| M2   | Front page                     | Today’s Story entry point, library navigation, tier selector, and theme toggle                                                                                             |
 | M3   | Story view                     | Renders story, tap‑a‑word definitions                                                                                                                                      |
 | M4   | Vocabulary builder             | Word list + 1 exercise type (MC)                                                                                                                                           |
 | M5   | Comprehension Q&A              | Questions with hidden answers, reveal on submit; multi‑agent grading of free‑text answers (§6.5)                                                                           |
@@ -615,12 +596,12 @@ OPENROUTER_API_KEY=...
 OPENROUTER_MODEL_STORY=openai/gpt-5.5
 OPENROUTER_MODEL_VOCAB=openai/gpt-4o-mini
 OPENROUTER_MODEL_QUIZ=openai/gpt-4o-mini
-OPENROUTER_MODEL_WOTD=openai/gpt-4o-mini
-# Answer grading (§6.5). Guard reuses QUIZ, feedback reuses WOTD.
+OPENROUTER_MODEL_FEEDBACK=openai/gpt-4o-mini
+# Answer grading (§6.5). Guard reuses QUIZ.
 OPENROUTER_MODEL_GRADER=openai/gpt-4o-mini
 OPENROUTER_MODEL_JUDGE=openai/gpt-4o
 
-# Story illustrations (§6.1 Step 4.5) — OpenAI Images API (use an OpenAI API key)
+# Story illustrations (§6.1 Step 4) — OpenAI Images API (use an OpenAI API key)
 IMAGE_API_KEY=...
 IMAGE_MODEL=gpt-image-1
 
@@ -712,7 +693,7 @@ az containerapp create \
       OPENROUTER_MODEL_STORY=openai/gpt-5.5 \
       OPENROUTER_MODEL_VOCAB=openai/gpt-4o-mini \
       OPENROUTER_MODEL_QUIZ=openai/gpt-4o-mini \
-      OPENROUTER_MODEL_WOTD=openai/gpt-4o-mini \
+      OPENROUTER_MODEL_FEEDBACK=openai/gpt-4o-mini \
       OPENROUTER_MODEL_GRADER=openai/gpt-4o-mini \
       OPENROUTER_MODEL_JUDGE=openai/gpt-4o
 
@@ -825,21 +806,19 @@ Task-by-task plan grouped by milestone. Each task lists **outputs** and **depend
 
 ### M2 — Front page
 
-- [ ] **T2.1 WOTD + Sentences gen** — `src/lib/gen/frontpage.ts`: two parallel small-model calls (§6.1 Step 4), Zod-validated. _Dep:_ T0.4
-- [ ] **T2.2 Static fallback** — bundled default WOTD + sentences so the page never renders empty. _Dep:_ T0.6
-- [ ] **T2.3 Landing UI** — `/` page: WOTD card, Interesting Sentences strip, Today’s Story hook (cover slot), theme toggle. Tailwind + accessible components. _Dep:_ T2.1, T2.2
-- **Acceptance:** landing renders from a sample pack and from static fallback; Lighthouse a11y ≥ 90.
+- [ ] **T2.1 Landing UI** — `/` page: Today’s Story hook, Story Library entry point, persisted tier selector, and theme toggle. Tailwind + accessible components. _Dep:_ T0.6
+- **Acceptance:** landing renders from a stored pack and from the static sample; Lighthouse a11y ≥ 90.
 
 ### M3 — Story view
 
-- [ ] **T3.1 Story renderer** — `/story` route: paragraphs, reading-time, cover + inline images placed by `afterParagraph` (graceful when an image is missing). _Dep:_ T2.3, T1.3
+- [ ] **T3.1 Story renderer** — `/story` route: paragraphs, reading-time, cover + inline images placed by `afterParagraph` (graceful when an image is missing). _Dep:_ T2.1, T1.3
 - [ ] **T3.2 Tap-a-word** — client popover: tap a word → definition (from pack vocab first, else a lightweight lookup). Keyboard + touch accessible. _Dep:_ T3.1
 - **Acceptance:** story renders with 0–3 images correctly; tap-a-word works on touch and keyboard.
 
 ### M4 — Vocabulary builder
 
 - [ ] **T4.1 Vocab gen** — `src/lib/gen/vocab.ts`: §6.1 Step 2 extraction, substring validation, dedupe. _Dep:_ T1.3
-- [ ] **T4.2 Vocab UI + MC exercise** — word list with definition/synonyms; one Multiple-Choice activity with immediate, encouraging feedback. _Dep:_ T4.1, T2.3
+- [ ] **T4.2 Vocab UI + MC exercise** — word list with definition/synonyms; one Multiple-Choice activity with immediate, encouraging feedback. _Dep:_ T4.1, T2.1
 - **Acceptance:** every `exampleFromStory` is a real substring; MC exercise scores correctly.
 
 ### M5 — Comprehension Q&A + grading
@@ -851,22 +830,22 @@ Task-by-task plan grouped by milestone. Each task lists **outputs** and **depend
 - [ ] **T5.5 Judge (Step 4)** — runs only on disagreement/low-confidence; structured inputs only; forgiving default on failure. _Dep:_ T5.4
 - [ ] **T5.6 Feedback (Step 5)** — kind, specific message; static template fallback. _Dep:_ T5.4
 - [ ] **T5.7 Grade API** — `POST /api/grade`: orchestrate Steps 1–5, return `{ grade, feedback, telemetry }`. Rate-limited. _Dep:_ T5.2–T5.6
-- [ ] **T5.8 Quiz UI** — questions with hidden answers, submit → reveal + feedback; de-emphasized “Show answer”; optional score summary. _Dep:_ T5.7, T2.3
+- [ ] **T5.8 Quiz UI** — questions with hidden answers, submit → reveal + feedback; de-emphasized “Show answer”; optional score summary. _Dep:_ T5.7, T2.1
 - **Acceptance:** MC/literal grade with zero LLM calls; an injection attempt is neutralized; grader-agreement + judged flags recorded.
 
 ### M6 — Daily caching + generation API
 
 - [ ] **T6.1 Table store** — `src/lib/store/tableStore.ts`: `AzureTableDailyPackStore` (`get`/`getLatest`/`upsert`), inverted-date RowKey (§5.4). _Dep:_ T0.5, T0.6
-- [ ] **T6.2 Assemble + persist (Step 5)** — combine all gen outputs into `DailyPack`, final safety pass, `readingTimeMin`, upsert; also write the denormalized metadata columns (`title`, `genre`, `theme`, `coverBlobPath`, `readingTimeMin`) for the Story Library (§5.4). _Dep:_ T1.3, T2.1, T4.1, T5.1, T6.1
+- [ ] **T6.2 Assemble + persist (Step 5)** — combine all gen outputs into `DailyPack`, final safety pass, `readingTimeMin`, upsert; also write the denormalized metadata columns (`title`, `genre`, `theme`, `coverBlobPath`, `readingTimeMin`) for the Story Library (§5.4). _Dep:_ T1.3, T4.1, T5.1, T6.1
 - [ ] **T6.3 `/api/generate`** — key-protected (`timingSafeEqual`), `date`/`force` params, rate-limit, structured summary, safe logging (§6.2). `GET = POST`. _Dep:_ T6.2
-- [ ] **T6.4 Read endpoints + fallback** — story/vocab/quiz/front-page reads serve cache; latest-pack fallback + `meta.isFresh` banner (§6.3). _Dep:_ T6.1
-- [ ] **T6.5 Wire UI to reads** — replace dev/sample data in M2–M5 with real read endpoints. _Dep:_ T6.4, T2.3, T3.1, T4.2, T5.8
+- [ ] **T6.4 Read endpoints + fallback** — reader pages serve cached packs; latest-pack fallback + `meta.isFresh` banner (§6.3). _Dep:_ T6.1
+- [ ] **T6.5 Wire UI to reads** — replace dev/sample data in M2–M5 with real read endpoints. _Dep:_ T6.4, T2.1, T3.1, T4.2, T5.8
 - **Acceptance:** one `/api/generate` call populates a day; reads serve it; missing-today falls back with the banner; 404 only when no pack ever existed.
 
 ### M6.5 — Illustrations
 
 - [ ] **T6.5.1 Blob store** — `src/lib/store/blobStore.ts`: upload WebP to `story-images` at `{date}/{role}-{n}.webp`; Managed Identity in prod, Azurite in dev. _Dep:_ T6.1
-- [ ] **T6.5.2 Image render (Step 4.5)** — assemble prompt from `artDirection` + spec; call image API; **moderate**; WebP-encode; upload; record `blobPath`. Non-blocking on failure. _Dep:_ T6.5.1, T1.3
+- [ ] **T6.5.2 Image render (Step 4)** — assemble prompt from `artDirection` + spec; call image API; **moderate**; WebP-encode; upload; record `blobPath`. Non-blocking on failure. _Dep:_ T6.5.1, T1.3
 - [ ] **T6.5.3 Hook into generate** — call T6.5.2 within `/api/generate`; persist `story.images[]` paths. _Dep:_ T6.5.2, T6.3
 - [ ] **T6.5.4 Serve images** — resolve `blobPath` → URL in story + cover UI; alt text applied. _Dep:_ T3.1, T6.5.3
 - **Acceptance:** generate produces ≤3 moderated WebP blobs; a failed/blocked image leaves a valid text pack; images render with alt text.
@@ -882,8 +861,8 @@ Task-by-task plan grouped by milestone. Each task lists **outputs** and **depend
 
 ### M7 — Polish
 
-- [ ] **T7.1 Read-aloud** — SpeechSynthesis controls on story/WOTD; play/pause/stop. _Dep:_ T3.1
-- [ ] **T7.2 Theme + fonts** — light/dark toggle (persisted); dyslexia-friendly font option (§9). _Dep:_ T2.3
+- [ ] **T7.1 Read-aloud** — SpeechSynthesis controls on stories; play/pause/stop. _Dep:_ T3.1
+- [ ] **T7.2 Theme + fonts** — light/dark toggle (persisted); dyslexia-friendly font option (§9). _Dep:_ T2.1
 - [ ] **T7.3 Accessibility pass** — keyboard nav, focus states, ARIA, contrast; Playwright + axe checks. _Dep:_ M2–M6.5 UI
 - [ ] **T7.4 Dockerfile + deploy** — §12.2 Dockerfile; §12 one-time Azure setup; `deploy.yml` (OIDC → ACR → `containerapp update`); run the §12.6 checklist. _Dep:_ T6.5.4, T0.7
 - **Acceptance:** deployed to ACA on a custom domain; §12.6 checklist fully green.
@@ -900,7 +879,7 @@ Task-by-task plan grouped by milestone. Each task lists **outputs** and **depend
 - [ ] **T9.1 Tier config** — define the three tiers (`early` | `growing` | `middle`) with per-tier word-count, Lexile/Flesch–Kincaid band, sentence-complexity, and vocabulary settings (§2); a `TierSchema` + `TIERS` table. _Dep:_ T0.6
 - [ ] **T9.2 Tier-aware generation** — thread `tier` through `seedForDate`/`generateAndStore`; parameterize the story prompt (word count, band, vocab difficulty) and the validators (word-count + FK bounds) by tier. `POST /api/generate?tier=` (default `growing`). _Dep:_ T9.1, T1.2, T1.3, T6.3
 - [ ] **T9.3 Persist tier** — add `tier` to `DailyPack`, the denormalized metadata columns, and `PackSummary`; `/api/stories` returns it. _Dep:_ T9.2, T6.1, T6.6.1
-- [ ] **T9.4 Tier selector UI** — a persisted tier picker (localStorage); reads (front page, story, library) serve the selected tier, falling back to the nearest available. Tier badge on library cards. _Dep:_ T9.3, T6.4, T6.6.3
+- [ ] **T9.4 Tier selector UI** — a persisted tier picker; home, story, and library reads serve the selected tier, falling back to the nearest available. Tier badge on library cards. _Dep:_ T9.3, T6.4, T6.6.3
 - [ ] **T9.5 Admin** — tier dropdown on `/admin`; optional "generate all three tiers" for a date. _Dep:_ T9.2
 - **Acceptance:** the same date can hold one story per tier; each passes its own tier's word-count/reading-level validators; switching tier in the UI serves the matching pack.
 

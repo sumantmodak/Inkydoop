@@ -3,16 +3,6 @@ import { DailyPackSchema, PackSummarySchema } from "@/lib/schemas";
 
 const validPack = {
   date: "2026-07-15",
-  wordOfTheDay: {
-    word: "lantern",
-    pos: "noun",
-    pronunciation: "LAN-tern",
-    definition: "a portable light with a protective case",
-    examples: ["She carried a lantern into the cave."],
-  },
-  interestingSentences: [
-    { text: "The fog swallowed the pier.", tag: "imagery" },
-  ],
   story: {
     title: "The Attic Light",
     genre: "mystery",

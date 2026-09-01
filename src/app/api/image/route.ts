@@ -3,7 +3,7 @@ import { downloadImage } from "@/lib/store/blobStore";
 
 export const dynamic = "force-dynamic";
 
-// Streams a story image from Blob storage (§6.1 Step 4.5 / T6.5.4).
+// Streams a story image from Blob storage (§6.1 Step 4 / T6.5.4).
 export async function GET(req: NextRequest) {
   const path = req.nextUrl.searchParams.get("path");
   if (

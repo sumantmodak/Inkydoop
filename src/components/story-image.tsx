@@ -5,7 +5,7 @@ interface StoryImageProps {
 }
 
 // Renders a story image from Blob storage, or a friendly placeholder when the
-// illustration is missing (§6.1 Step 4.5).
+// illustration is missing (§6.1 Step 4).
 export function StoryImage({ alt, blobPath, className }: StoryImageProps) {
   if (blobPath) {
     return (

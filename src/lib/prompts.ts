@@ -69,19 +69,7 @@ Write the rubric BEFORE imagining any student answer: mustInclude (1-3 concepts 
 Return only JSON: { "questions": [{ "id": string, "type": string, "question": string, "answer": string, "explanation": string, "choices"?: string[], "rubric": { "mustInclude": string[], "niceToHave": string[], "commonWrongPatterns": string[] } }] }.`;
 }
 
-// ── Front page: Word of the Day + Interesting Sentences (§6.1 Step 4) ─
-
-export function wotdSystem(tier: Tier): string {
-  return `Pick one Word of the Day for grade ${tier.grades} readers. Age-appropriate and encouraging; no scary, violent, or adult content.
-Return only JSON: { "word": string, "pos": string, "pronunciation": string, "definition": string, "examples": string[] } with 2-3 kid-friendly example sentences.`;
-}
-
-export function sentencesSystem(tier: Tier): string {
-  return `Write 3-5 vivid example sentences for grade ${tier.grades} readers. Each sentence highlights one literary device, tagged as one of: metaphor, simile, alliteration, strong verb, imagery, personification. Age-appropriate; no scary, violent, or adult content.
-Return only JSON: { "sentences": [{ "text": string, "tag": string }] }.`;
-}
-
-// ── Illustrations (§6.1 Step 4.5) ────────────────────────────────────
+// ── Illustrations (§6.1 Step 4) ──────────────────────────────────────
 
 export const IMAGE_SAFE_SUFFIX =
   "Style: richly detailed, soft painterly watercolor children's-book illustration with warm lighting, expressive faces, depth, and a cozy, magical feel — polished, publication-quality. Cheerful and friendly for ages 8-10. Safe and age-appropriate. No text, words, or letters in the image.";

@@ -1,33 +1,9 @@
 import type {
   DailyPack,
-  FrontPage,
   Question,
   Story,
   VocabularyItem,
 } from "@/lib/schemas";
-
-/** Safe, static front-page content so the page never renders empty (§6.3). */
-export const FALLBACK_FRONT_PAGE: FrontPage = {
-  wordOfTheDay: {
-    word: "curious",
-    pos: "adjective",
-    pronunciation: "KYOOR-ee-us",
-    definition: "wanting to learn or know more about something",
-    examples: [
-      "The curious kitten peeked inside the open box.",
-      "She was curious about how rainbows are made.",
-    ],
-  },
-  interestingSentences: [
-    {
-      text: "The wind tiptoed through the tall grass.",
-      tag: "personification",
-    },
-    { text: "Waves whispered against the warm sand.", tag: "alliteration" },
-    { text: "The city sparkled like a bowl of stars.", tag: "simile" },
-    { text: "Morning light spilled across the quiet room.", tag: "imagery" },
-  ],
-};
 
 /** Safe, static story + vocabulary so the story view renders before storage (§6.3). */
 export const FALLBACK_STORY: Story = {
@@ -187,8 +163,6 @@ export const FALLBACK_QUESTIONS: Question[] = [
 export const FALLBACK_PACK: DailyPack = {
   date: "2026-07-15",
   tier: "growing",
-  wordOfTheDay: FALLBACK_FRONT_PAGE.wordOfTheDay,
-  interestingSentences: FALLBACK_FRONT_PAGE.interestingSentences,
   story: FALLBACK_STORY,
   vocabulary: FALLBACK_VOCABULARY,
   questions: FALLBACK_QUESTIONS,

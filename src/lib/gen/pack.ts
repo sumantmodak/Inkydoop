@@ -3,7 +3,6 @@ import { seedForDate } from "./seed";
 import { generateStory } from "./story";
 import { generateVocabulary } from "./vocab";
 import { generateQuestions } from "./quiz";
-import { generateFrontPage } from "./frontpage";
 import { renderImages } from "./images";
 import { countWords, checkSafety } from "./validators";
 import { TIERS } from "./tiers";
@@ -39,7 +38,6 @@ export async function generateAndStore(input: {
     tier,
     { signal },
   );
-  const frontPage = await generateFrontPage(tier, { signal });
 
   // Render illustrations (non-blocking: failures yield fewer/no images).
   // Namespaced by the pack id so same-date stories don't overwrite images.
@@ -59,8 +57,6 @@ export async function generateAndStore(input: {
   const pack: DailyPack = {
     date,
     tier: tierId,
-    wordOfTheDay: frontPage.wordOfTheDay,
-    interestingSentences: frontPage.interestingSentences,
     story,
     vocabulary,
     questions,

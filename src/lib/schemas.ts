@@ -9,19 +9,6 @@ export const TIER_IDS = ["early", "growing", "middle"] as const;
 export const TierIdSchema = z.enum(TIER_IDS);
 export type TierId = z.infer<typeof TierIdSchema>;
 
-export const WordOfTheDaySchema = z.object({
-  word: z.string(),
-  pos: z.string(),
-  pronunciation: z.string(),
-  definition: z.string(),
-  examples: z.array(z.string()),
-});
-
-export const InterestingSentenceSchema = z.object({
-  text: z.string(),
-  tag: z.string(),
-});
-
 export const ArtDirectionSchema = z.object({
   style: z.string(),
   characters: z.array(z.object({ name: z.string(), look: z.string() })),
@@ -48,7 +35,7 @@ export const StorySchema = z.object({
 
 /**
  * Image spec produced by story generation (§6.1 Step 1). Becomes a StoryImage
- * once rendered and uploaded (blobPath added in §6.1 Step 4.5).
+ * once rendered and uploaded (blobPath added in §6.1 Step 4).
  */
 export const ImageSpecSchema = z.object({
   role: z.enum(["cover", "scene"]),
@@ -112,17 +99,9 @@ export const QuestionSchema = z.object({
 export const DailyPackSchema = z.object({
   date: DateSchema,
   tier: TierIdSchema.default("growing"),
-  wordOfTheDay: WordOfTheDaySchema,
-  interestingSentences: z.array(InterestingSentenceSchema),
   story: StorySchema,
   vocabulary: z.array(VocabularyItemSchema),
   questions: z.array(QuestionSchema),
-});
-
-/** Story-independent front-page content (§6.1 Step 4). */
-export const FrontPageSchema = z.object({
-  wordOfTheDay: WordOfTheDaySchema,
-  interestingSentences: z.array(InterestingSentenceSchema),
 });
 
 /** Metadata-only projection for the Story Library (§3.5). */
@@ -167,8 +146,6 @@ export const QuizAttemptSchema = z.object({
   judged: z.boolean(),
 });
 
-export type WordOfTheDay = z.infer<typeof WordOfTheDaySchema>;
-export type InterestingSentence = z.infer<typeof InterestingSentenceSchema>;
 export type ArtDirection = z.infer<typeof ArtDirectionSchema>;
 export type StoryImage = z.infer<typeof StoryImageSchema>;
 export type Story = z.infer<typeof StorySchema>;
@@ -180,7 +157,6 @@ export type QuestionType = z.infer<typeof QuestionTypeSchema>;
 export type Rubric = z.infer<typeof RubricSchema>;
 export type Question = z.infer<typeof QuestionSchema>;
 export type DailyPack = z.infer<typeof DailyPackSchema>;
-export type FrontPage = z.infer<typeof FrontPageSchema>;
 export type PackSummary = z.infer<typeof PackSummarySchema>;
 export type Grade = z.infer<typeof GradeSchema>;
 export type GraderOutput = z.infer<typeof GraderOutputSchema>;

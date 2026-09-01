@@ -73,7 +73,7 @@ async function renderOne(
   }
 }
 
-/** Render the story's image specs to Blob storage (§6.1 Step 4.5). */
+/** Render the story's image specs to Blob storage (§6.1 Step 4). */
 export async function renderImages(
   gen: GeneratedStory,
   prefix: string,

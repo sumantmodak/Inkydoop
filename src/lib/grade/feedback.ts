@@ -33,7 +33,7 @@ export async function generateFeedback(
   ].join("\n");
   try {
     const { feedback } = await chatJson(
-      env.OPENROUTER_MODEL_WOTD,
+      env.OPENROUTER_MODEL_FEEDBACK,
       [
         { role: "system", content: FEEDBACK_SYSTEM },
         { role: "user", content: user },

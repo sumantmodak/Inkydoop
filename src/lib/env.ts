@@ -13,7 +13,7 @@ const EnvSchema = z
     OPENROUTER_MODEL_STORY: z.string().default("openai/gpt-5.5"),
     OPENROUTER_MODEL_VOCAB: z.string().default("openai/gpt-4o-mini"),
     OPENROUTER_MODEL_QUIZ: z.string().default("openai/gpt-4o-mini"),
-    OPENROUTER_MODEL_WOTD: z.string().default("openai/gpt-4o-mini"),
+    OPENROUTER_MODEL_FEEDBACK: z.string().default("openai/gpt-4o-mini"),
     OPENROUTER_MODEL_GRADER: z.string().default("openai/gpt-4o-mini"),
     OPENROUTER_MODEL_JUDGE: z.string().default("openai/gpt-4o"),
 

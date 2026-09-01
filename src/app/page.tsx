@@ -8,25 +8,9 @@ import { getTierCookie } from "@/lib/tier-cookie";
 
 export const dynamic = "force-dynamic";
 
-const SENTENCE_PILLS = [
-  "bg-sunny/25 text-amber-800 dark:text-amber-200",
-  "bg-sky/25 text-sky-800 dark:text-sky-200",
-  "bg-mint/25 text-emerald-800 dark:text-emerald-200",
-  "bg-coral/25 text-rose-800 dark:text-rose-200",
-  "bg-grape/25 text-purple-800 dark:text-purple-200",
-];
-
-const SENTENCE_SPANS = [
-  "sm:col-span-3",
-  "sm:col-span-3",
-  "sm:col-span-2",
-  "sm:col-span-4",
-];
-
 export default async function Home() {
   const tier = await getTierCookie();
   const { pack } = await getServedPack(undefined, tier);
-  const { wordOfTheDay, interestingSentences } = pack;
   const story = pack.story;
   const cover = story.images.find((img) => img.role === "cover");
 
@@ -89,100 +73,11 @@ export default async function Home() {
             </span>
           </div>
         </Link>
-
-        <section
-          aria-labelledby="wotd-heading"
-          className="animate-pop-in rounded-3xl border-2 border-sunny/40 bg-surface p-6 shadow-sm sm:col-span-4"
-          style={{ animationDelay: "80ms" }}
-        >
-          <div className="flex items-center gap-2">
-            <StarIcon className="h-5 w-5 text-sunny" />
-            <h2
-              id="wotd-heading"
-              className="font-display text-sm font-bold tracking-wide text-amber-700 uppercase dark:text-amber-300"
-            >
-              Word of the Day
-            </h2>
-          </div>
-          <p className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <span className="font-display text-4xl font-bold text-brand">
-              {wordOfTheDay.word}
-            </span>
-            <span className="text-muted">{wordOfTheDay.pronunciation}</span>
-            <span className="text-sm text-muted italic">
-              {wordOfTheDay.pos}
-            </span>
-          </p>
-          <p className="mt-3 text-lg">{wordOfTheDay.definition}</p>
-          <ul className="mt-4 flex flex-col gap-2">
-            {wordOfTheDay.examples.map((example, i) => (
-              <li
-                key={i}
-                className="rounded-2xl bg-sunny/10 px-4 py-2 text-foreground/90"
-              >
-                {example}
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <aside
-          className="animate-pop-in flex flex-col items-center justify-center gap-2 rounded-3xl bg-gradient-to-br from-mint/25 to-sky/25 p-5 text-center shadow-sm sm:col-span-2"
-          style={{ animationDelay: "120ms" }}
-        >
-          <Mascot className="animate-float h-14 w-14" />
-          <p className="font-display font-semibold text-brand">Tip!</p>
-          <p className="text-sm text-foreground/80">
-            Tap tricky words in the story to see what they mean.
-          </p>
-        </aside>
-
-        <section aria-labelledby="sentences-heading" className="contents">
-          <h2
-            id="sentences-heading"
-            className="font-display mt-2 text-sm font-bold tracking-wide text-muted uppercase sm:col-span-6"
-          >
-            Sparkling Sentences
-          </h2>
-          <ul className="contents">
-            {interestingSentences.map((sentence, i) => (
-              <li
-                key={i}
-                className={`hover-pop animate-pop-in flex flex-col gap-3 rounded-2xl border-2 border-surface-border bg-surface p-4 shadow-sm ${
-                  SENTENCE_SPANS[i % SENTENCE_SPANS.length]
-                }`}
-                style={{ animationDelay: `${180 + i * 60}ms` }}
-              >
-                <span className="text-lg">{sentence.text}</span>
-                <span
-                  className={`w-fit rounded-full px-3 py-1 font-display text-xs font-semibold ${
-                    SENTENCE_PILLS[i % SENTENCE_PILLS.length]
-                  }`}
-                >
-                  {sentence.tag}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
       </main>
 
       <footer className="mt-10 text-center text-sm text-muted">
         Come back tomorrow for a brand-new story!
       </footer>
     </div>
-  );
-}
-
-function StarIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className={className}
-      fill="currentColor"
-      aria-hidden="true"
-    >
-      <path d="M12 2l2.9 6.1 6.6.9-4.8 4.6 1.2 6.6L12 17.8 6.1 20.8l1.2-6.6L2.5 9l6.6-.9z" />
-    </svg>
   );
 }
