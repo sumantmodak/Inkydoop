@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { QuizClient, type PublicQuestion } from "@/components/quiz-client";
 import { getServedPack } from "@/lib/store/read";
+import { getTierCookie } from "@/lib/tier-cookie";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +11,8 @@ export default async function QuizPage({
   searchParams: Promise<{ id?: string }>;
 }) {
   const { id } = await searchParams;
-  const { pack, id: packId } = await getServedPack(id);
+  const tier = await getTierCookie();
+  const { pack, id: packId } = await getServedPack(id, tier);
   // Strip the rubric before sending questions to the client.
   const questions: PublicQuestion[] = pack.questions.map((q) => ({
     id: q.id,

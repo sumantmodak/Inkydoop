@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { env } from "@/lib/env";
 import { generateAndStore } from "@/lib/gen/pack";
+import { parseTier } from "@/lib/gen/tiers";
 import { rateLimit } from "@/lib/rate-limit";
 import { todayUtc } from "@/lib/store/read";
 
@@ -35,17 +36,19 @@ export async function POST(req: NextRequest) {
 
   const url = new URL(req.url);
   const date = url.searchParams.get("date") ?? todayUtc();
+  const tier = parseTier(url.searchParams.get("tier"));
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return NextResponse.json({ error: "invalid date" }, { status: 400 });
   }
 
   try {
-    const result = await generateAndStore({ date });
+    const result = await generateAndStore({ date, tier });
     console.log(
       JSON.stringify({
         event: "generate",
         id: result.id,
         date,
+        tier,
         durationMs: result.durationMs,
         ip,
       }),

@@ -1,4 +1,4 @@
-import type { DailyPack, Story } from "@/lib/schemas";
+import type { DailyPack, Story, TierId } from "@/lib/schemas";
 import { seedForDate } from "./seed";
 import { generateStory } from "./story";
 import { generateVocabulary } from "./vocab";
@@ -6,11 +6,13 @@ import { generateQuestions } from "./quiz";
 import { generateFrontPage } from "./frontpage";
 import { renderImages } from "./images";
 import { countWords, checkSafety } from "./validators";
+import { TIERS } from "./tiers";
 import { insertPack, newPackId } from "@/lib/store/tableStore";
 
 export interface GenerateResult {
   id: string;
   date: string;
+  tier: TierId;
   generated: boolean;
   durationMs: number;
 }
@@ -18,22 +20,26 @@ export interface GenerateResult {
 /** Run the full daily generation pipeline and persist the pack (§6.1 Step 5). */
 export async function generateAndStore(input: {
   date: string;
+  tier: TierId;
   signal?: AbortSignal;
 }): Promise<GenerateResult> {
-  const { date, signal } = input;
+  const { date, tier: tierId, signal } = input;
+  const tier = TIERS[tierId];
   const start = Date.now();
   const id = newPackId(date);
   const seed = seedForDate(date);
-  const gen = await generateStory(seed, { signal });
+  const gen = await generateStory(seed, tier, { signal });
   const vocabulary = await generateVocabulary(
     { paragraphs: gen.paragraphs, candidateVocab: gen.candidateVocab },
+    tier,
     { signal },
   );
   const questions = await generateQuestions(
     { paragraphs: gen.paragraphs, vocabulary },
+    tier,
     { signal },
   );
-  const frontPage = await generateFrontPage({ signal });
+  const frontPage = await generateFrontPage(tier, { signal });
 
   // Render illustrations (non-blocking: failures yield fewer/no images).
   // Namespaced by the pack id so same-date stories don't overwrite images.
@@ -52,6 +58,7 @@ export async function generateAndStore(input: {
 
   const pack: DailyPack = {
     date,
+    tier: tierId,
     wordOfTheDay: frontPage.wordOfTheDay,
     interestingSentences: frontPage.interestingSentences,
     story,
@@ -71,6 +78,12 @@ export async function generateAndStore(input: {
     throw new Error(`Safety filter tripped: ${flagged.join(", ")}`);
   }
 
-  await insertPack(id, date, pack);
-  return { id, date, generated: true, durationMs: Date.now() - start };
+  await insertPack(id, date, tierId, pack);
+  return {
+    id,
+    date,
+    tier: tierId,
+    generated: true,
+    durationMs: Date.now() - start,
+  };
 }

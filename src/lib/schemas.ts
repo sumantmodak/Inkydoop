@@ -4,6 +4,11 @@ const DateSchema = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, "expected YYYY-MM-DD");
 
+/** Reading tiers (§2). Single source of truth for the tier ids. */
+export const TIER_IDS = ["early", "growing", "middle"] as const;
+export const TierIdSchema = z.enum(TIER_IDS);
+export type TierId = z.infer<typeof TierIdSchema>;
+
 export const WordOfTheDaySchema = z.object({
   word: z.string(),
   pos: z.string(),
@@ -106,6 +111,7 @@ export const QuestionSchema = z.object({
 
 export const DailyPackSchema = z.object({
   date: DateSchema,
+  tier: TierIdSchema.default("growing"),
   wordOfTheDay: WordOfTheDaySchema,
   interestingSentences: z.array(InterestingSentenceSchema),
   story: StorySchema,
@@ -123,6 +129,7 @@ export const FrontPageSchema = z.object({
 export const PackSummarySchema = z.object({
   id: z.string(),
   date: DateSchema,
+  tier: TierIdSchema,
   title: z.string(),
   genre: z.string(),
   theme: z.string(),

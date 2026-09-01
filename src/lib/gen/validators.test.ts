@@ -4,9 +4,11 @@ import {
   readingGrade,
   checkSafety,
   validateStory,
-  MIN_WORDS,
 } from "@/lib/gen/validators";
+import { TIERS } from "@/lib/gen/tiers";
 import type { GeneratedStory } from "@/lib/schemas";
+
+const GROWING = TIERS.growing;
 
 describe("countWords", () => {
   it("counts words across paragraphs", () => {
@@ -53,12 +55,12 @@ function storyWith(overrides: Partial<GeneratedStory>): GeneratedStory {
 
 describe("validateStory", () => {
   it("flags a too-short story", () => {
-    const issues = validateStory(storyWith({}));
+    const issues = validateStory(storyWith({}), GROWING);
     expect(issues.some((i) => i.kind === "word_count")).toBe(true);
   });
 
   it("flags unsafe content", () => {
-    const issues = validateStory(storyWith({ title: "The Gun" }));
+    const issues = validateStory(storyWith({ title: "The Gun" }), GROWING);
     expect(issues.some((i) => i.kind === "safety")).toBe(true);
   });
 
@@ -67,6 +69,7 @@ describe("validateStory", () => {
       storyWith({
         images: [{ role: "scene", afterParagraph: 0, prompt: "x", alt: "x" }],
       }),
+      GROWING,
     );
     expect(issues.some((i) => i.kind === "structure")).toBe(true);
   });
@@ -74,8 +77,11 @@ describe("validateStory", () => {
   it("passes a well-formed, long-enough story", () => {
     const sentence =
       "The little fox looked around the bright forest and smiled with joy. ";
-    const paragraph = sentence.repeat(Math.ceil(MIN_WORDS / 12));
-    const issues = validateStory(storyWith({ paragraphs: [paragraph] }));
+    const paragraph = sentence.repeat(Math.ceil(GROWING.minWords / 12));
+    const issues = validateStory(
+      storyWith({ paragraphs: [paragraph] }),
+      GROWING,
+    );
     expect(issues).toEqual([]);
   });
 });

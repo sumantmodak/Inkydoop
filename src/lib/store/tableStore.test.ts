@@ -24,6 +24,7 @@ describe("entityToSummary", () => {
   const base = {
     rowKey: "79739284-8200000000000-ab",
     date: "2026-07-15",
+    tier: "middle",
     title: "The Sky Garden Promise",
     genre: "adventure",
     theme: "growth",
@@ -34,6 +35,7 @@ describe("entityToSummary", () => {
     expect(entityToSummary({ ...base, coverBlobPath: "" })).toEqual({
       id: "79739284-8200000000000-ab",
       date: "2026-07-15",
+      tier: "middle",
       title: "The Sky Garden Promise",
       genre: "adventure",
       theme: "growth",

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { StoryBody } from "@/components/story-body";
 import { StoryImage } from "@/components/story-image";
 import { getServedPack } from "@/lib/store/read";
+import { getTierCookie } from "@/lib/tier-cookie";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +12,8 @@ export default async function StoryPage({
   searchParams: Promise<{ id?: string }>;
 }) {
   const { id } = await searchParams;
-  const { pack, id: packId } = await getServedPack(id);
+  const tier = await getTierCookie();
+  const { pack, id: packId } = await getServedPack(id, tier);
   const story = pack.story;
   const vocabulary = pack.vocabulary;
   const cover = story.images.find((img) => img.role === "cover");

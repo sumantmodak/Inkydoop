@@ -6,7 +6,8 @@ import {
   type Question,
   type VocabularyItem,
 } from "@/lib/schemas";
-import { QUIZ_SYSTEM } from "@/lib/prompts";
+import { quizSystem } from "@/lib/prompts";
+import type { Tier } from "./tiers";
 
 const QuizResponseSchema = z.object({ questions: z.array(QuestionSchema) });
 
@@ -29,6 +30,7 @@ export function validateQuestions(questions: Question[]): Question[] {
 /** Generate comprehension questions with pre-computed rubrics (§6.1 Step 3). */
 export async function generateQuestions(
   input: { paragraphs: string[]; vocabulary: VocabularyItem[] },
+  tier: Tier,
   options: { signal?: AbortSignal } = {},
 ): Promise<Question[]> {
   const storyText = input.paragraphs.join("\n\n");
@@ -37,7 +39,7 @@ export async function generateQuestions(
   const { questions } = await chatJson(
     env.OPENROUTER_MODEL_QUIZ,
     [
-      { role: "system", content: QUIZ_SYSTEM },
+      { role: "system", content: quizSystem(tier) },
       { role: "user", content: user },
     ],
     QuizResponseSchema,

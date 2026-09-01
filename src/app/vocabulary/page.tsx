@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { VocabQuiz, type VocabQuestion } from "@/components/vocab-quiz";
 import { getServedPack } from "@/lib/store/read";
+import { getTierCookie } from "@/lib/tier-cookie";
 import type { VocabularyItem } from "@/lib/schemas";
 
 export const dynamic = "force-dynamic";
@@ -33,7 +34,8 @@ export default async function VocabularyPage({
   searchParams: Promise<{ id?: string }>;
 }) {
   const { id } = await searchParams;
-  const { pack, id: packId } = await getServedPack(id);
+  const tier = await getTierCookie();
+  const { pack, id: packId } = await getServedPack(id, tier);
   const vocabulary = pack.vocabulary;
   const questions = buildQuestions(vocabulary);
 

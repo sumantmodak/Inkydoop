@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { listPacks } from "@/lib/store/tableStore";
-import { PackSummarySchema } from "@/lib/schemas";
+import { PackSummarySchema, TIER_IDS, type TierId } from "@/lib/schemas";
 import { rateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
@@ -24,9 +24,13 @@ export async function GET(req: NextRequest) {
   const limitRaw = req.nextUrl.searchParams.get("limit");
   const limit = limitRaw ? Number(limitRaw) : undefined;
   const cursor = req.nextUrl.searchParams.get("cursor") ?? undefined;
+  const tierRaw = req.nextUrl.searchParams.get("tier");
+  const tier = TIER_IDS.includes(tierRaw as TierId)
+    ? (tierRaw as TierId)
+    : undefined;
 
   try {
-    const page = await listPacks({ limit, cursor });
+    const page = await listPacks({ limit, cursor, tier });
     return NextResponse.json(ResponseSchema.parse(page));
   } catch {
     // Store unavailable — return an empty page rather than breaking browse.

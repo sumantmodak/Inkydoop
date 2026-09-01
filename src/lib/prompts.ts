@@ -4,21 +4,24 @@
  * the prompts easy to find, review, and tune. Runtime message assembly (the
  * user-turn content built from a story/answer) stays with its module.
  */
-import { MIN_WORDS, MAX_WORDS, TARGET_WORD_COUNT } from "@/lib/gen/validators";
+import type { Tier } from "@/lib/gen/tiers";
 
 // ── Story (§6.1 Step 1) ──────────────────────────────────────────────
 
-export const STORY_SYSTEM = `You are an expert children's-fiction writer and storybook illustration director. Write ONE original daily reading story for elementary students in grades 3-5 (Lexile 500-800), then plan its illustrations.
+export function storySystem(tier: Tier): string {
+  return `You are an expert children's-fiction writer and storybook illustration director. Write ONE original daily reading story for ${tier.label} readers (grades ${tier.grades}, Lexile ${tier.lexile}), then plan its illustrations.
 
 Before writing, silently plan a tiny story bible (premise, main character, supporting character, central problem, setting, gentle theme, how the character changes). Do not output the plan — only the story.
 
 STORY CRAFT
 - It must read like a polished chapter from a children's novel — never a worksheet, summary, moral lecture, or a set of disconnected fragments.
-- Include: a main character (age 8-11) with a clear goal/worry/wish; one supporting character who helps or challenges them; a vivid, easy-to-picture setting; a real beginning, rising action, conflict, climax, and satisfying ending; natural kid dialogue; a meaningful choice the main character makes; and a memorable final line.
+- Include: a relatable child main character with a clear goal/worry/wish; one supporting character who helps or challenges them; a vivid, easy-to-picture setting; a real beginning, rising action, conflict, climax, and satisfying ending; natural kid dialogue; a meaningful choice the main character makes; and a memorable final line.
 - Let the theme grow from the events. Do NOT state the lesson (no "the moral was...", no "from that day on...").
 - Show, don't tell: use specific sensory details and strong verbs, and reveal feelings through actions instead of naming them.
 
-LENGTH IS A HARD LIMIT: the story MUST be between ${MIN_WORDS} and ${MAX_WORDS} words total (aim for ${TARGET_WORD_COUNT}). Never exceed ${MAX_WORDS} words. Count the words and trim before returning.
+LENGTH IS A HARD LIMIT: the story MUST be between ${tier.minWords} and ${tier.maxWords} words total (aim for ${tier.targetWords}). Never exceed ${tier.maxWords} words. Count the words and trim before returning.
+
+READING LEVEL: write for grades ${tier.grades}. Use ${tier.sentences}. Vocabulary: ${tier.vocab}.
 
 PARAGRAPHS
 - Most paragraphs are 3-5 sentences that blend dialogue, action, and description. Do NOT start a new paragraph after every sentence or line of dialogue.
@@ -42,14 +45,15 @@ Return only JSON with this shape:
   "artDirection": { "style": string, "characters": [{ "name": string, "look": string }], "setting": string },
   "images": [{ "role": "cover"|"scene", "afterParagraph": number, "prompt": string, "alt": string }]
 }`;
+}
 
 /** Fallback prompt: regenerate only the illustration specs from a finished draft. */
 export const IMAGE_SPECS_SYSTEM = `You are an art director. Given a story and its visual style, write 3 illustration prompts (1 cover + 2 scenes) that reuse the character looks exactly. Return JSON { images: [{ role, afterParagraph, prompt, alt }] }.`;
 
 // ── Vocabulary (§6.1 Step 2) ─────────────────────────────────────────
 
-export function vocabSystem(maxDefinitionChars: number): string {
-  return `You extract vocabulary from a story for elementary students in grades 3-5.
+export function vocabSystem(tier: Tier, maxDefinitionChars: number): string {
+  return `You extract vocabulary from a story for grade ${tier.grades} readers.
 Pick 5-10 words that (a) actually appear in the story, (b) are appropriately challenging, and (c) are varied (no two near-synonyms).
 For each word provide: word, pos, a kid-friendly definition (<= ${maxDefinitionChars} characters), an exampleFromStory copied verbatim from the story text, synonyms, and antonyms.
 Return only JSON: { "vocabulary": [{ "word": string, "pos": string, "definition": string, "exampleFromStory": string, "synonyms": string[], "antonyms": string[] }] }.`;
@@ -57,24 +61,30 @@ Return only JSON: { "vocabulary": [{ "word": string, "pos": string, "definition"
 
 // ── Comprehension questions (§6.1 Step 3) ────────────────────────────
 
-export const QUIZ_SYSTEM = `You write reading-comprehension questions for elementary students in grades 3-5, based on a story.
+export function quizSystem(tier: Tier): string {
+  return `You write reading-comprehension questions for grade ${tier.grades} readers, based on a story.
 Produce 5-8 questions with this mix: 2 literal, 2 inferential, 1 vocabulary-in-context, 1 theme, and 0-2 extras.
 Give each question a unique id, a type (literal | inferential | vocabulary-in-context | theme | extra), the question text, the answer, a short explanation grounded in the story, optional multiple-choice choices, and a rubric.
 Write the rubric BEFORE imagining any student answer: mustInclude (1-3 concepts required for full credit), niceToHave (0-2 extras), commonWrongPatterns (0-3 misconceptions).
 Return only JSON: { "questions": [{ "id": string, "type": string, "question": string, "answer": string, "explanation": string, "choices"?: string[], "rubric": { "mustInclude": string[], "niceToHave": string[], "commonWrongPatterns": string[] } }] }.`;
+}
 
 // ── Front page: Word of the Day + Interesting Sentences (§6.1 Step 4) ─
 
-export const WOTD_SYSTEM = `Pick one Word of the Day for elementary students in grades 3-5. Age-appropriate and encouraging; no scary, violent, or adult content.
+export function wotdSystem(tier: Tier): string {
+  return `Pick one Word of the Day for grade ${tier.grades} readers. Age-appropriate and encouraging; no scary, violent, or adult content.
 Return only JSON: { "word": string, "pos": string, "pronunciation": string, "definition": string, "examples": string[] } with 2-3 kid-friendly example sentences.`;
+}
 
-export const SENTENCES_SYSTEM = `Write 3-5 vivid example sentences for elementary students in grades 3-5. Each sentence highlights one literary device, tagged as one of: metaphor, simile, alliteration, strong verb, imagery, personification. Age-appropriate; no scary, violent, or adult content.
+export function sentencesSystem(tier: Tier): string {
+  return `Write 3-5 vivid example sentences for grade ${tier.grades} readers. Each sentence highlights one literary device, tagged as one of: metaphor, simile, alliteration, strong verb, imagery, personification. Age-appropriate; no scary, violent, or adult content.
 Return only JSON: { "sentences": [{ "text": string, "tag": string }] }.`;
+}
 
 // ── Illustrations (§6.1 Step 4.5) ────────────────────────────────────
 
 export const IMAGE_SAFE_SUFFIX =
-  "Warm, friendly children's book illustration for ages 8-10. Cheerful and safe. No text, words, or letters in the image.";
+  "Style: richly detailed, soft painterly watercolor children's-book illustration with warm lighting, expressive faces, depth, and a cozy, magical feel — polished, publication-quality. Cheerful and friendly for ages 8-10. Safe and age-appropriate. No text, words, or letters in the image.";
 
 // ── Answer grading (§6.5) ────────────────────────────────────────────
 

@@ -14,11 +14,15 @@ An AI‑powered English Language Arts (ELA) web app for **elementary school stud
 
 ## 2. Target Audience
 
-| Audience   | Grades | Reading Level    | Story Length | Vocabulary Difficulty |
-| ---------- | ------ | ---------------- | ------------ | --------------------- |
-| Elementary | 3–5    | Lexile ~600–1100 | ~1,000 words | Tier 1–2 words        |
+Content is generated at **three reading tiers** so the same daily genre/theme can be enjoyed from early elementary through middle school. A reader picks a tier (persisted); the app defaults to **Growing**.
 
-All generated content targets this single band; no grade selector is required.
+| Tier (`id`)             | Audience                     | Grades | Reading Level     | Story Length       | Vocabulary                   |
+| ----------------------- | ---------------------------- | ------ | ----------------- | ------------------ | ---------------------------- |
+| **Early** (`early`)     | Early elementary             | K–2    | Lexile ~200–500   | ~350–550 words     | Tier 1, very short sentences |
+| **Growing** (`growing`) | Late elementary–early middle | 3–6    | Lexile ~500–850   | ~700–1,000 words   | Tier 1–2                     |
+| **Middle** (`middle`)   | Middle school                | 6–8    | Lexile ~800–1,050 | ~1,000–1,400 words | Tier 2–3, richer syntax      |
+
+Each tier drives the story's target word count, reading-level band (Flesch–Kincaid check), sentence complexity, and vocabulary difficulty (§6.1 Step 0). The `growing` tier is the current default and matches the stories we generate today.
 
 ## 3. Core Features
 
@@ -154,7 +158,7 @@ We use **Azure Table Storage in both dev and prod** — one driver, one code pat
   e.g. `2026-06-30` → `"79736970"`.
   “Latest available” becomes: `PartitionKey eq 'daily' and RowKey ge <invertedToday>` with `top=1`.
 - Properties: `date` (`"YYYY-MM-DD"`), `packJson` (string; gzip only if approaching the 64 KB per‑property limit — our packs are well under it), `createdAt`.
-- **Denormalized metadata columns** — `title`, `genre`, `theme`, `coverBlobPath`, `readingTimeMin` — stored **alongside** `packJson`. The Story Library (§3.5) lists these via a projected query (`select` only the metadata columns), so browsing never deserializes full packs. `packJson` is fetched only when a single story is opened.
+- **Denormalized metadata columns** — `title`, `genre`, `theme`, `tier`, `coverBlobPath`, `readingTimeMin`, plus a few generation-telemetry columns (`storyModel`, `totalTokens`, `durationMs`) — stored **alongside** `packJson`. The Story Library (§3.5) lists these via a projected query (`select` only the metadata columns), so browsing never deserializes full packs. The full generation metadata (§7 `GenerationMeta`) lives inside `packJson`; `packJson` is fetched only when a single story is opened.
 - Exact lookup uses `PartitionKey + RowKey` — a single point read, the cheapest/fastest op Table Storage offers.
 - **Browse** is a single‑partition scan projecting the metadata columns, already newest‑first thanks to the inverted `RowKey`; `@azure/data-tables` returns a **continuation token** for paging.
 
@@ -208,17 +212,17 @@ Each call to `/api/generate` runs the pipeline below. All LLM calls go through *
 
 - Compute a deterministic seed from `date` (e.g. SHA‑256 → int).
 - Use the seed to pick:
-  - **Genre** from a rotating list (adventure, mystery, sci‑fi, friendship, fable, historical, slice‑of‑life…).
+  - **Genre** from a rotating list (adventure, mystery, sci‑fi, fantasy, friendship, folktale, historical, slice‑of‑life…).
   - **Theme / motif** (e.g. _courage_, _curiosity_, _teamwork_, _change_).
-  - **Setting hint** (forest, space station, small town, ancient market…).
-- Fixed constraints: target Lexile 500–800, ~1,000 words, Tier 1–2 vocabulary, short sentences.
+- **Setting is not seeded** — the model invents a fresh, imaginative setting each time, so stories aren't confined to a fixed list of places.
+- **Tier** (`early` | `growing` | `middle`, see §2) is an **input** to generation, not derived from the date. It sets the story's target word count, Lexile/Flesch–Kincaid band, sentence complexity, and vocabulary difficulty. Defaults to `growing`.
 
-Determinism here means a `force` regenerate for the same date picks the same genre/theme — only the LLM output changes. This makes debugging predictable.
+Determinism means a `force`/repeat generate for the same date picks the same genre/theme — only the LLM output (and the invented setting) changes. This makes debugging predictable. Because packs are keyed by a unique id (§5.4), the same date can hold several stories — e.g. one per tier.
 
 #### Step 1 — Generate the story (one big call)
 
 - **Model:** `OPENROUTER_MODEL_STORY` (the strongest model — default `openai/gpt-5.5` via OpenRouter; it also emits the art bible + image prompts).
-- **Inputs:** genre, theme, setting, target word count (~1,000), Lexile band (500–800), safety rules, a small list of **seed words** we’d like woven in (optional — story can introduce its own too).
+- **Inputs:** genre, theme, **tier** (which sets target word count, Lexile/Flesch–Kincaid band, sentence complexity, and vocabulary difficulty — §2 / §6.1 Step 0), safety rules, and a small list of **seed words** we’d like woven in (optional — story can introduce its own too). The **setting is invented by the model**.
 - **Output (JSON):** the story author also emits an **“art bible”** (`artDirection`) and the **image specs** (`images`) in the same call, so the model that knows the characters/setting/pacing is the one that describes them for illustration — this is what keeps characters consistent across images (see §6.1 Step 4.5).
   ```json
   {
@@ -500,6 +504,7 @@ Student answer
 ```ts
 DailyPack {
   date: string            // YYYY-MM-DD
+  tier: 'early' | 'growing' | 'middle'   // reading tier (§2)
   wordOfTheDay: { word, pos, pronunciation, definition, examples[] }
   interestingSentences: { text, tag }[]
   story: {
@@ -512,16 +517,44 @@ DailyPack {
     id, type, question, answer, explanation, choices?,
     rubric: { mustInclude: string[], niceToHave: string[], commonWrongPatterns: string[] }
   }[]
+  generation: GenerationMeta   // how this pack was produced (§6.1 Step 5 / §6.2)
+}
+
+// Captured for every generation and stored inside the pack (§6.1 Step 5).
+GenerationMeta {
+  startedAt: string           // ISO timestamp
+  finishedAt: string          // ISO timestamp
+  durationMs: number          // wall-clock total
+  appVersion: string          // build / prompt version (e.g. git short sha)
+  seed: { genre: string; theme: string; tier: string }
+  models: {                   // model that ran each step
+    story: string; vocab: string; quiz: string; wotd: string; image: string
+  }
+  tokens: {
+    byStep: {                 // per-LLM-call usage reported by OpenRouter
+      step: string; model: string;
+      promptTokens: number; completionTokens: number; totalTokens: number
+    }[]
+    promptTokens: number; completionTokens: number; totalTokens: number   // rolled up
+  }
+  durationsMsByStep: { step: string; ms: number }[]
+  retries: { story: number }  // corrective-retry counts per step
+  images: { model: string; requested: number; succeeded: number; bytes: number }
+  measured: { wordCount: number; readingGrade: number }   // validator readings
+  costUsd?: number            // when the provider returns cost/usage
 }
 
 // Metadata-only projection for the Story Library (§3.5) — never carries packJson:
 PackSummary {
+  id: string              // unique pack id (§5.4)
   date: string            // YYYY-MM-DD
+  tier: 'early' | 'growing' | 'middle'
   title: string
   genre: string
   theme: string
   readingTimeMin: number
   coverBlobPath: string | null   // cover thumbnail; null if illustrations failed
+  totalTokens?: number    // denormalized for the admin/telemetry view
 }
 
 // Produced by the §6.5 grading pipeline (not persisted until we add accounts):
@@ -570,6 +603,8 @@ Optional later: `User`, `Progress` (persist `QuizAttempt` per user).
 | M6.6 | Story Library                  | Browse all packs (metadata‑only, paged, newest‑first); open any date to load its story (§3.5)                                                                              |
 | M7   | Polish                         | Read‑aloud, theme, accessibility pass, deploy                                                                                                                              |
 | M8   | Teacher mode                   | Printable **PDF of today’s pack** (story + vocabulary + Q&A with answer key)                                                                                               |
+| M9   | Reading tiers                  | Three reading levels (early / growing / middle); tier‑aware generation + a persisted reader‑facing tier selector (§2)                                                      |
+| M10  | Generation metadata            | Capture models, tokens, timings, retries, and image stats per generation; store with the pack + surface in `/admin` (§7 `GenerationMeta`)                                  |
 
 ## 11. Configuration
 
@@ -859,6 +894,23 @@ Task-by-task plan grouped by milestone. Each task lists **outputs** and **depend
 - [x] **T8.2 PDF export** — print CSS (`@media print`) for browser “Save as PDF”; if fidelity needs more, a server route rendering via headless Chromium. Decide based on T8.1 output. _Dep:_ T8.1
 - [x] **T8.3 Teacher entry point** — a discreet “Print today’s pack” action. _Dep:_ T8.1
 - **Acceptance:** a clean one-to-two-page PDF for any cached date, answer key included.
+
+### M9 — Reading tiers
+
+- [ ] **T9.1 Tier config** — define the three tiers (`early` | `growing` | `middle`) with per-tier word-count, Lexile/Flesch–Kincaid band, sentence-complexity, and vocabulary settings (§2); a `TierSchema` + `TIERS` table. _Dep:_ T0.6
+- [ ] **T9.2 Tier-aware generation** — thread `tier` through `seedForDate`/`generateAndStore`; parameterize the story prompt (word count, band, vocab difficulty) and the validators (word-count + FK bounds) by tier. `POST /api/generate?tier=` (default `growing`). _Dep:_ T9.1, T1.2, T1.3, T6.3
+- [ ] **T9.3 Persist tier** — add `tier` to `DailyPack`, the denormalized metadata columns, and `PackSummary`; `/api/stories` returns it. _Dep:_ T9.2, T6.1, T6.6.1
+- [ ] **T9.4 Tier selector UI** — a persisted tier picker (localStorage); reads (front page, story, library) serve the selected tier, falling back to the nearest available. Tier badge on library cards. _Dep:_ T9.3, T6.4, T6.6.3
+- [ ] **T9.5 Admin** — tier dropdown on `/admin`; optional "generate all three tiers" for a date. _Dep:_ T9.2
+- **Acceptance:** the same date can hold one story per tier; each passes its own tier's word-count/reading-level validators; switching tier in the UI serves the matching pack.
+
+### M10 — Generation metadata
+
+- [ ] **T10.1 Usage plumbing** — have `chatJson` surface OpenRouter token `usage` (and cost when present); accumulate per step. _Dep:_ T0.4
+- [ ] **T10.2 GenerationMeta** — assemble the §7 `GenerationMeta` in `generateAndStore` (models, per-step tokens + totals, per-step + total durations, story retry count, image stats, measured word count/FK grade, seed, appVersion, timestamps); store it in `packJson` and denormalize `storyModel`/`totalTokens`/`durationMs` columns. _Dep:_ T6.2, T10.1
+- [ ] **T10.3 Report in response** — `/api/generate` returns the metadata summary; `/admin` shows models, tokens, cost, and per-step timings after a run. _Dep:_ T10.2, T6.3
+- [ ] **T10.4 Telemetry view (optional)** — a small admin list of recent generations (date, tier, model, tokens, duration) from the projected columns. _Dep:_ T10.2, T6.6.1
+- **Acceptance:** every generated pack carries a complete `GenerationMeta`; the admin page shows token/cost/timing for the last run.
 
 ### Cross-cutting (do alongside, not last)
 

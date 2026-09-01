@@ -186,6 +186,7 @@ export const FALLBACK_QUESTIONS: Question[] = [
 /** A complete sample pack used when no generated pack exists yet. */
 export const FALLBACK_PACK: DailyPack = {
   date: "2026-07-15",
+  tier: "growing",
   wordOfTheDay: FALLBACK_FRONT_PAGE.wordOfTheDay,
   interestingSentences: FALLBACK_FRONT_PAGE.interestingSentences,
   story: FALLBACK_STORY,

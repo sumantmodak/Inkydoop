@@ -5,6 +5,7 @@ import {
   DailyPackSchema,
   type DailyPack,
   type PackSummary,
+  type TierId,
 } from "@/lib/schemas";
 
 const PARTITION = "daily";
@@ -32,6 +33,7 @@ interface PackEntity {
   partitionKey: string;
   rowKey: string;
   date: string;
+  tier: string;
   packJson: string;
   createdAt: string;
   title: string;
@@ -98,12 +100,13 @@ export async function getPackById(id: string): Promise<StoredPack | null> {
   }
 }
 
-/** The most recently generated pack (newest date, newest generation). */
-export async function getLatestPack(): Promise<StoredPack | null> {
+/** The most recently generated pack, optionally filtered to a reading tier. */
+export async function getLatestPack(tier?: TierId): Promise<StoredPack | null> {
   const client = await getClient();
-  const iter = client.listEntities<PackEntity>({
-    queryOptions: { filter: odata`PartitionKey eq ${PARTITION}` },
-  });
+  const filter = tier
+    ? odata`PartitionKey eq ${PARTITION} and tier eq ${tier}`
+    : odata`PartitionKey eq ${PARTITION}`;
+  const iter = client.listEntities<PackEntity>({ queryOptions: { filter } });
   for await (const entity of iter) {
     return { id: entity.rowKey, date: entity.date, pack: parsePack(entity) };
   }
@@ -118,6 +121,7 @@ export async function getLatestPack(): Promise<StoredPack | null> {
 export async function insertPack(
   id: string,
   date: string,
+  tier: TierId,
   pack: DailyPack,
 ): Promise<void> {
   const client = await getClient();
@@ -126,6 +130,7 @@ export async function insertPack(
     partitionKey: PARTITION,
     rowKey: id,
     date,
+    tier,
     packJson: JSON.stringify(pack),
     createdAt: new Date().toISOString(),
     title: pack.story.title,
@@ -145,6 +150,7 @@ type PackMetaEntity = Pick<
   PackEntity,
   | "rowKey"
   | "date"
+  | "tier"
   | "title"
   | "genre"
   | "theme"
@@ -161,6 +167,7 @@ export function entityToSummary(entity: PackMetaEntity): PackSummary {
   return {
     id: entity.rowKey,
     date: entity.date,
+    tier: (entity.tier as TierId) ?? "growing",
     title: entity.title,
     genre: entity.genre,
     theme: entity.theme,
@@ -173,16 +180,21 @@ export function entityToSummary(entity: PackMetaEntity): PackSummary {
 export async function listPacks(opts?: {
   limit?: number;
   cursor?: string;
+  tier?: TierId;
 }): Promise<{ items: PackSummary[]; nextCursor?: string }> {
   const client = await getClient();
   const limit = clampListLimit(opts?.limit);
+  const filter = opts?.tier
+    ? odata`PartitionKey eq ${PARTITION} and tier eq ${opts.tier}`
+    : odata`PartitionKey eq ${PARTITION}`;
   const pages = client
     .listEntities<PackEntity>({
       queryOptions: {
-        filter: odata`PartitionKey eq ${PARTITION}`,
+        filter,
         select: [
           "RowKey",
           "date",
+          "tier",
           "title",
           "genre",
           "theme",

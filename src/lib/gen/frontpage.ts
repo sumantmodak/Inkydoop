@@ -6,7 +6,8 @@ import {
   InterestingSentenceSchema,
   type FrontPage,
 } from "@/lib/schemas";
-import { WOTD_SYSTEM, SENTENCES_SYSTEM } from "@/lib/prompts";
+import { wotdSystem, sentencesSystem } from "@/lib/prompts";
+import type { Tier } from "./tiers";
 
 const SentencesResponseSchema = z.object({
   sentences: z.array(InterestingSentenceSchema),
@@ -14,6 +15,7 @@ const SentencesResponseSchema = z.object({
 
 /** Generate the story-independent front-page content (§6.1 Step 4). */
 export async function generateFrontPage(
+  tier: Tier,
   options: {
     signal?: AbortSignal;
   } = {},
@@ -23,7 +25,7 @@ export async function generateFrontPage(
     chatJson(
       env.OPENROUTER_MODEL_WOTD,
       [
-        { role: "system", content: WOTD_SYSTEM },
+        { role: "system", content: wotdSystem(tier) },
         { role: "user", content: "Give today's Word of the Day." },
       ],
       WordOfTheDaySchema,
@@ -32,7 +34,7 @@ export async function generateFrontPage(
     chatJson(
       env.OPENROUTER_MODEL_WOTD,
       [
-        { role: "system", content: SENTENCES_SYSTEM },
+        { role: "system", content: sentencesSystem(tier) },
         { role: "user", content: "Give today's interesting sentences." },
       ],
       SentencesResponseSchema,

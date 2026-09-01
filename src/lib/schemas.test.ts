@@ -86,6 +86,7 @@ describe("PackSummarySchema", () => {
     const summary = {
       id: "79739284-8200000000000-ab",
       date: "2026-07-15",
+      tier: "growing",
       title: "The Attic Light",
       genre: "mystery",
       theme: "curiosity",

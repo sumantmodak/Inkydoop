@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { seedForDate } from "@/lib/gen/seed";
 import { generateStory } from "@/lib/gen/story";
+import { TIERS, parseTier } from "@/lib/gen/tiers";
 
 export const dynamic = "force-dynamic";
 
@@ -23,9 +24,10 @@ export async function GET(req: NextRequest) {
   }
 
   const seed = seedForDate(date);
+  const tier = TIERS[parseTier(req.nextUrl.searchParams.get("tier"))];
   try {
-    const story = await generateStory(seed);
-    return NextResponse.json({ date, seed, story });
+    const story = await generateStory(seed, tier);
+    return NextResponse.json({ date, seed, tier: tier.id, story });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }

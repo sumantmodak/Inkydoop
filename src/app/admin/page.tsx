@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { TIER_IDS, type TierId } from "@/lib/schemas";
+import { TIERS } from "@/lib/gen/tiers";
 
 function todayUtc(): string {
   return new Date().toISOString().slice(0, 10);
@@ -16,6 +18,7 @@ type Status =
 export default function AdminPage() {
   const [key, setKey] = useState("");
   const [date, setDate] = useState(todayUtc());
+  const [tier, setTier] = useState<TierId>("growing");
   const [status, setStatus] = useState<Status>({ kind: "idle" });
 
   async function generate(e: React.FormEvent) {
@@ -24,7 +27,7 @@ export default function AdminPage() {
     setStatus({ kind: "running" });
     try {
       const res = await fetch(
-        `/api/generate?date=${encodeURIComponent(date)}`,
+        `/api/generate?date=${encodeURIComponent(date)}&tier=${tier}`,
         { method: "POST", headers: { "x-generate-key": key } },
       );
       const text = await res.text();
@@ -98,6 +101,23 @@ export default function AdminPage() {
             onChange={(e) => setDate(e.target.value)}
             className="rounded-xl border-2 border-surface-border bg-background px-3 py-2 focus-visible:border-brand focus-visible:outline-none"
           />
+        </label>
+
+        <label className="flex flex-col gap-1">
+          <span className="font-display text-sm font-semibold">
+            Reading tier
+          </span>
+          <select
+            value={tier}
+            onChange={(e) => setTier(e.target.value as TierId)}
+            className="rounded-xl border-2 border-surface-border bg-background px-3 py-2 focus-visible:border-brand focus-visible:outline-none"
+          >
+            {TIER_IDS.map((t) => (
+              <option key={t} value={t}>
+                {TIERS[t].label} — grades {TIERS[t].grades}
+              </option>
+            ))}
+          </select>
         </label>
 
         <button

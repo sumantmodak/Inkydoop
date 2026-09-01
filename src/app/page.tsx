@@ -2,7 +2,9 @@ import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Mascot } from "@/components/mascot";
 import { StoryImage } from "@/components/story-image";
+import { TierSelect } from "@/components/tier-select";
 import { getServedPack } from "@/lib/store/read";
+import { getTierCookie } from "@/lib/tier-cookie";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +24,8 @@ const SENTENCE_SPANS = [
 ];
 
 export default async function Home() {
-  const { pack } = await getServedPack();
+  const tier = await getTierCookie();
+  const { pack } = await getServedPack(undefined, tier);
   const { wordOfTheDay, interestingSentences } = pack;
   const story = pack.story;
   const cover = story.images.find((img) => img.role === "cover");
@@ -37,6 +40,7 @@ export default async function Home() {
           </h1>
         </div>
         <div className="flex items-center gap-2">
+          <TierSelect current={tier} />
           <Link
             href="/library"
             className="font-display rounded-full bg-surface px-4 py-1.5 text-sm font-semibold text-brand shadow-sm transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none"

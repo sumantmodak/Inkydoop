@@ -1,13 +1,5 @@
 import type { GeneratedStory } from "@/lib/schemas";
-
-export const TARGET_WORD_COUNT = 1000;
-export const WORD_TOLERANCE = 0.3;
-export const MIN_WORDS = Math.round(TARGET_WORD_COUNT * (1 - WORD_TOLERANCE));
-export const MAX_WORDS = Math.round(TARGET_WORD_COUNT * (1 + WORD_TOLERANCE));
-
-// Flesch–Kincaid grade band appropriate for grades 3–5.
-export const MIN_GRADE = 2.0;
-export const MAX_GRADE = 6.5;
+import type { Tier } from "./tiers";
 
 const BANNED = [
   /\bkill(s|ed|ing)?\b/i,
@@ -66,23 +58,23 @@ export interface StoryIssue {
   message: string;
 }
 
-export function validateStory(story: GeneratedStory): StoryIssue[] {
+export function validateStory(story: GeneratedStory, tier: Tier): StoryIssue[] {
   const issues: StoryIssue[] = [];
 
   const words = countWords(story.paragraphs);
-  if (words < MIN_WORDS || words > MAX_WORDS) {
+  if (words < tier.minWords || words > tier.maxWords) {
     issues.push({
       kind: "word_count",
-      message: `word count ${words} is outside ${MIN_WORDS}-${MAX_WORDS}`,
+      message: `word count ${words} is outside ${tier.minWords}-${tier.maxWords}`,
     });
   }
 
   const text = `${story.title} ${story.paragraphs.join(" ")}`;
   const grade = readingGrade(story.paragraphs.join(" "));
-  if (grade < MIN_GRADE || grade > MAX_GRADE) {
+  if (grade < tier.minGrade || grade > tier.maxGrade) {
     issues.push({
       kind: "reading_level",
-      message: `reading grade ${grade.toFixed(1)} is outside ${MIN_GRADE}-${MAX_GRADE}`,
+      message: `reading grade ${grade.toFixed(1)} is outside ${tier.minGrade}-${tier.maxGrade}`,
     });
   }
 

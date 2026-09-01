@@ -10,17 +10,9 @@ import {
   type ImageSpec,
 } from "@/lib/schemas";
 import type { DaySeed } from "./seed";
-import {
-  TARGET_WORD_COUNT,
-  MIN_WORDS,
-  MAX_WORDS,
-  MIN_GRADE,
-  MAX_GRADE,
-  countWords,
-  validateStory,
-  type StoryIssue,
-} from "./validators";
-import { STORY_SYSTEM, IMAGE_SPECS_SYSTEM } from "@/lib/prompts";
+import { countWords, validateStory, type StoryIssue } from "./validators";
+import type { Tier } from "./tiers";
+import { storySystem, IMAGE_SPECS_SYSTEM } from "@/lib/prompts";
 
 const MAX_ATTEMPTS = 3; // 1 initial + 2 corrective retries
 
@@ -63,20 +55,24 @@ async function regenerateImageSpecs(
   return images;
 }
 
-function correctionFor(story: GeneratedStory, issues: StoryIssue[]): string {
+function correctionFor(
+  story: GeneratedStory,
+  issues: StoryIssue[],
+  tier: Tier,
+): string {
   return issues
     .map((issue) => {
       switch (issue.kind) {
         case "word_count": {
           const words = countWords(story.paragraphs);
           const dir =
-            words > MAX_WORDS
-              ? `shorten it by about ${words - TARGET_WORD_COUNT} words`
-              : `expand it by about ${TARGET_WORD_COUNT - words} words`;
-          return `Your previous draft was ${words} words, which is not allowed. The story MUST be between ${MIN_WORDS} and ${MAX_WORDS} words (aim for ${TARGET_WORD_COUNT}); ${dir} while keeping the same plot.`;
+            words > tier.maxWords
+              ? `shorten it by about ${words - tier.targetWords} words`
+              : `expand it by about ${tier.targetWords - words} words`;
+          return `Your previous draft was ${words} words, which is not allowed. The story MUST be between ${tier.minWords} and ${tier.maxWords} words (aim for ${tier.targetWords}); ${dir} while keeping the same plot.`;
         }
         case "reading_level":
-          return `Adjust reading difficulty to grades 3-5 (Flesch-Kincaid ${MIN_GRADE}-${MAX_GRADE}).`;
+          return `Adjust reading difficulty to grades ${tier.grades} (Flesch-Kincaid ${tier.minGrade}-${tier.maxGrade}).`;
         case "safety":
           return "Remove any unsafe or inappropriate content.";
         case "structure":
@@ -91,12 +87,13 @@ export interface GenerateStoryOptions {
 }
 
 /**
- * Generate one validated story for a seeded day (§6.1 Step 1). Retries with a
- * corrective note when validators fail; regenerates only the image specs when
- * the draft omits them.
+ * Generate one validated story for a seeded day + tier (§6.1 Step 1). Retries
+ * with a corrective note when validators fail; regenerates only the image specs
+ * when the draft omits them.
  */
 export async function generateStory(
   seed: DaySeed,
+  tier: Tier,
   options: GenerateStoryOptions = {},
 ): Promise<GeneratedStory> {
   const { signal } = options;
@@ -107,7 +104,7 @@ export async function generateStory(
     const draft = await chatJson(
       env.OPENROUTER_MODEL_STORY,
       [
-        { role: "system", content: STORY_SYSTEM },
+        { role: "system", content: storySystem(tier) },
         { role: "user", content: buildUserPrompt(seed, corrective) },
       ],
       StoryDraftSchema,
@@ -120,11 +117,11 @@ export async function generateStory(
         : await regenerateImageSpecs(draft, signal);
 
     const story = GeneratedStorySchema.parse({ ...draft, images });
-    const issues = validateStory(story);
+    const issues = validateStory(story, tier);
     if (issues.length === 0) return story;
 
     lastIssues = issues;
-    corrective = correctionFor(story, issues);
+    corrective = correctionFor(story, issues, tier);
   }
 
   throw new Error(

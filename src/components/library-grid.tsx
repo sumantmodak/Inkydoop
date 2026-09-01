@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { StoryImage } from "@/components/story-image";
+import { TIERS } from "@/lib/gen/tiers";
 import type { PackSummary } from "@/lib/schemas";
 
 interface LibraryGridProps {
@@ -71,7 +72,10 @@ export function LibraryGrid({ initialItems, initialCursor }: LibraryGridProps) {
                 />
               </div>
               <div className="p-4">
-                <div className="flex items-center gap-2 text-xs">
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <span className="font-display rounded-full bg-grape/15 px-2 py-0.5 font-semibold text-grape">
+                    {TIERS[s.tier].label}
+                  </span>
                   <span className="font-display rounded-full bg-brand/10 px-2 py-0.5 font-semibold text-brand capitalize">
                     {s.genre}
                   </span>

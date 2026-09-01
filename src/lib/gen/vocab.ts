@@ -3,6 +3,7 @@ import { env } from "@/lib/env";
 import { chatJson } from "@/lib/ai/openrouter";
 import { VocabularyItemSchema, type VocabularyItem } from "@/lib/schemas";
 import { vocabSystem } from "@/lib/prompts";
+import type { Tier } from "./tiers";
 
 const MAX_DEFINITION_CHARS = 140;
 const MAX_WORDS = 10;
@@ -36,6 +37,7 @@ export function filterVocabulary(
 /** Extract vocabulary from a story (§6.1 Step 2). */
 export async function generateVocabulary(
   input: { paragraphs: string[]; candidateVocab: string[] },
+  tier: Tier,
   options: { signal?: AbortSignal } = {},
 ): Promise<VocabularyItem[]> {
   const storyText = input.paragraphs.join("\n\n");
@@ -43,7 +45,7 @@ export async function generateVocabulary(
   const { vocabulary } = await chatJson(
     env.OPENROUTER_MODEL_VOCAB,
     [
-      { role: "system", content: vocabSystem(MAX_DEFINITION_CHARS) },
+      { role: "system", content: vocabSystem(tier, MAX_DEFINITION_CHARS) },
       { role: "user", content: user },
     ],
     VocabResponseSchema,

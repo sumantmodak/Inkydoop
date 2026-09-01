@@ -1,6 +1,6 @@
 import { getPackById, getLatestPack } from "./tableStore";
 import { FALLBACK_PACK } from "@/lib/fallback";
-import type { DailyPack } from "@/lib/schemas";
+import type { DailyPack, TierId } from "@/lib/schemas";
 
 export interface ServedPack {
   pack: DailyPack;
@@ -22,17 +22,25 @@ const SAMPLE: ServedPack = {
 
 /**
  * Resolve the pack to show: a specific pack by id, else the most recently
- * generated pack, else the built-in sample. Never throws — falls back to the
- * sample if the store is unavailable (§6.3).
+ * generated pack for the requested tier (falling back to any tier), else the
+ * built-in sample. Never throws — falls back to the sample if the store is
+ * unavailable (§6.3).
  */
-export async function getServedPack(id?: string): Promise<ServedPack> {
+export async function getServedPack(
+  id?: string,
+  tier?: TierId,
+): Promise<ServedPack> {
   try {
     if (id) {
       const byId = await getPackById(id);
       if (byId) return { ...byId, isSample: false };
     }
-    const latest = await getLatestPack();
+    const latest = await getLatestPack(tier);
     if (latest) return { ...latest, isSample: false };
+    if (tier) {
+      const any = await getLatestPack();
+      if (any) return { ...any, isSample: false };
+    }
   } catch {
     // store unavailable (e.g. Azurite not running) — fall through to the sample
   }
