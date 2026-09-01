@@ -47,7 +47,7 @@ async function regenerateImageSpecs(
     },
   ];
   const { images } = await chatJson(
-    env.OPENROUTER_MODEL_QUIZ,
+    env.OPENROUTER_MODEL_LEARNING,
     messages,
     ImageSpecsSchema,
     { signal },

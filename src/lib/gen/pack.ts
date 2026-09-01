@@ -1,8 +1,7 @@
 import type { DailyPack, Story, TierId } from "@/lib/schemas";
 import { seedForDate } from "./seed";
 import { generateStory } from "./story";
-import { generateVocabulary } from "./vocab";
-import { generateQuestions } from "./quiz";
+import { generateLearningMaterials } from "./learning";
 import { renderImages } from "./images";
 import { countWords, checkSafety } from "./validators";
 import { TIERS } from "./tiers";
@@ -28,13 +27,8 @@ export async function generateAndStore(input: {
   const id = newPackId(date);
   const seed = seedForDate(date);
   const gen = await generateStory(seed, tier, { signal });
-  const vocabulary = await generateVocabulary(
+  const { vocabulary, questions } = await generateLearningMaterials(
     { paragraphs: gen.paragraphs, candidateVocab: gen.candidateVocab },
-    tier,
-    { signal },
-  );
-  const questions = await generateQuestions(
-    { paragraphs: gen.paragraphs, vocabulary },
     tier,
     { signal },
   );

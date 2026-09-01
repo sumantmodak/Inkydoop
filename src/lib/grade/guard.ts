@@ -20,7 +20,7 @@ export async function guardAnswer(
 ): Promise<GuardResult> {
   try {
     return await chatJson(
-      env.OPENROUTER_MODEL_QUIZ,
+      env.OPENROUTER_MODEL_GUARD,
       [
         { role: "system", content: GUARD_SYSTEM },
         { role: "user", content: answer },

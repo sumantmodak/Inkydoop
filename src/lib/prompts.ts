@@ -50,23 +50,21 @@ Return only JSON with this shape:
 /** Fallback prompt: regenerate only the illustration specs from a finished draft. */
 export const IMAGE_SPECS_SYSTEM = `You are an art director. Given a story and its visual style, write 3 illustration prompts (1 cover + 2 scenes) that reuse the character looks exactly. Return JSON { images: [{ role, afterParagraph, prompt, alt }] }.`;
 
-// ── Vocabulary (§6.1 Step 2) ─────────────────────────────────────────
+// ── Learning materials (§6.1 Steps 2-3) ──────────────────────────────
 
-export function vocabSystem(tier: Tier, maxDefinitionChars: number): string {
-  return `You extract vocabulary from a story for grade ${tier.grades} readers.
-Pick 5-10 words that (a) actually appear in the story, (b) are appropriately challenging, and (c) are varied (no two near-synonyms).
-For each word provide: word, pos, a kid-friendly definition (<= ${maxDefinitionChars} characters), an exampleFromStory copied verbatim from the story text, synonyms, and antonyms.
-Return only JSON: { "vocabulary": [{ "word": string, "pos": string, "definition": string, "exampleFromStory": string, "synonyms": string[], "antonyms": string[] }] }.`;
-}
+export function learningSystem(
+  tier: Tier,
+  maxDefinitionChars: number,
+): string {
+  return `You create vocabulary and reading-comprehension materials for grade ${tier.grades} readers from one finished story.
 
-// ── Comprehension questions (§6.1 Step 3) ────────────────────────────
+First choose 5-10 vocabulary words that actually appear in the story, are appropriately challenging, and are varied (no two near-synonyms). For each word provide: word, pos, a kid-friendly definition (<= ${maxDefinitionChars} characters), an exampleFromStory copied verbatim from the story text, synonyms, and antonyms.
 
-export function quizSystem(tier: Tier): string {
-  return `You write reading-comprehension questions for grade ${tier.grades} readers, based on a story.
-Produce 5-8 questions with this mix: 2 literal, 2 inferential, 1 vocabulary-in-context, 1 theme, and 0-2 extras.
-Give each question a unique id, a type (literal | inferential | vocabulary-in-context | theme | extra), the question text, the answer, a short explanation grounded in the story, optional multiple-choice choices, and a rubric.
-Write the rubric BEFORE imagining any student answer: mustInclude (1-3 concepts required for full credit), niceToHave (0-2 extras), commonWrongPatterns (0-3 misconceptions).
-Return only JSON: { "questions": [{ "id": string, "type": string, "question": string, "answer": string, "explanation": string, "choices"?: string[], "rubric": { "mustInclude": string[], "niceToHave": string[], "commonWrongPatterns": string[] } }] }.`;
+Then produce 5-8 questions using that vocabulary and the story: 2 literal, 2 inferential, 1 vocabulary-in-context about one of the selected words, 1 theme, and 0-2 extras. Give each question a unique id, a type (literal | inferential | vocabulary-in-context | theme | extra), the question text, the answer, a short explanation grounded in the story, optional multiple-choice choices, and a rubric.
+
+Write each rubric before imagining any student answer: mustInclude (1-3 concepts required for full credit), niceToHave (0-2 extras), commonWrongPatterns (0-3 misconceptions).
+
+Return only JSON: { "vocabulary": [{ "word": string, "pos": string, "definition": string, "exampleFromStory": string, "synonyms": string[], "antonyms": string[] }], "questions": [{ "id": string, "type": string, "question": string, "answer": string, "explanation": string, "choices"?: string[], "rubric": { "mustInclude": string[], "niceToHave": string[], "commonWrongPatterns": string[] } }] }.`;
 }
 
 // ── Illustrations (§6.1 Step 4) ──────────────────────────────────────

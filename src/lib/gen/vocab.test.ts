@@ -2,7 +2,7 @@
  * @vitest-environment node
  */
 import { describe, it, expect } from "vitest";
-import { filterVocabulary } from "@/lib/gen/vocab";
+import { filterVocabulary } from "@/lib/gen/learning";
 import type { VocabularyItem } from "@/lib/schemas";
 
 const story =

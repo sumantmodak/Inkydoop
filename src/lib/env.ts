@@ -11,8 +11,8 @@ const EnvSchema = z
     // OpenRouter (text) — default to OpenAI models routed through OpenRouter
     OPENROUTER_API_KEY: z.string().min(1, "OPENROUTER_API_KEY is required"),
     OPENROUTER_MODEL_STORY: z.string().default("openai/gpt-5.5"),
-    OPENROUTER_MODEL_VOCAB: z.string().default("openai/gpt-4o-mini"),
-    OPENROUTER_MODEL_QUIZ: z.string().default("openai/gpt-4o-mini"),
+    OPENROUTER_MODEL_LEARNING: z.string().default("openai/gpt-4o-mini"),
+    OPENROUTER_MODEL_GUARD: z.string().default("openai/gpt-4o-mini"),
     OPENROUTER_MODEL_FEEDBACK: z.string().default("openai/gpt-4o-mini"),
     OPENROUTER_MODEL_GRADER: z.string().default("openai/gpt-4o-mini"),
     OPENROUTER_MODEL_JUDGE: z.string().default("openai/gpt-4o"),

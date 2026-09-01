@@ -1,904 +1,570 @@
 # Inkydoop
 
-An AI‑powered English Language Arts (ELA) web app for **elementary school students (grades 3–5)**. Every day brings a short AI‑generated story, vocabulary practice, and reading‑comprehension questions — all in a kid‑friendly UI.
+Inkydoop is an AI-powered English Language Arts reading app. It generates illustrated stories for three reading tiers, then builds vocabulary practice and comprehension questions from each finished story.
 
----
+The application is anonymous and story-first. Readers can open the latest story for their reading tier, browse previously generated packs, practice vocabulary, review comprehension questions, and print a teacher worksheet with an answer key.
 
-## 1. Goals
+## Current Status
 
-- Make daily reading fun and habit‑forming.
-- Build **vocabulary** through context, not memorization.
-- Strengthen **reading comprehension** with thoughtful Q&A.
-- Keep content **age‑appropriate and safe** for elementary readers.
-- Use AI (via **OpenRouter**) so content is fresh every day without manual authoring.
+The implemented application includes:
 
-## 2. Target Audience
+- Tier-aware story generation with corrective validation retries.
+- One combined AI call for vocabulary and comprehension materials.
+- Up to three non-blocking story illustrations.
+- An archive of append-only story packs.
+- Inline word definitions with story vocabulary and dictionary lookup fallback.
+- A scored, client-side multiple-choice vocabulary exercise.
+- Manual comprehension self-review with answer and explanation reveal.
+- A printable teacher pack with an answer key.
+- A key-protected admin generation page and API.
+- Light and dark themes.
+- Azure Table and Blob Storage support, with Azurite for local development.
+- A server-side grading API that is implemented but not used by the current quiz UI.
 
-Content is generated at **three reading tiers** so the same daily genre/theme can be enjoyed from early elementary through middle school. A reader picks a tier (persisted); the app defaults to **Growing**.
+## Technology
 
-| Tier (`id`)             | Audience                     | Grades | Reading Level     | Story Length       | Vocabulary                   |
-| ----------------------- | ---------------------------- | ------ | ----------------- | ------------------ | ---------------------------- |
-| **Early** (`early`)     | Early elementary             | K–2    | Lexile ~200–500   | ~350–550 words     | Tier 1, very short sentences |
-| **Growing** (`growing`) | Late elementary–early middle | 3–6    | Lexile ~500–850   | ~700–1,000 words   | Tier 1–2                     |
-| **Middle** (`middle`)   | Middle school                | 6–8    | Lexile ~800–1,050 | ~1,000–1,400 words | Tier 2–3, richer syntax      |
+- Next.js 16 App Router
+- React 19
+- TypeScript
+- Tailwind CSS 4
+- Zod 4
+- OpenRouter for text and image model requests
+- Azure Table Storage for story packs
+- Azure Blob Storage for story images
+- Azure Identity for production storage authentication
+- Azurite for local storage emulation
+- Vitest for unit tests
+- Playwright configured for browser tests
 
-Each tier drives the story's target word count, reading-level band (Flesch–Kincaid check), sentence complexity, and vocabulary difficulty (§6.1 Step 0). The `growing` tier is the current default and matches the stories we generate today.
+The project uses Node.js 22 or newer and pnpm.
 
-## 3. Core Features
+## Reader Experience
 
-### 3.1 Front Page
+### Home
 
-- **Today’s Story** entry point (cover image / title / 1‑line hook)
-- Story Library entry point
-- Persisted reading-tier selector
-- Theme toggle
+The home page resolves the most recently generated pack for the saved reading tier and displays its cover, title, and story entry point. It also provides:
 
-> The **cover image** is the first `story.images[]` entry (`role: cover`), served from Azure Blob Storage.
+- A three-tier reading-level selector.
+- A link to the Story Library.
+- A persisted light/dark theme toggle.
 
-### 3.2 Story
+If no matching tier exists, the app tries the latest pack from any tier. If storage is unavailable or contains no packs, it displays the bundled sample pack.
 
-- AI‑generated, **~1,000 words**, divided into short paragraphs/chapters.
-- Genre rotates daily (adventure, mystery, sci‑fi, friendship, fable, historical…).
-- Includes a small set of **target vocabulary** woven naturally into the prose.
-- **3 illustrations** per story — 1 cover + 2 inline scene images — generated to match the text and served from Azure Blob Storage (see §6.1 Step 4). Images are **non‑blocking**: a failed illustration never invalidates a valid text pack.
-- Inline “tap‑a‑word” feature: tap any word → quick definition popup.
-- Estimated reading time displayed.
+### Story
 
-### 3.3 Vocabulary Builder
+The story page displays:
 
-- Pulls **5–10 interesting words** from today’s story.
-- For each word:
-  - Definition, part of speech, example sentence (from the story)
-  - Synonyms / antonyms
-  - A short interactive activity (cycled):
-    - Multiple choice
-    - Fill in the blank
-    - Match word ↔ definition
-    - Use in your own sentence (AI feedback)
+- Cover art when available.
+- Title and estimated reading time.
+- Story paragraphs.
+- Scene illustrations placed after their configured paragraphs.
+- Tap-a-word definitions.
+- Links to the vocabulary activity and printable teacher pack.
 
-### 3.4 Comprehension Q&A
+Generated vocabulary words are highlighted and use definitions stored in the pack. Other clicked words are looked up through `dictionaryapi.dev`.
 
-- 5–8 questions generated from the story, mixing:
-  - **Literal** (“Who…”, “Where…”)
-  - **Inferential** (“Why did…”, “What might happen if…”)
-  - **Vocabulary in context**
-  - **Theme / main idea**
-- Answers are **hidden by default**:
-  - Readers answer using free text or multiple choice.
-  - “Show answer” reveals the answer and explanation for manual comparison.
-- The current quiz does not automatically check, grade, or score answers.
+### Vocabulary
 
-### 3.5 Story Library (browse the archive)
+The vocabulary page lists each selected word with:
 
-- A **browse page** listing **every** past daily pack, newest‑first.
-- Each entry is a card showing lightweight **metadata**: cover thumbnail, title, genre, theme, date, and reading time — no full story loaded until you open it.
-- **Paginated / infinite scroll** so the list stays fast as the archive grows (the store returns a continuation cursor, see §5.4).
-- Clicking a card **loads that day’s story** in the Story view (§3.2) via `GET /api/story?date=YYYY-MM-DD`, with its vocabulary and quiz for that date.
-- Optional lightweight **filter** by genre and **search** by title (client‑side over the loaded metadata page).
+- Part of speech.
+- Kid-friendly definition.
+- A verbatim example from the story.
+- Synonyms and antonyms when available.
 
-## 4. User Flow
+It also creates a local multiple-choice definition exercise. Answers are scored in the browser and can be replayed without an API request.
 
+### Comprehension
+
+The comprehension page supports multiple-choice and free-text responses. Readers can reveal the stored answer and explanation for manual comparison.
+
+The current UI does not automatically grade, score, or submit comprehension answers.
+
+### Story Library
+
+The Story Library loads pack metadata without loading complete story JSON. It displays stories newest-first with:
+
+- Cover image or fallback art.
+- Reading tier.
+- Genre and theme.
+- Reading time and generation date.
+- A link to the exact pack by immutable ID.
+
+The first 12 results are server-rendered. Additional pages load through a continuation cursor.
+
+### Teacher Pack
+
+`/print/[id]` renders a print-oriented worksheet containing:
+
+- Story text.
+- Vocabulary definitions and examples.
+- Comprehension questions.
+- A separate answer-key section.
+
+The Print button opens the browser print dialog, which can print the worksheet or save it as a PDF.
+
+### Admin Generation
+
+`/admin` provides a form for an authorized operator to choose a date and reading tier, enter the generation key, and create a new pack.
+
+Every successful run creates a new pack. Existing packs are not overwritten.
+
+## Reading Tiers
+
+Tier configuration lives in `src/lib/gen/tiers.ts`.
+
+| ID        | Label   | Grade guidance | Lexile guidance | Target words | Accepted words | FK grade range |
+| --------- | ------- | -------------- | --------------- | -----------: | -------------: | -------------: |
+| `early`   | Early   | K-2            | 200-500         |          450 |        300-650 |        0.5-2.9 |
+| `growing` | Growing | 3-6            | 500-850         |        1,000 |      700-1,300 |        2.0-6.5 |
+| `middle`  | Middle  | 6-8            | 800-1050        |        1,200 |    1,000-1,500 |        6.0-9.0 |
+
+`growing` is the default. The selected tier is stored in a one-year `tier` cookie so server-rendered pages can resolve the appropriate pack.
+
+## Application Routes
+
+| Route                      | Behavior                                                                           |
+| -------------------------- | ---------------------------------------------------------------------------------- |
+| `/`                        | Latest story for the selected tier, tier selector, library link, and theme toggle. |
+| `/story?id=<pack-id>`      | Exact story pack when `id` is present; otherwise the latest resolved pack.         |
+| `/vocabulary?id=<pack-id>` | Vocabulary list and local multiple-choice activity for the resolved pack.          |
+| `/quiz?id=<pack-id>`       | Manual comprehension response and answer-reveal UI.                                |
+| `/library`                 | Newest-first, metadata-only story archive with cursor pagination.                  |
+| `/print/[id]`              | Print-oriented story, vocabulary, questions, and answer key.                       |
+| `/admin`                   | Manual, key-protected pack generation UI.                                          |
+
+All reader pages are dynamically rendered because they resolve current storage and cookie state.
+
+## API Routes
+
+### `POST /api/generate`
+
+`GET` is also mapped to the same handler for manual operation.
+
+Authentication:
+
+- `x-generate-key` request header, preferred.
+- `key` query parameter, also accepted.
+- Compared with `GENERATE_API_KEY` using a constant-time comparison.
+
+Query parameters:
+
+| Name   | Required | Description                                                  |
+| ------ | -------- | ------------------------------------------------------------ |
+| `date` | No       | Pack date in `YYYY-MM-DD`; defaults to the current UTC date. |
+| `tier` | No       | `early`, `growing`, or `middle`; defaults to `growing`.      |
+
+The endpoint is limited to five requests per minute per client IP within each running process.
+
+Successful response:
+
+```json
+{
+  "ok": true,
+  "id": "<pack-id>",
+  "date": "2026-09-01",
+  "tier": "growing",
+  "generated": true,
+  "durationMs": 12345
+}
 ```
-Landing page
-  ├─ [Browse Library] ──▶ Story Library (all packs, newest‑first)
-  │                         └─ pick a date ──▶ Story view (loads that pack)
-  └─ [Read Today’s Story] ──▶ Story view
-                                ├─ Read story (tap‑a‑word)
-                                ├─ [Vocabulary Builder] ──▶ exercises
-                                └─ [Comprehension Quiz] ──▶ Q&A with hidden answers
+
+### `GET /api/stories`
+
+Returns metadata-only archive pages.
+
+Query parameters:
+
+| Name     | Required | Description                                                   |
+| -------- | -------- | ------------------------------------------------------------- |
+| `limit`  | No       | Page size; defaults to 12 and is capped at 50.                |
+| `cursor` | No       | Azure Table continuation token returned by the previous page. |
+| `tier`   | No       | Optional exact tier filter.                                   |
+
+The endpoint is limited to 60 requests per minute per client IP within each running process. If storage is unavailable, it returns an empty `items` array.
+
+```json
+{
+  "items": [],
+  "nextCursor": "<optional-continuation-token>"
+}
 ```
 
-## 5. Architecture
+### `GET /api/image`
 
-### 5.1 High level
+Streams an image from Blob Storage.
 
+- Requires a validated `path` query parameter ending in `.webp`, `.png`, or `.jpeg`.
+- Rejects traversal paths.
+- Returns one-day public immutable caching headers.
+- Returns `404` when the blob does not exist.
+
+### `GET /api/dev/story`
+
+Generates a story draft for inspection without assembling or storing a complete pack.
+
+- Accepts optional `date` and `tier` query parameters.
+- Available only outside production.
+- Returns `404` when `NODE_ENV=production`.
+
+### `POST /api/grade`
+
+Grades one comprehension answer through the implemented grading pipeline. The current reader UI does not call this endpoint.
+
+Request body:
+
+```json
+{
+  "id": "<optional-pack-id>",
+  "questionId": "q1",
+  "answer": "A reader response"
+}
 ```
-┌────────────┐    HTTPS    ┌──────────────┐    HTTPS    ┌──────────────────┐
-│  Browser   │ ──────────▶ │  Web App API │ ──────────▶ │  OpenRouter LLMs │
-│ (React UI) │ ◀────────── │  (Next.js)   │ ◀────────── │  + Image API     │
-└────────────┘             │              │             └──────────────────┘
-                           │  + cache /   │
-                           │  daily store │
-                           └──────┬───────┘
-                                  │
-                 ┌────────────────┴────────────────┐
-                 │                                 │
-        ┌────────▼───────────┐          ┌──────────▼───────────┐
-        │  DailyPack store   │          │  Story images        │
-        │  Azure Table       │          │  Azure Blob Storage  │
-        │  Storage (JSON)    │          │  (WebP illustrations)│
-        └────────────────────┘          └──────────────────────┘
+
+- `answer` is limited to 1,000 characters.
+- Requests are limited to 20 per minute per client IP within each running process.
+- The pack is resolved by ID or through the normal latest/sample fallback.
+
+Response:
+
+```json
+{
+  "grade": "nailed_it",
+  "feedback": "Great job!",
+  "graderAgreement": true,
+  "judged": false
+}
 ```
 
-### 5.2 Suggested Stack
+## Content Generation
 
-- **Frontend:** Next.js (React) + TypeScript + Tailwind CSS
-- **Backend:** Next.js API routes (single deployable — TypeScript end‑to‑end; Go/C# were considered and rejected to avoid a two‑language system)
-- **AI:** OpenRouter API for text (model‑agnostic; **default to OpenAI models** — `openai/gpt-5.5` for the story, `openai/gpt-4o` for the judge, `openai/gpt-4o-mini` for the smaller tasks) + the **OpenAI Images API** (`gpt-image-1`) for illustrations
-- **Storage:** **Azure Table Storage** (`@azure/data-tables`) for the daily JSON pack + **Azure Blob Storage** (`@azure/storage-blob`) for story images — same drivers in dev and prod (dev uses the free **Azurite** emulator, which emulates both Table and Blob). See §5.4.
-- **Hosting:** Azure Container Apps (Managed Identity to both Table and Blob)
+Generation runs only through `/api/generate` or the admin page. Reader requests never generate or mutate packs.
 
-### 5.3 Why OpenRouter
+```mermaid
+flowchart TD
+    Request[Authorized generation request] --> Seed[Deterministic date seed]
+    Seed --> Story[Generate story and image specs]
+    Story --> StoryValidation[Validate and retry story]
+    StoryValidation --> Learning[Generate vocabulary and questions together]
+    Learning --> LearningValidation[Filter and validate learning materials]
+    LearningValidation --> Images[Render images concurrently]
+    Images --> Assemble[Assemble and safety-check DailyPack]
+    Assemble --> Table[Insert pack into Azure Table Storage]
+    Images --> Blob[Upload successful images to Blob Storage]
+```
 
-- One API key, many models — easy to A/B test quality vs. cost.
-- Can pin a specific model per content type (e.g. story vs. quiz generation).
+### 1. Date Seed
 
-### 5.4 Storage: Azure Table + Blob Storage
+`seedForDate()` hashes the requested date and deterministically selects a genre and theme. Repeating a date keeps those two inputs stable, while the model can still create a different story.
 
-We use two Azure Storage primitives in one Storage Account:
+### 2. Story Draft
 
-- **Table Storage** for the daily JSON pack (tiny, keyed reads/writes).
-- **Blob Storage** for story images (binary, too large for Table's 64 KB/property cap).
+`generateStory()` calls `OPENROUTER_MODEL_STORY` with the selected genre, theme, tier limits, writing guidance, and illustration requirements.
 
-Our Table access pattern is tiny:
+The expected output contains:
 
-- Write ≤ 1 row per day from `/api/generate`.
-- Read by exact key `date` or _“latest row where `date ≤ today`”_.
-- No joins, no relational queries, no user data yet.
+- Title, genre, and theme.
+- Story paragraphs.
+- Candidate vocabulary.
+- Art direction and character descriptions.
+- One cover and scene image specifications.
 
-We use **Azure Table Storage in both dev and prod** — one driver, one code path, no environment drift.
+Story validation checks:
 
-- **Dev:** run the **Azurite** emulator locally (`npm i -g azurite` or the VS Code extension). Point `AZURE_STORAGE_CONNECTION_STRING` at `UseDevelopmentStorage=true`.
-- **Prod:** a real Storage Account + Table. Cost is effectively free at our scale (cents/month).
+- Tier word-count bounds.
+- Tier Flesch-Kincaid grade range.
+- Banned safety terms.
+- Exactly one cover image specification.
+- At least one scene image specification.
 
-#### Entity design
+The story receives up to three attempts: one initial generation and two corrective retries. If the story omits image specifications, `OPENROUTER_MODEL_LEARNING` regenerates only those specifications without rewriting the story.
 
-- `PartitionKey` = `"daily"` (constant) — all rows live in one partition, keeping scans cheap and ordered.
-- `RowKey` = **inverted date** so an ascending scan is newest‑first:
-  `rowKey = (99999999 - Number(date.replaceAll('-',''))).toString().padStart(8,'0')`
-  e.g. `2026-06-30` → `"79736970"`.
-  “Latest available” becomes: `PartitionKey eq 'daily' and RowKey ge <invertedToday>` with `top=1`.
-- Properties: `date` (`"YYYY-MM-DD"`), `packJson` (string; gzip only if approaching the 64 KB per‑property limit — our packs are well under it), `createdAt`.
-- **Denormalized metadata columns** — `title`, `genre`, `theme`, `tier`, `coverBlobPath`, `readingTimeMin`, plus a few generation-telemetry columns (`storyModel`, `totalTokens`, `durationMs`) — stored **alongside** `packJson`. The Story Library (§3.5) lists these via a projected query (`select` only the metadata columns), so browsing never deserializes full packs. The full generation metadata (§7 `GenerationMeta`) lives inside `packJson`; `packJson` is fetched only when a single story is opened.
-- Exact lookup uses `PartitionKey + RowKey` — a single point read, the cheapest/fastest op Table Storage offers.
-- **Browse** is a single‑partition scan projecting the metadata columns, already newest‑first thanks to the inverted `RowKey`; `@azure/data-tables` returns a **continuation token** for paging.
+### 3. Learning Materials
 
-#### Access layer
+After the story passes validation, `generateLearningMaterials()` sends the finalized story once to `OPENROUTER_MODEL_LEARNING`. The call returns vocabulary and comprehension questions together.
+
+Vocabulary filtering:
+
+- Removes duplicate words case-insensitively.
+- Requires each example to occur in the story.
+- Limits definitions to 140 characters.
+- Keeps at most 10 words.
+
+Question filtering:
+
+- Removes duplicate IDs.
+- Requires at least one `mustInclude` rubric item.
+- Requires a multiple-choice answer to appear in its choices.
+
+### 4. Illustrations
+
+`renderImages()` requests all image specifications concurrently through OpenRouter using `IMAGE_MODEL` and `IMAGE_API_KEY`.
+
+- The prompt combines shared art direction, setting, character descriptions, scene instructions, and kid-safe prompt constraints.
+- Supported returned data URLs are PNG, JPEG, and WebP.
+- Successful bytes are uploaded to `<pack-id>/cover.<ext>` or `<pack-id>/scene-N.<ext>`.
+- Individual image failures are logged and dropped; they do not prevent the text pack from being stored.
+
+### 5. Assembly and Persistence
+
+The pack is assembled with a reading-time estimate of 150 words per minute. A final banned-term pass checks the title, story text, and question text. If it passes, the new pack is inserted into Azure Table Storage.
+
+## Grading Pipeline
+
+The grading backend in `src/lib/grade` remains available for future use or direct API clients:
+
+1. Route multiple-choice and short literal answers through local exact/fuzzy matching.
+2. Screen open-ended text with `OPENROUTER_MODEL_GUARD`.
+3. Run two graders using `OPENROUTER_MODEL_GRADER`.
+4. Use `OPENROUTER_MODEL_JUDGE` when graders disagree or confidence is low.
+5. Generate kind feedback with `OPENROUTER_MODEL_FEEDBACK`.
+
+Grades are `nailed_it`, `almost`, or `lets_look_again`.
+
+The current comprehension UI intentionally performs manual self-review and does not invoke this pipeline.
+
+## Data Model
+
+Zod schemas in `src/lib/schemas.ts` are the runtime and TypeScript source of truth.
 
 ```ts
-interface DailyPackStore {
-  get(date: string): Promise<DailyPack | null>;
-  getLatest(
-    onOrBefore: string,
-  ): Promise<{ date: string; pack: DailyPack } | null>;
-  upsert(date: string, pack: DailyPack): Promise<void>;
-  // Story Library (§3.5): metadata-only, paged, newest-first.
-  list(opts?: {
-    limit?: number;
-    cursor?: string;
-  }): Promise<{ items: PackSummary[]; nextCursor?: string }>;
-}
-
-class AzureTableDailyPackStore implements DailyPackStore {
-  // uses @azure/data-tables TableClient
-}
-```
-
-#### Notes / gotchas
-
-- `TableClient.upsertEntity(entity, "Replace")` gives idempotent writes for `force=true` regenerations.
-- Wrap Azurite startup in an npm script (`"dev:storage": "azurite --silent --location .azurite --debug .azurite/debug.log"`) so `.azurite/` can be gitignored.
-- One table (`DailyPacks`) is enough. If we later add users/progress, add separate tables rather than mixing entities.
-
-#### Blob Storage (story images)
-
-Images are far too large for a Table property, so illustrations live in **Azure Blob Storage** (same Storage Account, same Azurite emulator in dev).
-
-- **Container:** `story-images` (public‑read or served via the app / CDN).
-- **Path:** `{date}/{role}-{n}.webp` — e.g. `2026-07-14/cover.webp`, `2026-07-14/scene-1.webp`, `2026-07-14/scene-2.webp`. Deterministic paths mean a `force` regenerate overwrites in place.
-- **Format:** WebP (small, wide browser support). Target < 300 KB per image.
-- **What's stored in Table:** only the **blob path** (and `alt` text) inside the pack — never the image bytes. Table stays tiny; Blob holds the pixels.
-- **Access layer:** `@azure/storage-blob` `BlockBlobClient`; generation uploads bytes, reads serve the blob URL. In prod, the app's Managed Identity has **Storage Blob Data Contributor**; in dev, Azurite via the connection string.
-- **Lifecycle (optional):** a Blob lifecycle rule can cool/delete images older than N days to keep costs near zero, since only recent packs are ever served.
-
-## 6. Content Generation Strategy
-
-To keep cost low and quality high, generate content **once per day** and cache it. Generation is triggered **only** by the explicit, key‑protected `POST /api/generate` endpoint (see §6.2). No cron, no lazy fallback.
-
-### 6.1 LLM generation flow
-
-Each call to `/api/generate` runs the pipeline below. All LLM calls go through **OpenRouter** with `response_format: { type: "json_object" }` so we get parseable JSON, and every response is validated with **Zod** before we move on.
-
-#### Step 0 — Seed the day
-
-- Compute a deterministic seed from `date` (e.g. SHA‑256 → int).
-- Use the seed to pick:
-  - **Genre** from a rotating list (adventure, mystery, sci‑fi, fantasy, friendship, folktale, historical, slice‑of‑life…).
-  - **Theme / motif** (e.g. _courage_, _curiosity_, _teamwork_, _change_).
-- **Setting is not seeded** — the model invents a fresh, imaginative setting each time, so stories aren't confined to a fixed list of places.
-- **Tier** (`early` | `growing` | `middle`, see §2) is an **input** to generation, not derived from the date. It sets the story's target word count, Lexile/Flesch–Kincaid band, sentence complexity, and vocabulary difficulty. Defaults to `growing`.
-
-Determinism means a `force`/repeat generate for the same date picks the same genre/theme — only the LLM output (and the invented setting) changes. This makes debugging predictable. Because packs are keyed by a unique id (§5.4), the same date can hold several stories — e.g. one per tier.
-
-#### Step 1 — Generate the story (one big call)
-
-- **Model:** `OPENROUTER_MODEL_STORY` (the strongest model — default `openai/gpt-5.5` via OpenRouter; it also emits the art bible + image prompts).
-- **Inputs:** genre, theme, **tier** (which sets target word count, Lexile/Flesch–Kincaid band, sentence complexity, and vocabulary difficulty — §2 / §6.1 Step 0), safety rules, and a small list of **seed words** we’d like woven in (optional — story can introduce its own too). The **setting is invented by the model**.
-- **Output (JSON):** the story author also emits an **“art bible”** (`artDirection`) and the **image specs** (`images`) in the same call, so the model that knows the characters/setting/pacing is the one that describes them for illustration — this is what keeps characters consistent across images (see §6.1 Step 4).
-  ```json
-  {
-    "title": "...",
-    "genre": "mystery",
-    "theme": "curiosity",
-    "paragraphs": ["...", "..."],
-    "candidateVocab": ["lantern", "echoed", "stubborn"],
-    "artDirection": {
-      "style": "soft watercolor children's-book illustration, warm palette",
-      "characters": [
-        { "name": "Mia", "look": "9-year-old, curly brown hair, red raincoat" }
-      ],
-      "setting": "a foggy seaside town at dusk"
-    },
-    "images": [
-      { "role": "cover", "afterParagraph": -1, "prompt": "...", "alt": "..." },
-      { "role": "scene", "afterParagraph": 2, "prompt": "...", "alt": "..." },
-      { "role": "scene", "afterParagraph": 5, "prompt": "...", "alt": "..." }
-    ]
-  }
-  ```
-- **Validation:**
-  - Word count within ±15% of target.
-  - Flesch–Kincaid grade within target band; if off, retry once with a corrective prompt (“simplify” / “raise complexity”).
-  - Safety filter pass (regex + lightweight moderation model). On fail → regenerate up to N=2 times, then abort with an error.
-  - `artDirection` present and each `images[]` entry has a `prompt`, `alt`, and valid `afterParagraph`. If this block is missing/malformed, a cheap small‑model follow‑up regenerates **only** these fields from the finished story — the story text itself is not re‑rolled.
-
-Why one call instead of chapter‑by‑chapter: keeps narrative coherence, costs less than multi‑turn drafting, and at ~1,000 words it fits comfortably in modern context windows. Emitting the art bible here (rather than re‑reading the story in a later call) means the illustrations share one canonical character/setting description — no drift from a second model re‑inferring what everyone looks like.
-
-#### Step 2 — Extract vocabulary from the story
-
-- **Model:** `OPENROUTER_MODEL_VOCAB` (smaller/cheaper model is fine).
-- **Inputs:** the full story text + `candidateVocab` hint.
-- **Task:** pick **5–10** words that are (a) actually present in the story, (b) appropriately challenging for grades 3–5, (c) varied (no two near‑synonyms).
-- **Output (JSON):**
-  ```json
-  [
-    {
-      "word": "lantern",
-      "pos": "noun",
-      "definition": "a portable light with a protective case",
-      "exampleFromStory": "She lifted the lantern and stepped into the cave.",
-      "synonyms": ["lamp", "torch"],
-      "antonyms": []
-    }
-  ]
-  ```
-- **Validation:** every `exampleFromStory` must be a substring of the story (case‑insensitive); definitions max ~140 chars; reject duplicates.
-
-#### Step 3 — Generate comprehension questions
-
-- **Model:** `OPENROUTER_MODEL_QUIZ` (small model — questions are structured and short).
-- **Inputs:** the full story + the chosen vocabulary list.
-- **Task:** produce **5–8** questions with a required mix:
-  - 2 **literal** (who/what/where/when),
-  - 2 **inferential** (why/how/predict),
-  - 1 **vocabulary‑in‑context** (uses one of the chosen vocab words),
-  - 1 **theme / main idea**,
-  - 0–2 extras (author’s craft, sequencing, character motivation).
-- **Output (JSON):**
-  ```json
-  [
-    {
-      "id": "q1",
-      "type": "literal",
-      "question": "Where did Mia find the lantern?",
-      "choices": [
-        "In the attic",
-        "Under the bed",
-        "In the garden",
-        "At school"
-      ],
-      "answer": "In the attic",
-      "explanation": "Paragraph 2 says Mia 'climbed to the attic and discovered the lantern.'",
-      "rubric": {
-        "mustInclude": ["Mia was in the attic"],
-        "niceToHave": ["mentions the lantern was dusty/hidden"],
-        "commonWrongPatterns": ["confuses attic with basement"]
-      }
-    }
-  ]
-  ```
-- **Rubric (for grading, see §6.5):** every question also carries a **pre‑computed rubric** — frozen grading criteria written _before_ any student answer exists. `mustInclude` = concepts required for full credit; `niceToHave` = optional extras; `commonWrongPatterns` = known misconceptions to catch. Pre‑computing keeps grading consistent across all students, prevents answer‑influenced rubric drift, and lets an admin review criteria before they go live.
-- **Validation:** answer must be one of `choices` (when present); every `explanation` should reference something verifiable in the story (we cheaply check that key answer phrases appear in the text); each `mustInclude` bullet must be non‑empty. On failure → regenerate that question only.
-
-#### Step 4 — Render illustrations (specs → images → Blob)
-
-The image **specs and art bible already exist** from Step 1 — this step is purely mechanical, no further story inference.
-
-- **Assemble each prompt:** `artDirection.style` + the relevant character `look`(s) + the spec's scene `prompt`, so every image shares one canonical style and character description (consistency by construction).
-- **Image model:** call the **OpenAI Images API** (`IMAGE_API_KEY` / `IMAGE_MODEL`, default `gpt-image-1`) once per spec.
-- **Safety:** every prompt carries kid‑safe constraints (no scary/violent imagery). Each returned image passes a **moderation check** before upload; on a trip, regenerate up to N=2, then drop that image.
-- **Upload:** convert to WebP, upload to Blob at `{date}/{role}-{n}.webp`, and record `{ role, afterParagraph, alt, blobPath }` in `story.images[]`.
-- **Non‑blocking:** illustrations never block a valid text pack. If an image fails after retries, the pack is still persisted with whatever images succeeded (or none) — the UI simply renders text without the missing image.
-
-#### Step 5 — Assemble, safety‑check, persist
-
-- Combine outputs into a single `DailyPack` (see §7).
-- Run the final **safety filter pass** over the whole pack (story + questions + image alt text). If anything trips the filter at this stage, regenerate only the offending piece.
-- Compute `readingTimeMin` = `wordCount / 150` rounded up.
-- Persist image bytes to **Blob** and the JSON pack (with `story.images[]` blob paths) to **Table** with `UPSERT` on `date`; if `force=false` and a row exists, the endpoint returns `{ generated: false, reason: "exists" }` without calling any model.
-
-#### Cost & latency profile (rough)
-
-| Step               | Model class | Tokens out                 | Notes                                                     |
-| ------------------ | ----------- | -------------------------- | --------------------------------------------------------- |
-| 1 Story            | Large       | ~1.5k–2.5k                 |                                                           |
-| 2 Vocab            | Small       | ~300                       |                                                           |
-| 3 Quiz             | Small       | ~500                       |                                                           |
-| 4 Illustrations    | Image API   | 3 images                   | **New dominant cost** — ~1–4¢/image → ~3–12¢/day          |
-| **Total per day**  | —           | text ~2.3k–3.3k + 3 images | Text ≈ a few cents; images dominate but still ~$1–4/month |
-
-A full daily generation is **one HTTP call to `/api/generate`** and typically completes in ~15–50s (image generation adds ~5–20s). This is fine — generation is a manual admin call, off the read path; reads serve cached blobs instantly.
-
-#### Error handling
-
-- Each step has a **retry budget** (default 2) with a corrective prompt seeded from the validator’s complaint.
-- If a step fails after retries, the endpoint returns `{ ok: false, step, error }` and writes **nothing** (transactional — no half‑packs).
-- Token usage per step is recorded in the response for visibility.
-
-### 6.2 `/generate` endpoint (key‑protected)
-
-A single admin route triggers generation on demand. It is the **only** way to (re)create a `DailyPack`.
-
-- **Path:** `POST /api/generate` (also accepts `GET` for easy manual triggering from a browser/cURL).
-- **Auth:** caller must supply a secret key that matches `GENERATE_API_KEY` in env.
-  - Preferred: HTTP header `x-generate-key: <key>`.
-  - Also accepted: `?key=<key>` query param (handy for manual runs; treat as lower‑trust).
-- **Inputs (optional):**
-  - `date` (defaults to today, UTC) — `YYYY-MM-DD`
-  - `force` — `true` to overwrite an existing pack for that date
-- **Behavior:**
-  - Validates key with **constant‑time compare**; on mismatch returns `401` with no detail.
-  - Rate‑limited (e.g. 5 req/min per IP) to limit abuse if the key leaks.
-  - Runs the generation flow (6.1), validates JSON with Zod, runs safety filter, persists `DailyPack`.
-  - Returns a summary: `{ date, generated: true, durationMs, tokensUsed }` (never the key).
-- **Logging:** every call logs `{ timestamp, ip, date, success, durationMs }`. Key is **never** logged.
-
-**Example calls**
-
-```bash
-# Generate today's pack
-curl -X POST https://inkydoop.com/api/generate \
-  -H "x-generate-key: $GENERATE_API_KEY"
-
-# Regenerate a specific day
-curl -X POST "https://inkydoop.com/api/generate?date=2026-07-01&force=true" \
-  -H "x-generate-key: $GENERATE_API_KEY"
-```
-
-**Sketch**
-
-```ts
-// app/api/generate/route.ts
-import { timingSafeEqual } from "node:crypto";
-
-function authorized(req: Request): boolean {
-  const provided =
-    req.headers.get("x-generate-key") ??
-    new URL(req.url).searchParams.get("key") ??
-    "";
-  const expected = process.env.GENERATE_API_KEY ?? "";
-  if (!expected || provided.length !== expected.length) return false;
-  return timingSafeEqual(Buffer.from(provided), Buffer.from(expected));
-}
-
-export async function POST(req: Request) {
-  if (!authorized(req)) return new Response("unauthorized", { status: 401 });
-  const { date, force = false } = await parseParams(req);
-  const result = await generateAndStore({ date, force });
-  return Response.json({ ok: true, result });
-}
-export const GET = POST; // allow manual trigger
-```
-
-### 6.3 How daily generation actually happens
-
-**Manual trigger only.** Generation runs **exclusively** when someone calls `POST /api/generate` with the correct key. There is **no lazy fallback** and **no external scheduler**.
-
-- Reader pages only read from the cache — they never call the LLM.
-- **Browse the archive.** `GET /api/stories?limit=&cursor=` returns a metadata‑only, newest‑first page for the Story Library (§3.5): `{ items: PackSummary[], nextCursor? }`. It projects the denormalized metadata columns (§5.4) — no `packJson`, no LLM. `GET /api/story?date=YYYY-MM-DD` then loads a single full pack on demand.
-- **Fallback to latest available pack.** When a read endpoint is hit:
-  1. Look up `DailyPack` for `today`.
-  2. If missing, return the **most recent** `DailyPack` (highest `date <= today`).
-  3. The response includes a `meta` block so the UI can show context:
-     ```json
-     {
-       "meta": {
-         "requestedDate": "2026-07-01",
-         "servedDate": "2026-06-29",
-         "isFresh": false
-       }
-     }
-     ```
-  4. Only if **no pack exists at all** does the API return HTTP 404.
-- The UI shows a small banner when `isFresh: false`, e.g. _“Today’s pack isn’t ready yet — here’s the latest from {servedDate}.”_
-- To produce today’s content, run (locally or in any shell):
-
-  ```bash
-  curl -X POST https://inkydoop.com/api/generate \
-    -H "x-generate-key: $GENERATE_API_KEY"
-  ```
-
-This keeps the system simple and predictable: zero hidden LLM calls, no surprise costs, no scheduler infra to maintain — and the site is never empty as long as one pack has ever been generated.
-
-### 6.4 Prompt Design (sketch)
-
-**Story prompt**
-
-```
-You are writing a {genre} story for elementary students in grades 3–5 (Lexile ~{lexile}).
-Length: {wordCount} words. Tone: engaging, age‑appropriate, no violence/scary content.
-Weave these target words naturally: {targetWords}.
-Also act as art director: define a consistent visual style + character looks, then
-write 3 illustration prompts (1 cover + 2 scenes) that reuse those exact descriptions.
-Return JSON: {
-  "title": ..., "paragraphs": [...], "targetWords": [...],
-  "artDirection": { "style": ..., "characters": [{ "name", "look" }], "setting": ... },
-  "images": [{ "role": "cover"|"scene", "afterParagraph", "prompt", "alt" }]
-}
-```
-
-**Quiz prompt**
-
-```
-Given this story, create 6 comprehension questions for elementary students in grades 3–5.
-Mix: 2 literal, 2 inferential, 1 vocabulary‑in‑context, 1 theme.
-Return JSON: [{ "id", "type", "question", "answer", "explanation", "choices?" }]
-```
-
-All LLM calls request **structured JSON** and are validated with a schema (e.g. Zod) before being cached.
-
-### 6.5 Answer Grading (implemented backend, not exposed in the current UI)
-
-The grading pipeline remains available for a future redesigned learning path. The current comprehension quiz is manual self-review and does not call it.
-
-Free‑text comprehension answers (inferential, theme, vocabulary‑in‑context) are graded by a small multi‑agent pipeline anchored on the **pre‑computed rubric** from §6.1 Step 3. MC and short literal answers never reach it. The design principle: **each agent gets the smallest slice of context that lets it do its one job well**, which makes grading measurably more reliable than one big prompt.
-
-```
-Student answer
-   │
-   ▼
-① Router (code)      ── MC / short literal ──► exact / fuzzy match ──► grade + done
-   │ open‑ended
-   ▼
-② Guard (small)      detect prompt‑injection + unsafe content; wrap answer in <student_answer> tags
-   ▼
-③ Grader ×2 (small, parallel)   score vs. rubric + story; charity rules (ignore spelling, concept over keywords)
-   ▼
-④ Judge (medium)     ONLY if graders disagree or confidence is low; arbitrates from rubric + structured grader outputs
-   ▼
-⑤ Feedback (small)   turn the grade into 1–2 kind, specific sentences
-```
-
-**Step 1 — Router** (code, no LLM). MC → exact match; short literal → normalize + fuzzy match (Levenshtein ≥ 0.85) against `answer`. Both short‑circuit here. Only inferential / theme / vocab‑in‑context (or an empty/ambiguous literal) continue.
-
-**Step 2 — Guard** (`OPENROUTER_MODEL_QUIZ`, small). Treats the student's text as **untrusted**: detects prompt‑injection (“ignore previous…”, role‑play, fake schema) and unsafe content, then wraps the answer in `<student_answer>…</student_answer>` so every downstream prompt treats it as data, never instructions. On `injection: true` → skip grading, return a neutral `lets_look_again` (never reveal that injection was detected).
-
-**Step 3 — Graders ×2** (`OPENROUTER_MODEL_GRADER`, small, run in parallel). Both receive the **same** inputs — the pre‑computed rubric, the story, and the wrapped answer — and each emits `{ score, mustIncludeHits[], mustIncludeMissed[], wrongPatternHits[], confidence }`. Use two independent variants (different temperatures or model framings) so their **agreement rate** is a real quality signal. **Charity rules** in every grader prompt: ignore spelling/grammar; accept the most generous reading that still matches a rubric bullet; concept match ≥ keyword match; never penalize brevity.
-
-**Step 4 — Judge** (`OPENROUTER_MODEL_JUDGE`, medium). Runs **only** when the two graders disagree, or either confidence is low. It sees the rubric + both graders' **structured outputs** (scores and rubric hits — _not_ their free‑text justifications, which cause anchoring) and re‑adjudicates. When graders agree with high confidence, the judge is skipped — that's the cost savings (~80% of answers). On judge failure → default to the **more forgiving** of the two grades.
-
-**Step 5 — Feedback** (`OPENROUTER_MODEL_FEEDBACK`, small). Turns the final grade + rubric hits/misses into one or two encouraging, kid‑appropriate sentences. Kept **separate from grading** so “be kind” never inflates the score. Never says “wrong” — on a miss it offers a concrete hint (“Reread paragraph 3…”). On failure → fall back to a static template keyed on the grade.
-
-**Grade scale.** Three tiers for grades 3–5: `nailed_it` / `almost` / `lets_look_again`. `almost` = 1+ `mustInclude` hits but not all. No numeric percentages — they pretend more precision than the graders have and demoralize kids.
-
-**Cost per open‑ended answer:** ~2–4 small‑model calls (guard, 2 graders, feedback) + judge on ~20% → ~1–1.5k tokens, ~2–4s. Easy question types cost **zero** LLM calls.
-
-## 7. Data Model (initial)
-
-```ts
-DailyPack {
-  date: string            // YYYY-MM-DD
-  tier: 'early' | 'growing' | 'middle'   // reading tier (§2)
+interface DailyPack {
+  date: string;
+  tier: "early" | "growing" | "middle";
   story: {
-    title, genre, paragraphs[], readingTimeMin, targetWords[],
-    artDirection: { style: string, characters: { name: string, look: string }[], setting: string },
-    images: { role: 'cover'|'scene', afterParagraph: number, alt: string, blobPath: string }[]
-  }
-  vocabulary: { word, pos, definition, exampleFromStory, synonyms[], antonyms[] }[]
+    title: string;
+    genre: string;
+    theme: string;
+    paragraphs: string[];
+    readingTimeMin: number;
+    targetWords: string[];
+    artDirection: {
+      style: string;
+      characters: { name: string; look: string }[];
+      setting: string;
+    };
+    images: {
+      role: "cover" | "scene";
+      afterParagraph: number;
+      alt: string;
+      blobPath: string;
+    }[];
+  };
+  vocabulary: {
+    word: string;
+    pos: string;
+    definition: string;
+    exampleFromStory: string;
+    synonyms: string[];
+    antonyms: string[];
+  }[];
   questions: {
-    id, type, question, answer, explanation, choices?,
-    rubric: { mustInclude: string[], niceToHave: string[], commonWrongPatterns: string[] }
-  }[]
-  generation: GenerationMeta   // how this pack was produced (§6.1 Step 5 / §6.2)
-}
-
-// Captured for every generation and stored inside the pack (§6.1 Step 5).
-GenerationMeta {
-  startedAt: string           // ISO timestamp
-  finishedAt: string          // ISO timestamp
-  durationMs: number          // wall-clock total
-  appVersion: string          // build / prompt version (e.g. git short sha)
-  seed: { genre: string; theme: string; tier: string }
-  models: {                   // model that ran each step
-    story: string; vocab: string; quiz: string; image: string
-  }
-  tokens: {
-    byStep: {                 // per-LLM-call usage reported by OpenRouter
-      step: string; model: string;
-      promptTokens: number; completionTokens: number; totalTokens: number
-    }[]
-    promptTokens: number; completionTokens: number; totalTokens: number   // rolled up
-  }
-  durationsMsByStep: { step: string; ms: number }[]
-  retries: { story: number }  // corrective-retry counts per step
-  images: { model: string; requested: number; succeeded: number; bytes: number }
-  measured: { wordCount: number; readingGrade: number }   // validator readings
-  costUsd?: number            // when the provider returns cost/usage
-}
-
-// Metadata-only projection for the Story Library (§3.5) — never carries packJson:
-PackSummary {
-  id: string              // unique pack id (§5.4)
-  date: string            // YYYY-MM-DD
-  tier: 'early' | 'growing' | 'middle'
-  title: string
-  genre: string
-  theme: string
-  readingTimeMin: number
-  coverBlobPath: string | null   // cover thumbnail; null if illustrations failed
-  totalTokens?: number    // denormalized for the admin/telemetry view
-}
-
-// Produced by the §6.5 grading pipeline (not persisted until we add accounts):
-QuizAttempt {
-  questionId: string
-  studentAnswer: string
-  grade: 'nailed_it' | 'almost' | 'lets_look_again'
-  mustIncludeHits: string[]
-  feedback: string
-  graderAgreement: boolean   // telemetry: did the two graders match?
-  judged: boolean            // telemetry: did the judge have to arbitrate?
+    id: string;
+    type:
+      "literal" | "inferential" | "vocabulary-in-context" | "theme" | "extra";
+    question: string;
+    answer: string;
+    explanation: string;
+    choices?: string[];
+    rubric: {
+      mustInclude: string[];
+      niceToHave: string[];
+      commonWrongPatterns: string[];
+    };
+  }[];
 }
 ```
 
-Optional later: `User`, `Progress` (persist `QuizAttempt` per user).
+## Storage
 
-## 8. Safety & Quality
+### Azure Table Storage
 
-- **Content guardrails** in the system prompt (no violence, romance, scary content, profanity, politics).
-- Post‑generation **filter pass** (regex + lightweight moderation model) before caching.
-- **Student‑input is untrusted.** The grading Guard agent (§6.5 Step 2) detects prompt‑injection and unsafe content in submitted answers and wraps them in `<student_answer>` tags so downstream graders treat them as data, never instructions.
-- **Image safety.** Every illustration prompt (§6.1 Step 4) carries kid‑safe constraints; each generated image passes a **moderation check** before it's uploaded to Blob, and `alt` text is mandatory (accessibility + a second content check).
-- Manual override: an admin can regenerate a day’s pack.
-- Reading‑level check (e.g. Flesch‑Kincaid) to verify story matches the grades 3–5 band; regenerate if off.
+All packs use `PartitionKey = "daily"`.
 
-## 9. UX Principles
+Each generation creates a unique sortable `RowKey` containing:
 
-- **Big, friendly typography**; high contrast; dyslexia‑friendly font option.
-- Minimal chrome — content first.
-- Encouraging tone, no harsh “wrong” feedback.
-- Works on **tablet and desktop**; mobile‑responsive.
-- Optional **read‑aloud** (browser SpeechSynthesis) for accessibility.
+- Inverted date.
+- Inverted generation timestamp.
+- A short random suffix.
 
-## 10. Milestones
+Ascending queries therefore return newer dates first and newer generations first within a date. Multiple packs can coexist for the same date and tier.
 
-| #    | Milestone                      | Output                                                                                                                                                                     |
-| ---- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| M0   | Project scaffold               | Next.js + TS + Tailwind, env config, OpenRouter client                                                                                                                     |
-| M1   | Story generation               | API route returns a validated story JSON                                                                                                                                   |
-| M2   | Front page                     | Today’s Story entry point, library navigation, tier selector, and theme toggle                                                                                             |
-| M3   | Story view                     | Renders story, tap‑a‑word definitions                                                                                                                                      |
-| M4   | Vocabulary builder             | Word list + 1 exercise type (MC)                                                                                                                                           |
-| M5   | Comprehension Q&A              | Questions with answer entry and optional manual answer reveal                                                                                                             |
-| M6   | Daily caching + generation API | `DailyPack` persistence; key‑protected `POST /api/generate` as the **only** generation path; read endpoints fall back to the latest available pack when today’s is missing |
-| M6.5 | Illustrations                  | 3 images/story (cover + 2 scenes) generated, moderated, stored in Blob; rendered inline + as cover                                                                         |
-| M6.6 | Story Library                  | Browse all packs (metadata‑only, paged, newest‑first); open any date to load its story (§3.5)                                                                              |
-| M7   | Polish                         | Read‑aloud, theme, accessibility pass, deploy                                                                                                                              |
-| M8   | Teacher mode                   | Printable **PDF of today’s pack** (story + vocabulary + Q&A with answer key)                                                                                               |
-| M9   | Reading tiers                  | Three reading levels (early / growing / middle); tier‑aware generation + a persisted reader‑facing tier selector (§2)                                                      |
-| M10  | Generation metadata            | Capture models, tokens, timings, retries, and image stats per generation; store with the pack + surface in `/admin` (§7 `GenerationMeta`)                                  |
+Each entity stores:
 
-## 11. Configuration
+- Full validated pack JSON in `packJson`.
+- Date, tier, and creation timestamp.
+- Denormalized title, genre, theme, reading time, and cover path for archive queries.
 
-Environment variables (`.env.local`):
+Exact story links use a point read by partition and row key. Archive queries project metadata only and use Azure continuation tokens.
 
-```
-OPENROUTER_API_KEY=...
-OPENROUTER_MODEL_STORY=openai/gpt-5.5
-OPENROUTER_MODEL_VOCAB=openai/gpt-4o-mini
-OPENROUTER_MODEL_QUIZ=openai/gpt-4o-mini
-OPENROUTER_MODEL_FEEDBACK=openai/gpt-4o-mini
-# Answer grading (§6.5). Guard reuses QUIZ.
-OPENROUTER_MODEL_GRADER=openai/gpt-4o-mini
-OPENROUTER_MODEL_JUDGE=openai/gpt-4o
+### Azure Blob Storage
 
-# Story illustrations (§6.1 Step 4) — OpenAI Images API (use an OpenAI API key)
-IMAGE_API_KEY=...
-IMAGE_MODEL=gpt-image-1
+Story images are stored in the configured container under paths namespaced by pack ID. The application serves them through `/api/image` rather than exposing storage credentials to the browser.
 
-# Azure Storage — one account, Table for JSON + Blob for images
-# (used in dev via Azurite, and in prod via a real Storage Account)
-# Dev with Azurite emulator:
-AZURE_STORAGE_CONNECTION_STRING=UseDevelopmentStorage=true
-# Prod: paste the connection string from your Storage Account
-# AZURE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=https;AccountName=...;AccountKey=...;EndpointSuffix=core.windows.net
-AZURE_TABLE_NAME=DailyPacks
-AZURE_BLOB_CONTAINER=story-images
+### Authentication
 
-# Secret used to authorize POST /api/generate. Generate with:
-#   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-GENERATE_API_KEY=replace-with-long-random-string
-```
+- Local development uses `AZURE_STORAGE_CONNECTION_STRING` with Azurite.
+- Production code uses `AZURE_STORAGE_ACCOUNT` with `DefaultAzureCredential`.
 
-**Key handling rules**
+The repository does not currently contain production infrastructure or RBAC deployment definitions.
 
-- Treat `GENERATE_API_KEY` as a secret: never commit, never log, never expose to the client bundle (server‑side only — do **not** prefix with `NEXT_PUBLIC_`).
-- Use a long random value (≥ 32 bytes hex).
-- Rotate by updating the env var and redeploying.
+## Fallback Behavior
 
-## 12. Deployment
+`getServedPack()` resolves content in this order:
 
-Since we already committed to **Azure Table + Blob Storage**, the path of least friction is to host the whole app on Azure too — one bill, one identity model, one portal, and Managed Identity access to the storage account (no connection strings in prod).
+1. Exact pack ID, when supplied and found.
+2. Latest pack for the selected tier.
+3. Latest pack from any tier.
+4. Bundled sample pack.
 
-### 12.1 Recommended target: **Azure Container Apps** (ACA)
+Storage errors also fall through to the sample pack. The Story Library instead renders an empty result when storage is unavailable.
 
-Next.js runs great as a container, and ACA gives us:
+## Environment Configuration
 
-- HTTPS + custom domains + auto‑scaling out of the box.
-- **Scale‑to‑zero** for a hobby workload — you pay only when someone hits the site.
-- Simple **revisions** (blue/green) and per‑revision env vars.
-- **Managed Identity** to talk to Storage without secrets.
+Copy `.env.example` to `.env.local`. Environment files are ignored by Git.
 
-**Topology**
+Required secrets:
 
-```
-Resource Group: rg-inkydoop
-├─ Storage Account: stinkydoop<suffix>
-│    ├─ Table: DailyPacks          (daily JSON pack)
-│    └─ Blob container: story-images (WebP illustrations)
-├─ Container Apps Environment: cae-inkydoop
-│    └─ Container App: ca-inkydoop-web  (Next.js image)
-├─ Container Registry: crinkydoop<suffix>  (or use GHCR)
-└─ Log Analytics Workspace: log-inkydoop
+| Variable             | Purpose                                          |
+| -------------------- | ------------------------------------------------ |
+| `OPENROUTER_API_KEY` | Text generation requests.                        |
+| `IMAGE_API_KEY`      | Image generation requests through OpenRouter.    |
+| `GENERATE_API_KEY`   | Protects `/api/generate`; minimum 32 characters. |
+
+Model settings have defaults:
+
+| Variable                    | Default                         |
+| --------------------------- | ------------------------------- |
+| `OPENROUTER_MODEL_STORY`    | `openai/gpt-5.5`                |
+| `OPENROUTER_MODEL_LEARNING` | `openai/gpt-4o-mini`            |
+| `OPENROUTER_MODEL_GUARD`    | `openai/gpt-4o-mini`            |
+| `OPENROUTER_MODEL_FEEDBACK` | `openai/gpt-4o-mini`            |
+| `OPENROUTER_MODEL_GRADER`   | `openai/gpt-4o-mini`            |
+| `OPENROUTER_MODEL_JUDGE`    | `openai/gpt-4o`                 |
+| `IMAGE_MODEL`               | `google/gemini-2.5-flash-image` |
+
+Storage settings:
+
+| Variable                          | Required                  | Default        |
+| --------------------------------- | ------------------------- | -------------- |
+| `AZURE_STORAGE_CONNECTION_STRING` | One storage mode required | None           |
+| `AZURE_STORAGE_ACCOUNT`           | One storage mode required | None           |
+| `AZURE_TABLE_NAME`                | No                        | `DailyPacks`   |
+| `AZURE_BLOB_CONTAINER`            | No                        | `story-images` |
+
+At least one of `AZURE_STORAGE_CONNECTION_STRING` or `AZURE_STORAGE_ACCOUNT` must be set. Configuration is validated with Zod on first server-side environment access.
+
+Never commit `.env.local`, API keys, or generation keys. Rotate any key that has been exposed outside its intended secret store.
+
+## Local Development
+
+Prerequisites:
+
+- Node.js 22 or newer.
+- pnpm 10.
+
+Install dependencies:
+
+```powershell
+pnpm install
 ```
 
-**One‑time setup (sketch)**
+Create local configuration:
 
-```bash
-# Variables
-RG=rg-inkydoop
-LOC=eastus
-ST=stinkydoop$RANDOM
-ENV=cae-inkydoop
-APP=ca-inkydoop-web
-ACR=crinkydoop$RANDOM
-
-az group create -n $RG -l $LOC
-
-# Storage account + table + blob container
-az storage account create -n $ST -g $RG -l $LOC --sku Standard_LRS
-az storage table create --account-name $ST -n DailyPacks
-az storage container create --account-name $ST -n story-images
-
-# Container registry (skip if using GHCR)
-az acr create -n $ACR -g $RG --sku Basic --admin-enabled false
-
-# Container Apps environment
-az containerapp env create -n $ENV -g $RG -l $LOC
-
-# The app itself (image built and pushed separately in CI — see 12.3)
-az containerapp create \
-  -n $APP -g $RG --environment $ENV \
-  --image $ACR.azurecr.io/inkydoop:latest \
-  --ingress external --target-port 3000 \
-  --min-replicas 0 --max-replicas 2 \
-  --system-assigned \
-  --secrets openrouter-key=$OPENROUTER_API_KEY generate-key=$GENERATE_API_KEY image-key=$IMAGE_API_KEY \
-  --env-vars \
-      AZURE_STORAGE_ACCOUNT=$ST \
-      AZURE_TABLE_NAME=DailyPacks \
-      AZURE_BLOB_CONTAINER=story-images \
-      OPENROUTER_API_KEY=secretref:openrouter-key \
-      GENERATE_API_KEY=secretref:generate-key \
-      IMAGE_API_KEY=secretref:image-key \
-      OPENROUTER_MODEL_STORY=openai/gpt-5.5 \
-      OPENROUTER_MODEL_VOCAB=openai/gpt-4o-mini \
-      OPENROUTER_MODEL_QUIZ=openai/gpt-4o-mini \
-      OPENROUTER_MODEL_FEEDBACK=openai/gpt-4o-mini \
-      OPENROUTER_MODEL_GRADER=openai/gpt-4o-mini \
-      OPENROUTER_MODEL_JUDGE=openai/gpt-4o
-
-# Grant the app's managed identity access to Table + Blob
-PRINCIPAL_ID=$(az containerapp show -n $APP -g $RG --query identity.principalId -o tsv)
-STORAGE_ID=$(az storage account show -n $ST -g $RG --query id -o tsv)
-az role assignment create --assignee $PRINCIPAL_ID \
-  --role "Storage Table Data Contributor" \
-  --scope $STORAGE_ID
-az role assignment create --assignee $PRINCIPAL_ID \
-  --role "Storage Blob Data Contributor" \
-  --scope $STORAGE_ID
+```powershell
+Copy-Item .env.example .env.local
 ```
 
-**Prod auth to storage**: the app uses `DefaultAzureCredential` from `@azure/identity` with `TableClient` (Table) and `BlobServiceClient` (Blob). No `AZURE_STORAGE_CONNECTION_STRING` in prod — the connection string is only used in dev (Azurite).
+Fill in the required secrets, then start Azurite in one terminal:
 
-### 12.2 Dockerfile (Next.js standalone)
-
-```dockerfile
-# Dockerfile
-FROM node:22-alpine AS deps
-WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci
-
-FROM node:22-alpine AS build
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-RUN npm run build   # next.config.js: output: 'standalone'
-
-FROM node:22-alpine AS runner
-WORKDIR /app
-ENV NODE_ENV=production PORT=3000
-COPY --from=build /app/.next/standalone ./
-COPY --from=build /app/.next/static ./.next/static
-COPY --from=build /app/public ./public
-EXPOSE 3000
-CMD ["node", "server.js"]
+```powershell
+pnpm dev:storage
 ```
 
-### 12.3 CI/CD (GitHub Actions)
+Start Next.js in another terminal:
 
-Two workflows:
+```powershell
+pnpm dev
+```
 
-1. **`ci.yml`** — on every PR: `npm ci`, `npm run lint`, `npm test`, `npm run build`.
-2. **`deploy.yml`** — on push to `main`:
-   - Log in to Azure via OIDC (federated credentials — no long‑lived secrets).
-   - `docker build` + push to ACR (or GHCR).
-   - `az containerapp update -n ca-inkydoop-web -g rg-inkydoop --image <acr>/inkydoop:${{ github.sha }}` — ACA creates a new revision and shifts traffic.
+Open `http://localhost:3000`.
 
-Secrets stored as GitHub Environment secrets: `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`. App runtime secrets live in ACA (as above), **not** in GitHub.
+Generate a pack from `http://localhost:3000/admin`, or call the API:
 
-### 12.4 Alternatives (and why we\u2019re not picking them)
+```powershell
+$headers = @{ "x-generate-key" = "<your-generate-key>" }
+Invoke-RestMethod `
+  -Method Post `
+  -Uri "http://localhost:3000/api/generate?date=2026-09-01&tier=growing" `
+  -Headers $headers
+```
 
-| Option                                | Verdict                                                                                                                                                                  |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Vercel**                            | Fastest to ship Next.js, but adds a second vendor and a second bill. Fine if you want zero‑config previews; Azure Table still works from Vercel (via connection string). |
-| **Azure Static Web Apps + Functions** | Great for pure static + light API, but our `/api/generate` can run 10–30s (LLM). SWA managed Functions have short defaults; ACA is simpler.                              |
-| **Azure App Service (Linux, Node)**   | Works fine; slightly more expensive at idle than ACA scale‑to‑zero. Pick this if you dislike containers.                                                                 |
-| **AKS**                               | Overkill for a single web app.                                                                                                                                           |
+## Scripts
 
-### 12.5 Cost sketch (hobby scale)
+| Command            | Purpose                                   |
+| ------------------ | ----------------------------------------- |
+| `pnpm dev`         | Start the Next.js development server.     |
+| `pnpm dev:storage` | Start Azurite for Table and Blob Storage. |
+| `pnpm lint`        | Run ESLint.                               |
+| `pnpm test`        | Run Vitest once.                          |
+| `pnpm test:e2e`    | Run Playwright tests.                     |
+| `pnpm build`       | Create a production build.                |
+| `pnpm start`       | Run the built Next.js server.             |
+| `pnpm format`      | Format the repository with Prettier.      |
 
-- **ACA**: min‑replicas=0 → ~$0 idle; per‑request compute is fractions of a cent.
-- **Storage Account (LRS)**: pennies/month for our Table + Blob volume (a month of WebP images is a few MB).
-- **Log Analytics**: keep retention low (30 days); a few dollars/month at most.
-- **OpenRouter (text)**: ~3.5k output tokens per pack × ~30 days ≈ 105k tokens/month — well under a dollar for small models, a few dollars if the story model is large.
-- **Image API**: the new dominant cost — 3 images/day × ~1–4¢ × 30 days ≈ **$1–4/month**.
+## Tests and CI
 
-### 12.6 Deployment checklist
+Unit tests cover:
 
-- [ ] `GENERATE_API_KEY` set as an ACA **secret** (not a plain env var).
-- [ ] `OPENROUTER_API_KEY` and `IMAGE_API_KEY` set as ACA **secrets**.
-- [ ] App’s Managed Identity has **Storage Table Data Contributor** and **Storage Blob Data Contributor** on the storage account.
-- [ ] `AZURE_STORAGE_ACCOUNT`, `AZURE_TABLE_NAME`, `AZURE_BLOB_CONTAINER` env vars set (no connection string in prod).
-- [ ] Custom domain + managed cert bound in ACA.
-- [ ] Log Analytics receiving container logs; a saved query for `/api/generate` calls.
-- [ ] First manual `curl -X POST .../api/generate -H "x-generate-key: ..."` succeeds and writes the `DailyPacks` row **and** the `story-images` blobs.
-- [ ] Confirm read endpoints fall back to the latest pack when today’s row is absent, and that images render from Blob.
+- Zod pack schemas.
+- Deterministic date seeds.
+- Story validators and readability checks.
+- Combined learning-material orchestration.
+- Vocabulary and question filtering.
+- Local grading routing.
+- Table metadata and pagination helpers.
 
-## 13. Decisions
+GitHub Actions runs the following on pull requests and pushes to `main`:
 
-1. **Accounts** — **Anonymous-only** at first. No login or progress tracking in v1; `QuizAttempt` (§7) stays in-memory/session-only until accounts are added later.
-2. **Languages** — **English only** for now. ESL/Spanish deferred.
-3. **Teacher mode** — **Yes.** Provide a printable **PDF of today’s pack** (story + vocabulary + comprehension Q&A with an answer key) — see milestone M8.
+```text
+pnpm install --frozen-lockfile
+pnpm lint
+pnpm test
+pnpm build
+```
 
-## 14. Execution Plan
+Playwright is configured in `playwright.config.ts`, but the repository currently has no browser test files. `pnpm test:e2e` therefore reports that no tests were found.
 
-Task-by-task plan grouped by milestone. Each task lists **outputs** and **dependencies** (by task ID). A task is _done_ when its acceptance check passes. Conventions: `T{milestone}.{n}`; TypeScript throughout; every LLM/IO boundary validated with **Zod**.
+## Project Structure
 
-### M0 — Project scaffold
+```text
+src/
+  app/                 Next.js pages and API route handlers
+  components/          Interactive reader, library, quiz, and theme UI
+  lib/
+    ai/                 OpenRouter JSON client
+    gen/                Seed, tiers, story, learning, images, validation, assembly
+    grade/              Optional answer-grading pipeline
+    store/              Azure Table/Blob access and read fallback
+    env.ts              Server-only validated environment access
+    fallback.ts         Bundled sample pack
+    prompts.ts          Model instructions
+    schemas.ts          Shared Zod schemas and inferred types
+```
 
-- [ ] **T0.1 Init repo** — `create-next-app` (App Router, TS, ESLint, Tailwind, `src/`), set `next.config.js` → `output: 'standalone'`. Add `pnpm` + Node 22 `.nvmrc`. _Dep:_ —
-- [ ] **T0.2 Tooling** — Prettier, ESLint config, `vitest` + `@testing-library`, Playwright, `.editorconfig`. Scripts: `dev`, `build`, `lint`, `test`, `test:e2e`. _Dep:_ T0.1
-- [ ] **T0.3 Env plumbing** — `src/lib/env.ts`: Zod-validate all env vars from §11; fail fast on boot. `.env.example` committed; `.env.local` gitignored. _Dep:_ T0.1
-- [ ] **T0.4 OpenRouter client** — `src/lib/ai/openrouter.ts`: typed `chatJson<T>(model, messages, schema)` that sets `response_format: json_object`, parses, and Zod-validates with a retry-on-invalid-JSON budget. _Dep:_ T0.3
-- [ ] **T0.5 Azurite dev storage** — `dev:storage` npm script; `.azurite/` gitignored; README dev-setup note. _Dep:_ T0.1
-- [ ] **T0.6 Shared schemas** — `src/lib/schemas.ts`: Zod schemas + inferred types for `DailyPack`, `story` (incl. `artDirection`, `images`), `vocabulary`, `questions` (incl. `rubric`), `QuizAttempt` (§7). Single source of truth for UI + API. _Dep:_ T0.3
-- [ ] **T0.7 CI** — `.github/workflows/ci.yml`: `pnpm i`, lint, test, build on PR. _Dep:_ T0.2
-- **Acceptance:** `pnpm build` + `pnpm test` green; boot fails clearly on a missing env var.
+## Current Operational Limitations
 
-### M1 — Story generation
+- Image responses are not moderated after generation.
+- Returned PNG and JPEG images are stored as received; there is no WebP conversion or byte-size limit.
+- Content safety uses prompt constraints and a small banned-term filter, not a dedicated moderation service.
+- Generation is a synchronous HTTP operation and can take several minutes.
+- Rate limiting is in-memory and applies per running process, not across replicas.
+- Reader fallback does not expose freshness metadata or distinguish an older pack from the current date in the UI.
+- Storage failures can be hidden by the bundled sample fallback.
+- The grading API is not connected to the comprehension UI.
+- There are no Playwright tests yet.
+- There are no Docker, Bicep, Terraform, `azd`, or deployment workflow files.
+- Generation token usage, provider cost, retries, and per-step timings are not persisted.
+- The application has no accounts or server-side reader progress.
 
-- [ ] **T1.1 Seed** — `src/lib/gen/seed.ts`: deterministic `date → { genre, theme, setting }` via SHA-256 (§6.1 Step 0) + unit tests proving determinism. _Dep:_ T0.6
-- [ ] **T1.2 Story prompt** — `src/lib/gen/story.ts`: build the §6.4 story prompt (incl. art-director instructions) and call `chatJson` with the story schema. _Dep:_ T0.4, T1.1
-- [ ] **T1.3 Validators** — word-count ±15%, Flesch–Kincaid band check, safety regex/moderation, `artDirection`/`images` presence; corrective-retry loop (N=2); image-fields-only fallback regen. _Dep:_ T1.2
-- [ ] **T1.4 Story API (dev)** — temporary `GET /api/dev/story` returning a validated story for manual inspection. _Dep:_ T1.3
-- **Acceptance:** repeated calls for a fixed date yield the same genre/theme; output passes all validators.
-
-### M2 — Front page
-
-- [ ] **T2.1 Landing UI** — `/` page: Today’s Story hook, Story Library entry point, persisted tier selector, and theme toggle. Tailwind + accessible components. _Dep:_ T0.6
-- **Acceptance:** landing renders from a stored pack and from the static sample; Lighthouse a11y ≥ 90.
-
-### M3 — Story view
-
-- [ ] **T3.1 Story renderer** — `/story` route: paragraphs, reading-time, cover + inline images placed by `afterParagraph` (graceful when an image is missing). _Dep:_ T2.1, T1.3
-- [ ] **T3.2 Tap-a-word** — client popover: tap a word → definition (from pack vocab first, else a lightweight lookup). Keyboard + touch accessible. _Dep:_ T3.1
-- **Acceptance:** story renders with 0–3 images correctly; tap-a-word works on touch and keyboard.
-
-### M4 — Vocabulary builder
-
-- [ ] **T4.1 Vocab gen** — `src/lib/gen/vocab.ts`: §6.1 Step 2 extraction, substring validation, dedupe. _Dep:_ T1.3
-- [ ] **T4.2 Vocab UI + MC exercise** — word list with definition/synonyms; one Multiple-Choice activity with immediate, encouraging feedback. _Dep:_ T4.1, T2.1
-- **Acceptance:** every `exampleFromStory` is a real substring; MC exercise scores correctly.
-
-### M5 — Comprehension Q&A + grading
-
-- [ ] **T5.1 Question gen** — `src/lib/gen/quiz.ts`: §6.1 Step 3 with required type mix + **pre-computed rubric** per question; validators. _Dep:_ T1.3, T4.1
-- [ ] **T5.2 Router (Step 1)** — `src/lib/grade/router.ts`: MC exact-match, literal fuzzy-match (Levenshtein ≥ 0.85); no LLM. Unit tests. _Dep:_ T0.6
-- [ ] **T5.3 Guard (Step 2)** — injection + safety detection; wrap answer in `<student_answer>` tags. _Dep:_ T0.4
-- [ ] **T5.4 Graders ×2 (Step 3)** — two parallel variants vs. rubric + story; charity rules; structured output. _Dep:_ T5.1, T5.3
-- [ ] **T5.5 Judge (Step 4)** — runs only on disagreement/low-confidence; structured inputs only; forgiving default on failure. _Dep:_ T5.4
-- [ ] **T5.6 Feedback (Step 5)** — kind, specific message; static template fallback. _Dep:_ T5.4
-- [ ] **T5.7 Grade API** — `POST /api/grade`: orchestrate Steps 1–5, return `{ grade, feedback, telemetry }`. Rate-limited. _Dep:_ T5.2–T5.6
-- [ ] **T5.8 Quiz UI** — questions with answer entry and de-emphasized manual “Show answer”; no automated checking, grading, or score summary. _Dep:_ T5.1, T2.1
-- **Acceptance:** readers can answer each question and reveal its answer and explanation for self-review without an API call.
-
-### M6 — Daily caching + generation API
-
-- [ ] **T6.1 Table store** — `src/lib/store/tableStore.ts`: `AzureTableDailyPackStore` (`get`/`getLatest`/`upsert`), inverted-date RowKey (§5.4). _Dep:_ T0.5, T0.6
-- [ ] **T6.2 Assemble + persist (Step 5)** — combine all gen outputs into `DailyPack`, final safety pass, `readingTimeMin`, upsert; also write the denormalized metadata columns (`title`, `genre`, `theme`, `coverBlobPath`, `readingTimeMin`) for the Story Library (§5.4). _Dep:_ T1.3, T4.1, T5.1, T6.1
-- [ ] **T6.3 `/api/generate`** — key-protected (`timingSafeEqual`), `date`/`force` params, rate-limit, structured summary, safe logging (§6.2). `GET = POST`. _Dep:_ T6.2
-- [ ] **T6.4 Read endpoints + fallback** — reader pages serve cached packs; latest-pack fallback + `meta.isFresh` banner (§6.3). _Dep:_ T6.1
-- [ ] **T6.5 Wire UI to reads** — replace dev/sample data in M2–M5 with real read endpoints. _Dep:_ T6.4, T2.1, T3.1, T4.2, T5.8
-- **Acceptance:** one `/api/generate` call populates a day; reads serve it; missing-today falls back with the banner; 404 only when no pack ever existed.
-
-### M6.5 — Illustrations
-
-- [ ] **T6.5.1 Blob store** — `src/lib/store/blobStore.ts`: upload WebP to `story-images` at `{date}/{role}-{n}.webp`; Managed Identity in prod, Azurite in dev. _Dep:_ T6.1
-- [ ] **T6.5.2 Image render (Step 4)** — assemble prompt from `artDirection` + spec; call image API; **moderate**; WebP-encode; upload; record `blobPath`. Non-blocking on failure. _Dep:_ T6.5.1, T1.3
-- [ ] **T6.5.3 Hook into generate** — call T6.5.2 within `/api/generate`; persist `story.images[]` paths. _Dep:_ T6.5.2, T6.3
-- [ ] **T6.5.4 Serve images** — resolve `blobPath` → URL in story + cover UI; alt text applied. _Dep:_ T3.1, T6.5.3
-- **Acceptance:** generate produces ≤3 moderated WebP blobs; a failed/blocked image leaves a valid text pack; images render with alt text.
-
-### M6.6 — Story Library
-
-- [x] **T6.6.1 Store `list()`** — add `list({ limit, cursor })` to `AzureTableDailyPackStore`: single-partition scan projecting metadata columns only, newest-first, returning `{ items: PackSummary[], nextCursor? }` from the Table continuation token (§5.4). Unit test paging. _Dep:_ T6.1, T6.2
-- [x] **T6.6.2 `/api/stories`** — `GET /api/stories?limit=&cursor=` returns a metadata-only page; no `packJson`, no LLM. Zod-validate the response. _Dep:_ T6.6.1
-- [x] **T6.6.3 Library UI** — `/library` route: responsive card grid (cover thumb, title, genre, theme, date, reading time) with infinite scroll / “load more” via `nextCursor`; graceful cover fallback when `coverBlobPath` is null. _Dep:_ T6.6.2, T6.5.4
-- [x] **T6.6.4 Open a story** — card → `/story?date=YYYY-MM-DD` loads that pack via `GET /api/story?date=` and reuses the Story view (§3.2). _Dep:_ T6.6.3, T3.1, T6.4
-- [ ] **T6.6.5 Filter/search (optional)** — client-side genre filter + title search over the loaded metadata pages. _Dep:_ T6.6.3
-- **Acceptance:** the library lists all packs newest-first without loading full stories; paging works past one page; clicking any card loads that date’s story, vocab, and quiz.
-
-### M7 — Polish
-
-- [ ] **T7.1 Read-aloud** — SpeechSynthesis controls on stories; play/pause/stop. _Dep:_ T3.1
-- [ ] **T7.2 Theme + fonts** — light/dark toggle (persisted); dyslexia-friendly font option (§9). _Dep:_ T2.1
-- [ ] **T7.3 Accessibility pass** — keyboard nav, focus states, ARIA, contrast; Playwright + axe checks. _Dep:_ M2–M6.5 UI
-- [ ] **T7.4 Dockerfile + deploy** — §12.2 Dockerfile; §12 one-time Azure setup; `deploy.yml` (OIDC → ACR → `containerapp update`); run the §12.6 checklist. _Dep:_ T6.5.4, T0.7
-- **Acceptance:** deployed to ACA on a custom domain; §12.6 checklist fully green.
-
-### M8 — Teacher mode (PDF)
-
-- [x] **T8.1 Printable route** — `/print/[date]` server-rendered, print-optimized layout: story + vocabulary + Q&A **with answer key**. _Dep:_ T6.4
-- [x] **T8.2 PDF export** — print CSS (`@media print`) for browser “Save as PDF”; if fidelity needs more, a server route rendering via headless Chromium. Decide based on T8.1 output. _Dep:_ T8.1
-- [x] **T8.3 Teacher entry point** — a discreet “Print today’s pack” action. _Dep:_ T8.1
-- **Acceptance:** a clean one-to-two-page PDF for any cached date, answer key included.
-
-### M9 — Reading tiers
-
-- [ ] **T9.1 Tier config** — define the three tiers (`early` | `growing` | `middle`) with per-tier word-count, Lexile/Flesch–Kincaid band, sentence-complexity, and vocabulary settings (§2); a `TierSchema` + `TIERS` table. _Dep:_ T0.6
-- [ ] **T9.2 Tier-aware generation** — thread `tier` through `seedForDate`/`generateAndStore`; parameterize the story prompt (word count, band, vocab difficulty) and the validators (word-count + FK bounds) by tier. `POST /api/generate?tier=` (default `growing`). _Dep:_ T9.1, T1.2, T1.3, T6.3
-- [ ] **T9.3 Persist tier** — add `tier` to `DailyPack`, the denormalized metadata columns, and `PackSummary`; `/api/stories` returns it. _Dep:_ T9.2, T6.1, T6.6.1
-- [ ] **T9.4 Tier selector UI** — a persisted tier picker; home, story, and library reads serve the selected tier, falling back to the nearest available. Tier badge on library cards. _Dep:_ T9.3, T6.4, T6.6.3
-- [ ] **T9.5 Admin** — tier dropdown on `/admin`; optional "generate all three tiers" for a date. _Dep:_ T9.2
-- **Acceptance:** the same date can hold one story per tier; each passes its own tier's word-count/reading-level validators; switching tier in the UI serves the matching pack.
-
-### M10 — Generation metadata
-
-- [ ] **T10.1 Usage plumbing** — have `chatJson` surface OpenRouter token `usage` (and cost when present); accumulate per step. _Dep:_ T0.4
-- [ ] **T10.2 GenerationMeta** — assemble the §7 `GenerationMeta` in `generateAndStore` (models, per-step tokens + totals, per-step + total durations, story retry count, image stats, measured word count/FK grade, seed, appVersion, timestamps); store it in `packJson` and denormalize `storyModel`/`totalTokens`/`durationMs` columns. _Dep:_ T6.2, T10.1
-- [ ] **T10.3 Report in response** — `/api/generate` returns the metadata summary; `/admin` shows models, tokens, cost, and per-step timings after a run. _Dep:_ T10.2, T6.3
-- [ ] **T10.4 Telemetry view (optional)** — a small admin list of recent generations (date, tier, model, tokens, duration) from the projected columns. _Dep:_ T10.2, T6.6.1
-- **Acceptance:** every generated pack carries a complete `GenerationMeta`; the admin page shows token/cost/timing for the last run.
-
-### Cross-cutting (do alongside, not last)
-
-- [ ] **X.1 Telemetry** — persist grader-agreement / judged / token-usage counters; a Log Analytics saved query. _Dep:_ T5.7, T7.4
-- [ ] **X.2 Error contract** — consistent `{ ok:false, step, error }` shape across generation + grading (§6.1 error handling). _Dep:_ T1.3, T5.7
-- [ ] **X.3 Rate limiting** — shared limiter for `/api/generate` and `/api/grade`. _Dep:_ T5.7, T6.3
-- [ ] **X.4 Content safety review** — spot-check a week of generated packs before public launch. _Dep:_ T6.3, T6.5.3
-
----
-
-> **Next step:** start **M0** at T0.1. Each task is sized to land in a single focused change with its acceptance check.
+These limitations describe the current repository state; they are not implemented features.

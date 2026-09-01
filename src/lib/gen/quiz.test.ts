@@ -2,7 +2,7 @@
  * @vitest-environment node
  */
 import { describe, it, expect } from "vitest";
-import { validateQuestions } from "@/lib/gen/quiz";
+import { validateQuestions } from "@/lib/gen/learning";
 import type { Question } from "@/lib/schemas";
 
 function question(overrides: Partial<Question>): Question {

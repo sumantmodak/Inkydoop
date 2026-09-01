@@ -96,6 +96,11 @@ export const QuestionSchema = z.object({
   rubric: RubricSchema,
 });
 
+export const LearningMaterialsSchema = z.object({
+  vocabulary: z.array(VocabularyItemSchema),
+  questions: z.array(QuestionSchema),
+});
+
 export const DailyPackSchema = z.object({
   date: DateSchema,
   tier: TierIdSchema.default("growing"),
@@ -156,6 +161,7 @@ export type VocabularyItem = z.infer<typeof VocabularyItemSchema>;
 export type QuestionType = z.infer<typeof QuestionTypeSchema>;
 export type Rubric = z.infer<typeof RubricSchema>;
 export type Question = z.infer<typeof QuestionSchema>;
+export type LearningMaterials = z.infer<typeof LearningMaterialsSchema>;
 export type DailyPack = z.infer<typeof DailyPackSchema>;
 export type PackSummary = z.infer<typeof PackSummarySchema>;
 export type Grade = z.infer<typeof GradeSchema>;
