@@ -10,7 +10,10 @@ import { learningSystem } from "@/lib/prompts";
 import type { Tier } from "./tiers";
 
 const MAX_DEFINITION_CHARS = 140;
+const MIN_VOCABULARY_WORDS = 5;
 const MAX_VOCABULARY_WORDS = 10;
+const MIN_QUESTIONS = 5;
+const MAX_ATTEMPTS = 3;
 
 export function filterVocabulary(
   items: VocabularyItem[],
@@ -55,25 +58,43 @@ export async function generateLearningMaterials(
   options: { signal?: AbortSignal } = {},
 ): Promise<LearningMaterials> {
   const storyText = input.paragraphs.join("\n\n");
-  const user = `Candidate vocabulary (hint): ${input.candidateVocab.join(", ")}\n\nStory:\n${storyText}`;
-  const generated = await chatJson(
-    env.OPENROUTER_MODEL_LEARNING,
-    [
-      {
-        role: "system",
-        content: learningSystem(tier, MAX_DEFINITION_CHARS),
-      },
-      { role: "user", content: user },
-    ],
-    LearningMaterialsSchema,
-    { signal: options.signal },
-  );
+  const basePrompt = `Candidate vocabulary (hint): ${input.candidateVocab.join(", ")}\n\nStory:\n${storyText}`;
+  let lastCounts = { vocabulary: 0, questions: 0 };
 
-  return {
-    vocabulary: filterVocabulary(generated.vocabulary, storyText).slice(
-      0,
-      MAX_VOCABULARY_WORDS,
-    ),
-    questions: validateQuestions(generated.questions),
-  };
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const correction =
+      attempt === 1
+        ? ""
+        : `\n\nCorrection: the previous response produced only ${lastCounts.vocabulary} valid vocabulary items and ${lastCounts.questions} valid questions after validation. Return 5-10 vocabulary items with verbatim story examples and 5-8 questions with unique IDs, non-empty rubrics, and every multiple-choice answer exactly matching one choice.`;
+    const generated = await chatJson(
+      env.OPENROUTER_MODEL_LEARNING,
+      [
+        {
+          role: "system",
+          content: learningSystem(tier, MAX_DEFINITION_CHARS),
+        },
+        { role: "user", content: `${basePrompt}${correction}` },
+      ],
+      LearningMaterialsSchema,
+      { signal: options.signal },
+    );
+
+    const vocabulary = filterVocabulary(
+      generated.vocabulary,
+      storyText,
+    ).slice(0, MAX_VOCABULARY_WORDS);
+    const questions = validateQuestions(generated.questions);
+    lastCounts = { vocabulary: vocabulary.length, questions: questions.length };
+
+    if (
+      vocabulary.length >= MIN_VOCABULARY_WORDS &&
+      questions.length >= MIN_QUESTIONS
+    ) {
+      return { vocabulary, questions };
+    }
+  }
+
+  throw new Error(
+    `Learning-material generation failed after ${MAX_ATTEMPTS} attempts: ${lastCounts.vocabulary} valid vocabulary items and ${lastCounts.questions} valid questions`,
+  );
 }

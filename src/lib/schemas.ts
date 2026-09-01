@@ -99,8 +99,8 @@ export const QuestionSchema = z.object({
 });
 
 export const LearningMaterialsSchema = z.object({
-  vocabulary: z.array(VocabularyItemSchema),
-  questions: z.array(QuestionSchema),
+  vocabulary: z.array(VocabularyItemSchema).min(5).max(10),
+  questions: z.array(QuestionSchema).min(5).max(8),
 });
 
 export const DailyPackSchema = z.object({

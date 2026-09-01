@@ -291,6 +291,8 @@ The story receives up to three attempts: one initial generation and two correcti
 
 After the story passes validation, `generateLearningMaterials()` sends the finalized story once to `OPENROUTER_MODEL_LEARNING`. The call returns vocabulary and comprehension questions together.
 
+The raw response must contain 5-10 vocabulary items and 5-8 questions. Local validation then checks every item. If fewer than five valid vocabulary items or questions survive, the model receives the rejected counts and corrective requirements and retries. After three deficient attempts, generation fails before the pack is persisted.
+
 Vocabulary filtering:
 
 - Removes duplicate words case-insensitively.
@@ -303,6 +305,7 @@ Question filtering:
 - Removes duplicate IDs.
 - Requires at least one `mustInclude` rubric item.
 - Requires a multiple-choice answer to appear in its choices.
+- Requires at least five valid questions after filtering.
 
 ### 4. Illustrations
 

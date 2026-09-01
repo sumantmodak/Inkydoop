@@ -34,6 +34,16 @@ const question = {
   },
 };
 
+const vocabularyItems = Array.from({ length: 5 }, (_, index) => ({
+  ...vocabulary,
+  word: `lantern${index}`,
+}));
+
+const questions = Array.from({ length: 5 }, (_, index) => ({
+  ...question,
+  id: `q${index + 1}`,
+}));
+
 describe("generateLearningMaterials", () => {
   beforeEach(() => {
     vi.mocked(chatJson).mockReset();
@@ -41,8 +51,8 @@ describe("generateLearningMaterials", () => {
 
   it("generates vocabulary and questions in one model call", async () => {
     vi.mocked(chatJson).mockResolvedValue({
-      vocabulary: [vocabulary],
-      questions: [question],
+      vocabulary: vocabularyItems,
+      questions,
     });
 
     const result = await generateLearningMaterials(
@@ -55,8 +65,34 @@ describe("generateLearningMaterials", () => {
 
     expect(chatJson).toHaveBeenCalledTimes(1);
     expect(result).toEqual({
-      vocabulary: [vocabulary],
-      questions: [question],
+      vocabulary: vocabularyItems,
+      questions,
     });
+  });
+
+  it("retries when local validation leaves too few questions", async () => {
+    vi.mocked(chatJson)
+      .mockResolvedValueOnce({
+        vocabulary: vocabularyItems,
+        questions: [
+          ...questions.slice(0, 4),
+          { ...question, id: "q5", choices: ["a", "b"] },
+        ],
+      })
+      .mockResolvedValueOnce({ vocabulary: vocabularyItems, questions });
+
+    const result = await generateLearningMaterials(
+      {
+        paragraphs: ["Maya found a lantern in the attic."],
+        candidateVocab: ["lantern"],
+      },
+      TIERS.growing,
+    );
+
+    expect(chatJson).toHaveBeenCalledTimes(2);
+    expect(result.questions).toHaveLength(5);
+    expect(vi.mocked(chatJson).mock.calls[1][1][1].content).toContain(
+      "5 valid vocabulary items and 4 valid questions",
+    );
   });
 });
