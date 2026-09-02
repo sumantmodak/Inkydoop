@@ -409,7 +409,7 @@ interface DailyPack {
 }
 ```
 
-`generation` is optional only so packs created before telemetry was introduced remain readable. Every newly generated pack includes it.
+`generation` is optional only so packs created before telemetry was introduced remain readable. Every newly generated pack includes it. Packs written during the transition from deterministic seeds to random selections are normalized from the legacy `generation.seed` field to `generation.selection` when read.
 
 `GenerationMeta` stores:
 
@@ -471,7 +471,7 @@ The repository does not currently contain production infrastructure or RBAC depl
 3. Latest pack from any tier.
 4. Bundled sample pack.
 
-Storage errors also fall through to the sample pack. The Story Library instead renders an empty result when storage is unavailable.
+Storage errors also fall through to the sample pack and are written to the server error log. The Story Library instead renders an empty result when storage is unavailable.
 
 ## Environment Configuration
 

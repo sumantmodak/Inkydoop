@@ -41,8 +41,8 @@ export async function getServedPack(
       const any = await getLatestPack();
       if (any) return { ...any, isSample: false };
     }
-  } catch {
-    // store unavailable (e.g. Azurite not running) — fall through to the sample
+  } catch (error) {
+    console.error(`[store] serving sample pack: ${String(error)}`);
   }
   return SAMPLE;
 }

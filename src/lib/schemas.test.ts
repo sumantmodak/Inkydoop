@@ -142,4 +142,44 @@ describe("GenerationMetaSchema", () => {
 
     expect(() => GenerationMetaSchema.parse(metadata)).not.toThrow();
   });
+
+  it("migrates the legacy seed field to selection", () => {
+    const metadata = {
+      schemaVersion: 1,
+      status: "succeeded",
+      startedAt: "2026-09-01T00:00:00.000Z",
+      finishedAt: "2026-09-01T00:01:00.000Z",
+      durationMs: 60_000,
+      appVersion: "abc123",
+      promptVersion: "1",
+      seed: { genre: "mystery", theme: "curiosity", tier: "growing" },
+      models: {
+        story: "story-model",
+        learning: "learning-model",
+        image: "image-model",
+      },
+      calls: [],
+      tokens: { prompt: 100, completion: 200, total: 300 },
+      durationsMsByStep: [],
+      retries: { story: 0, learning: 0, invalidJson: 0 },
+      validation: {
+        wordCount: 950,
+        readingGrade: 4.2,
+        storyAttempts: [],
+        validVocabularyItems: 6,
+        validQuestions: 6,
+      },
+      images: {
+        requested: 3,
+        succeeded: 3,
+        failed: 0,
+        totalBytes: 30_000,
+        items: [],
+      },
+    };
+
+    expect(GenerationMetaSchema.parse(metadata).selection).toEqual(
+      metadata.seed,
+    );
+  });
 });

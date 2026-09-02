@@ -152,7 +152,13 @@ export const GeneratedImageMetaSchema = z.object({
   error: z.string().optional(),
 });
 
-export const GenerationMetaSchema = z.object({
+const GenerationSelectionSchema = z.object({
+  genre: z.string(),
+  theme: z.string(),
+  tier: TierIdSchema,
+});
+
+const GenerationMetaInputSchema = z.object({
   schemaVersion: z.literal(1),
   status: z.literal("succeeded"),
   startedAt: z.string(),
@@ -160,11 +166,8 @@ export const GenerationMetaSchema = z.object({
   durationMs: z.number().int().nonnegative(),
   appVersion: z.string(),
   promptVersion: z.string(),
-  selection: z.object({
-    genre: z.string(),
-    theme: z.string(),
-    tier: TierIdSchema,
-  }),
+  selection: GenerationSelectionSchema.optional(),
+  seed: GenerationSelectionSchema.optional(),
   models: z.object({
     story: z.string(),
     learning: z.string(),
@@ -205,6 +208,14 @@ export const GenerationMetaSchema = z.object({
     items: z.array(GeneratedImageMetaSchema),
   }),
 });
+
+export const GenerationMetaSchema = GenerationMetaInputSchema.refine(
+  (metadata) => Boolean(metadata.selection || metadata.seed),
+  { message: "generation selection is required" },
+).transform(({ seed, selection, ...metadata }) => ({
+  ...metadata,
+  selection: selection ?? seed!,
+}));
 
 export const DailyPackSchema = z.object({
   date: DateSchema,
