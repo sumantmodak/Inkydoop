@@ -4,6 +4,8 @@ Inkydoop is an AI-powered English Language Arts reading app. It generates illust
 
 The application is anonymous and story-first. Readers can open the latest story for their reading tier, browse previously generated packs, practice vocabulary, review comprehension questions, and print a teacher worksheet with an answer key.
 
+See [roadmap.md](roadmap.md) for planned discovery, retention, sharing, trust, analytics, performance, and accessibility work.
+
 ## Current Status
 
 The implemented application includes:
