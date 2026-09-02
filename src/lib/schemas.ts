@@ -9,6 +9,12 @@ export const TIER_IDS = ["early", "growing", "middle"] as const;
 export const TierIdSchema = z.enum(TIER_IDS);
 export type TierId = z.infer<typeof TierIdSchema>;
 
+export const ModerationStatusSchema = z.enum([
+  "pending",
+  "approved",
+  "rejected",
+]);
+
 export const ArtDirectionSchema = z.object({
   style: z.string(),
   characters: z.array(z.object({ name: z.string(), look: z.string() })),
@@ -238,6 +244,13 @@ export const PackSummarySchema = z.object({
   coverBlobPath: z.string().nullable(),
 });
 
+export const ModerationSummarySchema = PackSummarySchema.extend({
+  status: ModerationStatusSchema,
+  createdAt: z.string(),
+  moderatedAt: z.string().optional(),
+  moderationNote: z.string().optional(),
+});
+
 export const GradeSchema = z.enum(["nailed_it", "almost", "lets_look_again"]);
 
 /** One grader's structured output (§6.5 Step 3). */
@@ -288,6 +301,8 @@ export type GeneratedImageMeta = z.infer<typeof GeneratedImageMetaSchema>;
 export type GenerationMeta = z.infer<typeof GenerationMetaSchema>;
 export type DailyPack = z.infer<typeof DailyPackSchema>;
 export type PackSummary = z.infer<typeof PackSummarySchema>;
+export type ModerationStatus = z.infer<typeof ModerationStatusSchema>;
+export type ModerationSummary = z.infer<typeof ModerationSummarySchema>;
 export type Grade = z.infer<typeof GradeSchema>;
 export type GraderOutput = z.infer<typeof GraderOutputSchema>;
 export type GradeResult = z.infer<typeof GradeResultSchema>;

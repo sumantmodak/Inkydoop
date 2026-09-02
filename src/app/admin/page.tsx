@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { TIER_IDS, type TierId } from "@/lib/schemas";
 import { TIERS } from "@/lib/gen/tiers";
+import { ModerationPanel } from "@/components/moderation-panel";
 
 function todayUtc(): string {
   return new Date().toISOString().slice(0, 10);
@@ -12,7 +13,7 @@ function todayUtc(): string {
 type Status =
   | { kind: "idle" }
   | { kind: "running" }
-  | { kind: "done"; id: string; message: string }
+  | { kind: "done"; id: string }
   | { kind: "error"; message: string };
 
 export default function AdminPage() {
@@ -49,7 +50,7 @@ export default function AdminPage() {
       } catch {
         // non-JSON body — leave id empty
       }
-      setStatus({ kind: "done", id, message: text });
+      setStatus({ kind: "done", id });
     } catch (err) {
       setStatus({ kind: "error", message: String(err) });
     }
@@ -58,7 +59,7 @@ export default function AdminPage() {
   const running = status.kind === "running";
 
   return (
-    <div className="mx-auto w-full max-w-lg px-4 py-6 sm:py-10">
+    <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
       <Link
         href="/"
         className="font-display inline-flex items-center gap-1 rounded-full bg-surface px-4 py-1.5 text-sm font-semibold text-brand shadow-sm transition-transform hover:-translate-x-0.5 focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none"
@@ -66,100 +67,103 @@ export default function AdminPage() {
         ← Back
       </Link>
 
-      <h1 className="font-display mt-5 text-3xl font-bold text-brand sm:text-4xl">
-        Generate a story
-      </h1>
-      <p className="mt-1 text-muted">
-        Creates a new daily pack — story, vocabulary, questions, and
-        illustrations. Takes a few minutes. Each run makes a new story; it never
-        overwrites an existing one.
-      </p>
-
-      <form
-        onSubmit={generate}
-        className="mt-6 flex flex-col gap-4 rounded-3xl border-2 border-surface-border bg-surface p-5 shadow-sm"
-      >
-        <label className="flex flex-col gap-1">
-          <span className="font-display text-sm font-semibold">
-            Generate key
-          </span>
-          <input
-            type="password"
-            value={key}
-            onChange={(e) => setKey(e.target.value)}
-            autoComplete="off"
-            placeholder="GENERATE_API_KEY"
-            className="rounded-xl border-2 border-surface-border bg-background px-3 py-2 focus-visible:border-brand focus-visible:outline-none"
-          />
-        </label>
-
-        <label className="flex flex-col gap-1">
-          <span className="font-display text-sm font-semibold">Date</span>
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="rounded-xl border-2 border-surface-border bg-background px-3 py-2 focus-visible:border-brand focus-visible:outline-none"
-          />
-        </label>
-
-        <label className="flex flex-col gap-1">
-          <span className="font-display text-sm font-semibold">
-            Reading tier
-          </span>
-          <select
-            value={tier}
-            onChange={(e) => setTier(e.target.value as TierId)}
-            className="rounded-xl border-2 border-surface-border bg-background px-3 py-2 focus-visible:border-brand focus-visible:outline-none"
-          >
-            {TIER_IDS.map((t) => (
-              <option key={t} value={t}>
-                {TIERS[t].label} — grades {TIERS[t].grades}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <button
-          type="submit"
-          disabled={running || !key}
-          className="font-display rounded-full bg-brand px-6 py-2.5 font-semibold text-white shadow-sm transition-transform hover:scale-105 focus-visible:ring-4 focus-visible:ring-brand/40 focus-visible:outline-none disabled:opacity-60"
-        >
-          {running ? "Generating… (a few minutes)" : "Generate"}
-        </button>
-      </form>
-
-      {status.kind === "running" && (
-        <p className="mt-4 text-sm text-muted" aria-live="polite">
-          Working… writing the story and painting the illustrations. Keep this
-          tab open.
+      <div className="max-w-lg">
+        <h1 className="font-display mt-5 text-3xl font-bold text-brand sm:text-4xl">
+          Story operations
+        </h1>
+        <p className="mt-1 text-muted">
+          Generate private story packs, then review and approve them before they
+          appear to readers.
         </p>
-      )}
-      {status.kind === "done" && (
-        <div
-          role="status"
-          className="mt-4 rounded-2xl border-2 border-mint/40 bg-mint/10 p-4 text-sm"
+
+        <form
+          onSubmit={generate}
+          className="mt-6 flex flex-col gap-4 rounded-3xl border-2 border-surface-border bg-surface p-5 shadow-sm"
         >
-          <p className="font-display font-bold text-emerald-700">Done! 🎉</p>
-          <pre className="mt-2 overflow-x-auto whitespace-pre-wrap text-emerald-900 dark:text-emerald-200">
-            {status.message}
-          </pre>
-          <Link
-            href={`/story?id=${status.id}`}
-            className="font-display mt-3 inline-block rounded-full bg-brand px-4 py-1.5 font-semibold text-white"
+          <label className="flex flex-col gap-1">
+            <span className="font-display text-sm font-semibold">
+              Generate key
+            </span>
+            <input
+              type="password"
+              value={key}
+              onChange={(e) => setKey(e.target.value)}
+              autoComplete="off"
+              placeholder="GENERATE_API_KEY"
+              className="rounded-xl border-2 border-surface-border bg-background px-3 py-2 focus-visible:border-brand focus-visible:outline-none"
+            />
+          </label>
+
+          <label className="flex flex-col gap-1">
+            <span className="font-display text-sm font-semibold">Date</span>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="rounded-xl border-2 border-surface-border bg-background px-3 py-2 focus-visible:border-brand focus-visible:outline-none"
+            />
+          </label>
+
+          <label className="flex flex-col gap-1">
+            <span className="font-display text-sm font-semibold">
+              Reading tier
+            </span>
+            <select
+              value={tier}
+              onChange={(e) => setTier(e.target.value as TierId)}
+              className="rounded-xl border-2 border-surface-border bg-background px-3 py-2 focus-visible:border-brand focus-visible:outline-none"
+            >
+              {TIER_IDS.map((t) => (
+                <option key={t} value={t}>
+                  {TIERS[t].label} — grades {TIERS[t].grades}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <button
+            type="submit"
+            disabled={running || !key}
+            className="font-display rounded-full bg-brand px-6 py-2.5 font-semibold text-white shadow-sm transition-transform hover:scale-105 focus-visible:ring-4 focus-visible:ring-brand/40 focus-visible:outline-none disabled:opacity-60"
           >
-            Read it →
-          </Link>
-        </div>
-      )}
-      {status.kind === "error" && (
-        <div
-          role="alert"
-          className="mt-4 rounded-2xl border-2 border-coral/40 bg-coral/10 p-4 text-sm text-rose-800 dark:text-rose-200"
-        >
-          {status.message}
-        </div>
-      )}
+            {running ? "Generating… (a few minutes)" : "Generate"}
+          </button>
+        </form>
+
+        {status.kind === "running" && (
+          <p className="mt-4 text-sm text-muted" aria-live="polite">
+            Working… writing the story and painting the illustrations. Keep this
+            tab open.
+          </p>
+        )}
+        {status.kind === "done" && (
+          <div
+            role="status"
+            className="mt-4 rounded-2xl border-2 border-mint/40 bg-mint/10 p-4 text-sm"
+          >
+            <p className="font-display font-bold text-emerald-700">
+              Generated and pending review
+            </p>
+            <p className="mt-1 text-emerald-900 dark:text-emerald-200">
+              Pack {status.id} is private. Load the Pending queue below to
+              review it.
+            </p>
+          </div>
+        )}
+        {status.kind === "error" && (
+          <div
+            role="alert"
+            className="mt-4 rounded-2xl border-2 border-coral/40 bg-coral/10 p-4 text-sm text-rose-800 dark:text-rose-200"
+          >
+            {status.message}
+          </div>
+        )}
+      </div>
+
+      <ModerationPanel
+        adminKey={key}
+        requestedId={status.kind === "done" ? status.id : undefined}
+      />
     </div>
   );
 }

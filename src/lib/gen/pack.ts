@@ -31,6 +31,7 @@ export interface GenerateResult {
   date: string;
   tier: TierId;
   generated: boolean;
+  moderationStatus: "pending";
   durationMs: number;
   metadata: GenerateSummary;
 }
@@ -190,6 +191,7 @@ export async function generateAndStore(input: {
     date,
     tier: tierId,
     generated: true,
+    moderationStatus: "pending",
     durationMs: Date.now() - start,
     metadata: {
       models: generation.models,

@@ -17,6 +17,7 @@ The implemented application includes:
 - Manual comprehension self-review with answer and explanation reveal.
 - A printable teacher pack with an answer key.
 - A key-protected admin generation page and API.
+- A human moderation gate that keeps generated stories and images private until approval.
 - A story-first landing page with recent stories, genre discovery, sharing, direct learning actions, and a teacher entry point.
 - Immersive full-width story covers and inline scene illustrations that preserve their complete composition, with a constrained reading column.
 - Persisted generation telemetry covering provider calls, costs, retries, validation, timings, and image outputs.
@@ -111,11 +112,20 @@ The first 12 results are server-rendered. Additional pages load through a contin
 
 The Print button opens the browser print dialog, which can print the worksheet or save it as a PDF.
 
-### Admin Generation
+### Admin Operations and Moderation
 
-`/admin` provides a form for an authorized operator to choose a date and reading tier, enter the generation key, and create a new pack.
+`/admin` provides a key-protected workspace for generation and publication review.
 
-Every successful run creates a new pack. Existing packs are not overwritten.
+- Choose a date and reading tier and generate a new pack.
+- Review pending, approved, or rejected queues.
+- Read the complete story and inspect every illustration.
+- Check vocabulary, comprehension questions, answer key, story/art-direction metadata, and the complete generation audit record.
+- Inspect versions, random selection, models, tokens, costs, retries, validation attempts, step timings, every provider call, and every image result.
+- Expand the raw normalized generation JSON when exact field-level inspection is needed.
+- Add an optional review note.
+- Approve and publish or reject the pack.
+
+Every successful generation creates a private `pending` pack. Existing packs are not overwritten. Approval publishes the story, learning pages, print view, library metadata, and images together. Rejection keeps them private.
 
 ## Reading Tiers
 
@@ -139,7 +149,7 @@ Tier configuration lives in `src/lib/gen/tiers.ts`.
 | `/quiz?id=<pack-id>`       | Manual comprehension response and answer-reveal UI.                                                                              |
 | `/library?genre=<genre>`   | Newest-first, metadata-only archive with optional genre filtering and cursor pagination.                                         |
 | `/print/[id]`              | Print-oriented story, vocabulary, questions, and answer key.                                                                     |
-| `/admin`                   | Manual, key-protected pack generation UI.                                                                                        |
+| `/admin`                   | Key-protected generation and human moderation workspace.                                                                         |
 
 All reader pages are dynamically rendered because they resolve current storage and cookie state.
 
@@ -173,6 +183,7 @@ Successful response:
   "date": "2026-09-01",
   "tier": "growing",
   "generated": true,
+  "moderationStatus": "pending",
   "durationMs": 12345,
   "metadata": {
     "models": {
@@ -196,7 +207,7 @@ Successful response:
 
 ### `GET /api/stories`
 
-Returns metadata-only archive pages.
+Returns metadata-only archive pages containing approved and legacy-public packs only.
 
 Query parameters:
 
@@ -218,12 +229,36 @@ The endpoint is limited to 60 requests per minute per client IP within each runn
 
 ### `GET /api/image`
 
-Streams an image from Blob Storage.
+Streams an approved pack image from Blob Storage.
 
 - Requires a validated `path` query parameter ending in `.webp`, `.png`, or `.jpeg`.
 - Rejects traversal paths.
+- Returns `404` for pending and rejected pack images.
 - Returns one-day public immutable caching headers.
 - Returns `404` when the blob does not exist.
+
+### `GET /api/admin/moderation`
+
+Requires `x-generate-key`.
+
+- Without `id`, lists moderation summaries filtered by `status=pending|approved|rejected`; defaults to `pending`.
+- With `id=<pack-id>`, returns the complete pack and moderation record for private review.
+
+### `POST /api/admin/moderation`
+
+Requires `x-generate-key` and records an approval or rejection without rewriting story content.
+
+```json
+{
+  "id": "<pack-id>",
+  "action": "approve",
+  "note": "Optional review note"
+}
+```
+
+### `GET /api/admin/moderation/image`
+
+Requires `x-generate-key` and streams pending, approved, or rejected images for the moderation workspace with private, no-store caching.
 
 ### `GET /api/dev/story`
 
@@ -264,7 +299,7 @@ Response:
 
 ## Content Generation
 
-Generation runs only through `/api/generate` or the admin page. Reader requests never generate or mutate packs.
+Generation runs only through `/api/generate` or the admin page. Reader requests never generate or mutate packs. Generated packs remain pending until an admin decision changes their publication state.
 
 ```mermaid
 flowchart TD
@@ -275,8 +310,11 @@ flowchart TD
     Learning --> LearningValidation[Filter and validate learning materials]
     LearningValidation --> Images[Render images concurrently]
     Images --> Assemble[Assemble and safety-check DailyPack]
-    Assemble --> Table[Insert pack into Azure Table Storage]
+    Assemble --> Pending[Insert private pending pack]
     Images --> Blob[Upload successful images to Blob Storage]
+    Pending --> Review[Human review]
+    Review -->|Approve| Public[Public story, library, learning, print, and images]
+    Review -->|Reject| Private[Keep story and images private]
 ```
 
 ### 1. Story Selection
@@ -446,14 +484,15 @@ Each entity stores:
 - Date, tier, and creation timestamp.
 - Denormalized title, genre, theme, reading time, and cover path for archive queries.
 - Denormalized generation schema/app/prompt versions, requested models, total tokens, separate text/image/total reported costs, duration, story/learning retries, and successful/failed image counts for operational queries.
+- Moderation status, moderation timestamp, and optional moderation note.
 
-Exact story links use a point read by partition and row key. Archive queries project metadata only and use Azure continuation tokens.
+Exact public story links enforce approval before returning a pack. Latest-pack and archive queries skip pending and rejected entities, project metadata only, and use Azure continuation tokens.
 
 Archive queries can filter the denormalized `genre` column without loading `packJson`.
 
 ### Azure Blob Storage
 
-Story images are stored in the configured container under paths namespaced by pack ID. The application serves them through `/api/image` rather than exposing storage credentials to the browser.
+Story images are stored in the configured container under paths namespaced by pack ID. The public `/api/image` route checks the parent pack's moderation state before returning bytes. The admin review workspace uses the authenticated moderation-image route.
 
 ### Authentication
 
@@ -466,12 +505,14 @@ The repository does not currently contain production infrastructure or RBAC depl
 
 `getServedPack()` resolves content in this order:
 
-1. Exact pack ID, when supplied and found.
-2. Latest pack for the selected tier.
-3. Latest pack from any tier.
+1. Exact approved pack ID, when supplied and found.
+2. Latest approved pack for the selected tier.
+3. Latest approved pack from any tier.
 4. Bundled sample pack.
 
 Storage errors also fall through to the sample pack and are written to the server error log. The Story Library instead renders an empty result when storage is unavailable.
+
+Rows created before moderation fields were introduced are treated as approved for backward compatibility. Unknown moderation values fail closed as pending.
 
 ## Environment Configuration
 
@@ -610,6 +651,8 @@ src/
 ## Current Operational Limitations
 
 - Image responses are not moderated after generation.
+- Moderation uses the shared generation key and does not record an individual reviewer identity because accounts are not implemented.
+- Image generation and storage costs occur before human approval. Rejecting a pack does not currently delete its blobs.
 - WebP is requested, but providers can return PNG or JPEG; those formats are stored as received. There is no local conversion or byte-size limit.
 - Content safety uses prompt constraints and a small banned-term filter, not a dedicated moderation service.
 - Generation is a synchronous HTTP operation and can take several minutes.

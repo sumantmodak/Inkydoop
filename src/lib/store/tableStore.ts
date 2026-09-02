@@ -4,6 +4,8 @@ import { env } from "@/lib/env";
 import {
   DailyPackSchema,
   type DailyPack,
+  type ModerationStatus,
+  type ModerationSummary,
   type PackSummary,
   type TierId,
 } from "@/lib/schemas";
@@ -56,12 +58,24 @@ interface PackEntity {
   learningRetries?: number;
   imageSucceeded?: number;
   imageFailed?: number;
+  moderationStatus?: string;
+  moderatedAt?: string;
+  moderationNote?: string;
 }
 
 export interface StoredPack {
   id: string;
   date: string;
   pack: DailyPack;
+}
+
+export interface ModerationPack extends StoredPack {
+  moderation: {
+    status: ModerationStatus;
+    createdAt: string;
+    moderatedAt?: string;
+    note?: string;
+  };
 }
 
 let clientPromise: Promise<TableClient> | null = null;
@@ -103,15 +117,50 @@ function parsePack(entity: PackEntity): DailyPack {
   return DailyPackSchema.parse(JSON.parse(entity.packJson));
 }
 
+export function moderationStatusOf(entity: {
+  moderationStatus?: string;
+}): ModerationStatus {
+  if (entity.moderationStatus === undefined) return "approved";
+  if (
+    entity.moderationStatus === "pending" ||
+    entity.moderationStatus === "approved" ||
+    entity.moderationStatus === "rejected"
+  ) {
+    return entity.moderationStatus;
+  }
+  return "pending";
+}
+
+function isPublic(entity: { moderationStatus?: string }): boolean {
+  return moderationStatusOf(entity) === "approved";
+}
+
 /** Point-read a pack by its unique id. */
 export async function getPackById(id: string): Promise<StoredPack | null> {
   const client = await getClient();
   try {
     const entity = await client.getEntity<PackEntity>(PARTITION, id);
+    if (!isPublic(entity)) return null;
     return { id: entity.rowKey, date: entity.date, pack: parsePack(entity) };
   } catch (err) {
     if ((err as { statusCode?: number }).statusCode === 404) return null;
     throw err;
+  }
+}
+
+/** Check whether a pack's assets may be served publicly. */
+export async function isPackPublic(id: string): Promise<boolean> {
+  const client = await getClient();
+  try {
+    const entity = await client.getEntity<Pick<PackEntity, "moderationStatus">>(
+      PARTITION,
+      id,
+      { queryOptions: { select: ["moderationStatus"] } },
+    );
+    return isPublic(entity);
+  } catch (error) {
+    if ((error as { statusCode?: number }).statusCode === 404) return false;
+    throw error;
   }
 }
 
@@ -123,6 +172,7 @@ export async function getLatestPack(tier?: TierId): Promise<StoredPack | null> {
     : odata`PartitionKey eq ${PARTITION}`;
   const iter = client.listEntities<PackEntity>({ queryOptions: { filter } });
   for await (const entity of iter) {
+    if (!isPublic(entity)) continue;
     return { id: entity.rowKey, date: entity.date, pack: parsePack(entity) };
   }
   return null;
@@ -154,6 +204,7 @@ export async function insertPack(
     theme: pack.story.theme,
     coverBlobPath: cover?.blobPath ?? "",
     readingTimeMin: pack.story.readingTimeMin,
+    moderationStatus: "pending",
     ...(generation
       ? {
           generationSchemaVersion: generation.schemaVersion,
@@ -197,6 +248,7 @@ type PackMetaEntity = Pick<
   | "theme"
   | "readingTimeMin"
   | "coverBlobPath"
+  | "moderationStatus"
 >;
 
 export function clampListLimit(limit?: number): number {
@@ -234,28 +286,133 @@ export async function listPacks(opts?: {
         : opts?.genre
           ? odata`PartitionKey eq ${PARTITION} and genre eq ${opts.genre}`
           : odata`PartitionKey eq ${PARTITION}`;
-  const pages = client
-    .listEntities<PackEntity>({
-      queryOptions: {
-        filter,
-        select: [
-          "RowKey",
-          "date",
-          "tier",
-          "title",
-          "genre",
-          "theme",
-          "readingTimeMin",
-          "coverBlobPath",
-        ],
-      },
-    })
-    .byPage({ maxPageSize: limit, continuationToken: opts?.cursor });
+  const items: PackSummary[] = [];
+  let continuationToken = opts?.cursor;
+  do {
+    const pages = client
+      .listEntities<PackEntity>({
+        queryOptions: {
+          filter,
+          select: [
+            "RowKey",
+            "date",
+            "tier",
+            "title",
+            "genre",
+            "theme",
+            "readingTimeMin",
+            "coverBlobPath",
+            "moderationStatus",
+          ],
+        },
+      })
+      .byPage({
+        maxPageSize: limit - items.length,
+        continuationToken,
+      });
+    const { value } = await pages.next();
+    const page = (value ?? []) as PackEntity[] & {
+      continuationToken?: string;
+    };
+    items.push(...page.filter(isPublic).map(entityToSummary));
+    continuationToken = page.continuationToken || undefined;
+  } while (items.length < limit && continuationToken);
 
-  const { value } = await pages.next();
-  const page = (value ?? []) as PackEntity[] & { continuationToken?: string };
   return {
-    items: page.map(entityToSummary),
-    nextCursor: page.continuationToken || undefined,
+    items,
+    nextCursor: continuationToken,
   };
+}
+
+function entityToModerationSummary(entity: PackEntity): ModerationSummary {
+  return {
+    ...entityToSummary(entity),
+    status: moderationStatusOf(entity),
+    createdAt: entity.createdAt,
+    moderatedAt: entity.moderatedAt,
+    moderationNote: entity.moderationNote,
+  };
+}
+
+/** List packs for the admin moderation queue. */
+export async function listModerationPacks(
+  status: ModerationStatus = "pending",
+  limit = 50,
+): Promise<ModerationSummary[]> {
+  const client = await getClient();
+  const iter = client.listEntities<PackEntity>({
+    queryOptions: {
+      filter: odata`PartitionKey eq ${PARTITION}`,
+      select: [
+        "RowKey",
+        "date",
+        "tier",
+        "title",
+        "genre",
+        "theme",
+        "readingTimeMin",
+        "coverBlobPath",
+        "createdAt",
+        "moderationStatus",
+        "moderatedAt",
+        "moderationNote",
+      ],
+    },
+  });
+  const items: ModerationSummary[] = [];
+  for await (const entity of iter) {
+    if (moderationStatusOf(entity) !== status) continue;
+    items.push(entityToModerationSummary(entity));
+    if (items.length >= Math.min(Math.max(limit, 1), 100)) break;
+  }
+  return items;
+}
+
+/** Read any pack for authenticated moderation, regardless of public status. */
+export async function getPackForModeration(
+  id: string,
+): Promise<ModerationPack | null> {
+  const client = await getClient();
+  try {
+    const entity = await client.getEntity<PackEntity>(PARTITION, id);
+    return {
+      id: entity.rowKey,
+      date: entity.date,
+      pack: parsePack(entity),
+      moderation: {
+        status: moderationStatusOf(entity),
+        createdAt: entity.createdAt,
+        moderatedAt: entity.moderatedAt,
+        note: entity.moderationNote,
+      },
+    };
+  } catch (error) {
+    if ((error as { statusCode?: number }).statusCode === 404) return null;
+    throw error;
+  }
+}
+
+/** Approve or reject a generated pack without rewriting its content. */
+export async function moderatePack(
+  id: string,
+  status: "approved" | "rejected",
+  note?: string,
+): Promise<boolean> {
+  const client = await getClient();
+  try {
+    await client.updateEntity(
+      {
+        partitionKey: PARTITION,
+        rowKey: id,
+        moderationStatus: status,
+        moderatedAt: new Date().toISOString(),
+        moderationNote: note?.trim() || "",
+      },
+      "Merge",
+    );
+    return true;
+  } catch (error) {
+    if ((error as { statusCode?: number }).statusCode === 404) return false;
+    throw error;
+  }
 }

@@ -1,6 +1,10 @@
 /** @vitest-environment node */
 import { describe, it, expect } from "vitest";
-import { clampListLimit, entityToSummary } from "./tableStore";
+import {
+  clampListLimit,
+  entityToSummary,
+  moderationStatusOf,
+} from "./tableStore";
 
 describe("clampListLimit", () => {
   it("falls back to the default for missing or invalid input", () => {
@@ -49,5 +53,27 @@ describe("entityToSummary", () => {
       entityToSummary({ ...base, coverBlobPath: "2026-07-15/cover.png" })
         .coverBlobPath,
     ).toBe("2026-07-15/cover.png");
+  });
+});
+
+describe("moderationStatusOf", () => {
+  it("treats legacy rows without status as approved", () => {
+    expect(moderationStatusOf({})).toBe("approved");
+  });
+
+  it("preserves known moderation states", () => {
+    expect(moderationStatusOf({ moderationStatus: "pending" })).toBe("pending");
+    expect(moderationStatusOf({ moderationStatus: "approved" })).toBe(
+      "approved",
+    );
+    expect(moderationStatusOf({ moderationStatus: "rejected" })).toBe(
+      "rejected",
+    );
+  });
+
+  it("fails closed for an unknown status", () => {
+    expect(moderationStatusOf({ moderationStatus: "unexpected" })).toBe(
+      "pending",
+    );
   });
 });

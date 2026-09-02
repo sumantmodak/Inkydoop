@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { timingSafeEqual } from "node:crypto";
-import { env } from "@/lib/env";
+import { isAdminAuthorized } from "@/lib/admin-auth";
 import { generateAndStore } from "@/lib/gen/pack";
 import { parseTier } from "@/lib/gen/tiers";
 import { rateLimit } from "@/lib/rate-limit";
@@ -11,22 +10,12 @@ export const dynamic = "force-dynamic";
 // headroom so slow models aren't cut off mid-pipeline.
 export const maxDuration = 800;
 
-function authorized(req: NextRequest): boolean {
-  const provided =
-    req.headers.get("x-generate-key") ??
-    new URL(req.url).searchParams.get("key") ??
-    "";
-  const expected = env.GENERATE_API_KEY;
-  if (!expected || provided.length !== expected.length) return false;
-  return timingSafeEqual(Buffer.from(provided), Buffer.from(expected));
-}
-
 function clientIp(req: NextRequest): string {
   return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
 }
 
 export async function POST(req: NextRequest) {
-  if (!authorized(req)) {
+  if (!isAdminAuthorized(req)) {
     return new NextResponse("unauthorized", { status: 401 });
   }
   const ip = clientIp(req);
