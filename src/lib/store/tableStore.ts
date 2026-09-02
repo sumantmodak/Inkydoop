@@ -41,6 +41,21 @@ interface PackEntity {
   theme: string;
   coverBlobPath: string;
   readingTimeMin: number;
+  generationSchemaVersion?: number;
+  appVersion?: string;
+  promptVersion?: string;
+  storyModel?: string;
+  learningModel?: string;
+  imageModel?: string;
+  totalTokens?: number;
+  totalCostUsd?: number;
+  textCostUsd?: number;
+  imageCostUsd?: number;
+  durationMs?: number;
+  storyRetries?: number;
+  learningRetries?: number;
+  imageSucceeded?: number;
+  imageFailed?: number;
 }
 
 export interface StoredPack {
@@ -126,6 +141,7 @@ export async function insertPack(
 ): Promise<void> {
   const client = await getClient();
   const cover = pack.story.images.find((i) => i.role === "cover");
+  const generation = pack.generation;
   const entity: PackEntity = {
     partitionKey: PARTITION,
     rowKey: id,
@@ -138,6 +154,31 @@ export async function insertPack(
     theme: pack.story.theme,
     coverBlobPath: cover?.blobPath ?? "",
     readingTimeMin: pack.story.readingTimeMin,
+    ...(generation
+      ? {
+          generationSchemaVersion: generation.schemaVersion,
+          appVersion: generation.appVersion,
+          promptVersion: generation.promptVersion,
+          storyModel: generation.models.story,
+          learningModel: generation.models.learning,
+          imageModel: generation.models.image,
+          totalTokens: generation.tokens.total,
+          ...(generation.costUsd === undefined
+            ? {}
+            : { totalCostUsd: generation.costUsd }),
+          ...(generation.costs?.textUsd === undefined
+            ? {}
+            : { textCostUsd: generation.costs.textUsd }),
+          ...(generation.costs?.imagesUsd === undefined
+            ? {}
+            : { imageCostUsd: generation.costs.imagesUsd }),
+          durationMs: generation.durationMs,
+          storyRetries: generation.retries.story,
+          learningRetries: generation.retries.learning,
+          imageSucceeded: generation.images.succeeded,
+          imageFailed: generation.images.failed,
+        }
+      : {}),
   };
   await client.createEntity(entity);
 }

@@ -16,6 +16,7 @@ const EnvSchema = z
     OPENROUTER_MODEL_FEEDBACK: z.string().default("openai/gpt-4o-mini"),
     OPENROUTER_MODEL_GRADER: z.string().default("openai/gpt-4o-mini"),
     OPENROUTER_MODEL_JUDGE: z.string().default("openai/gpt-4o"),
+    APP_VERSION: z.string().default("development"),
 
     // Image generation (via OpenRouter chat completions with image modality)
     IMAGE_API_KEY: z.string().min(1, "IMAGE_API_KEY is required"),

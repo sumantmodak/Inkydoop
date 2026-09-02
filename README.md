@@ -19,6 +19,7 @@ The implemented application includes:
 - A key-protected admin generation page and API.
 - A story-first landing page with recent stories, genre discovery, sharing, direct learning actions, and a teacher entry point.
 - Immersive full-width story covers and inline scene illustrations that preserve their complete composition, with a constrained reading column.
+- Persisted generation telemetry covering provider calls, costs, retries, validation, timings, and image outputs.
 - Light and dark themes.
 - Azure Table and Blob Storage support, with Azurite for local development.
 - A server-side grading API that is implemented but not used by the current quiz UI.
@@ -172,7 +173,24 @@ Successful response:
   "date": "2026-09-01",
   "tier": "growing",
   "generated": true,
-  "durationMs": 12345
+  "durationMs": 12345,
+  "metadata": {
+    "models": {
+      "story": "<story-model>",
+      "learning": "<learning-model>",
+      "image": "<image-model>"
+    },
+    "tokens": { "prompt": 1000, "completion": 2500, "total": 3500 },
+    "costUsd": 0.12,
+    "costs": { "textUsd": 0.01, "imagesUsd": 0.11, "totalUsd": 0.12 },
+    "retries": { "story": 0, "learning": 1, "invalidJson": 0 },
+    "images": {
+      "requested": 3,
+      "succeeded": 3,
+      "failed": 0,
+      "totalBytes": 450000
+    }
+  }
 }
 ```
 
@@ -250,8 +268,8 @@ Generation runs only through `/api/generate` or the admin page. Reader requests 
 
 ```mermaid
 flowchart TD
-    Request[Authorized generation request] --> Seed[Deterministic date seed]
-    Seed --> Story[Generate story and image specs]
+  Request[Authorized generation request] --> Selection[Random genre and theme selection]
+  Selection --> Story[Generate story and image specs]
     Story --> StoryValidation[Validate and retry story]
     StoryValidation --> Learning[Generate vocabulary and questions together]
     Learning --> LearningValidation[Filter and validate learning materials]
@@ -261,9 +279,11 @@ flowchart TD
     Images --> Blob[Upload successful images to Blob Storage]
 ```
 
-### 1. Date Seed
+### 1. Story Selection
 
-`seedForDate()` hashes the requested date and deterministically selects from broad, age-appropriate pools spanning mystery, fantasy, science, travel, family, school, arts, nature, character growth, relationships, and community. Repeating a date keeps its genre and theme stable for the current pool definitions, while the model can still create a different story.
+`createStorySeed()` independently selects a fresh genre and theme for every generation run from broad, age-appropriate pools spanning mystery, fantasy, science, travel, family, school, arts, nature, character growth, relationships, and community.
+
+The requested date does not control the selection. Generating another tier or another story for the same date receives a new random combination. The chosen genre, theme, and tier are stored in generation metadata as `selection` so each resulting pack remains traceable.
 
 ### 2. Story Draft
 
@@ -385,8 +405,26 @@ interface DailyPack {
       commonWrongPatterns: string[];
     };
   }[];
+  generation?: GenerationMeta;
 }
 ```
+
+`generation` is optional only so packs created before telemetry was introduced remain readable. Every newly generated pack includes it.
+
+`GenerationMeta` stores:
+
+- Metadata schema version, success status, start/finish timestamps, total pre-persistence duration, application version, and prompt version.
+- Randomly selected genre/theme/tier combination and requested story, learning, and image models.
+- Every text-provider attempt with step, attempt number, requested/response model, provider, provider request ID, start time, duration, status, token counts, reported cost, and a sanitized error category.
+- Rolled-up prompt, completion, and total tokens plus separate reported text, image, and total costs. The legacy `costUsd` total is retained for compatibility.
+- Story, learning, image, and assembly durations.
+- Story corrective retries, learning corrective retries, and invalid-JSON/schema retries.
+- Final word count, Flesch-Kincaid reading grade, each story validation attempt and its issues, and valid vocabulary/question counts.
+- Every requested image with role, success/failure, requested 16:9/WebP settings, explicit moderation status, provider/model/request ID, blob path, actual format, dimensions, byte size, duration, reported cost, and sanitized error category.
+
+Provider IDs, provider names, actual response models, token usage, and costs are optional because OpenRouter or its upstream provider may omit them. Image moderation is currently recorded as `not_run` rather than implying a check occurred.
+
+Cost fields represent provider-reported values. `costs.textUsd` sums every text attempt, including retry attempts; `costs.imagesUsd` sums every image response; and `costs.totalUsd` combines both. Packs created before the breakdown was introduced can have only `costUsd` and per-image item costs.
 
 ## Storage
 
@@ -407,6 +445,7 @@ Each entity stores:
 - Full validated pack JSON in `packJson`.
 - Date, tier, and creation timestamp.
 - Denormalized title, genre, theme, reading time, and cover path for archive queries.
+- Denormalized generation schema/app/prompt versions, requested models, total tokens, separate text/image/total reported costs, duration, story/learning retries, and successful/failed image counts for operational queries.
 
 Exact story links use a point read by partition and row key. Archive queries project metadata only and use Azure continuation tokens.
 
@@ -457,6 +496,7 @@ Model settings have defaults:
 | `OPENROUTER_MODEL_GRADER`   | `openai/gpt-4o-mini`            |
 | `OPENROUTER_MODEL_JUDGE`    | `openai/gpt-4o`                 |
 | `IMAGE_MODEL`               | `google/gemini-2.5-flash-image` |
+| `APP_VERSION`               | `development`                   |
 
 Storage settings:
 
@@ -532,7 +572,7 @@ Invoke-RestMethod `
 Unit tests cover:
 
 - Zod pack schemas.
-- Deterministic date seeds.
+- Random genre and theme selection.
 - Story validators and readability checks.
 - Combined learning-material orchestration.
 - Vocabulary and question filtering.
@@ -579,7 +619,7 @@ src/
 - The grading API is not connected to the comprehension UI.
 - There are no Playwright tests yet.
 - There are no Docker, Bicep, Terraform, `azd`, or deployment workflow files.
-- Generation token usage, provider cost, retries, and per-step timings are not persisted.
+- Completely failed generation runs are not persisted because no story pack exists to attach them to. Failed provider attempts are retained when a later retry succeeds and the pack is stored.
 - The application has no accounts or server-side reader progress.
 
 These limitations describe the current repository state; they are not implemented features.

@@ -50,6 +50,9 @@ export async function POST(req: NextRequest) {
         date,
         tier,
         durationMs: result.durationMs,
+        totalTokens: result.metadata.tokens.total,
+        costs: result.metadata.costs,
+        images: result.metadata.images,
         ip,
       }),
     );

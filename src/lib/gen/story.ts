@@ -9,14 +9,20 @@ import {
   type StoryDraft,
   type ImageSpec,
 } from "@/lib/schemas";
-import type { DaySeed } from "./seed";
-import { countWords, validateStory, type StoryIssue } from "./validators";
+import type { StorySeed } from "./seed";
+import {
+  countWords,
+  readingGrade,
+  validateStory,
+  type StoryIssue,
+} from "./validators";
 import type { Tier } from "./tiers";
+import type { GenerationTelemetry } from "./telemetry";
 import { storySystem, IMAGE_SPECS_SYSTEM } from "@/lib/prompts";
 
 const MAX_ATTEMPTS = 3; // 1 initial + 2 corrective retries
 
-function buildUserPrompt(seed: DaySeed, corrective: string): string {
+function buildUserPrompt(seed: StorySeed, corrective: string): string {
   const lines = [
     `Genre: ${seed.genre}`,
     `Theme: ${seed.theme}`,
@@ -32,6 +38,7 @@ const ImageSpecsSchema = z.object({ images: z.array(ImageSpecSchema) });
 async function regenerateImageSpecs(
   draft: StoryDraft,
   signal?: AbortSignal,
+  telemetry?: GenerationTelemetry,
 ): Promise<ImageSpec[]> {
   const messages: ChatMessage[] = [
     {
@@ -50,7 +57,11 @@ async function regenerateImageSpecs(
     env.OPENROUTER_MODEL_LEARNING,
     messages,
     ImageSpecsSchema,
-    { signal },
+    {
+      signal,
+      step: "image_specs",
+      onCall: telemetry ? (call) => telemetry.calls.push(call) : undefined,
+    },
   );
   return images;
 }
@@ -84,6 +95,7 @@ function correctionFor(
 
 export interface GenerateStoryOptions {
   signal?: AbortSignal;
+  telemetry?: GenerationTelemetry;
 }
 
 /**
@@ -92,11 +104,11 @@ export interface GenerateStoryOptions {
  * when the draft omits them.
  */
 export async function generateStory(
-  seed: DaySeed,
+  seed: StorySeed,
   tier: Tier,
   options: GenerateStoryOptions = {},
 ): Promise<GeneratedStory> {
-  const { signal } = options;
+  const { signal, telemetry } = options;
   let corrective = "";
   let lastIssues: StoryIssue[] = [];
 
@@ -108,16 +120,27 @@ export async function generateStory(
         { role: "user", content: buildUserPrompt(seed, corrective) },
       ],
       StoryDraftSchema,
-      { temperature: 0.8, signal },
+      {
+        temperature: 0.8,
+        signal,
+        step: "story",
+        onCall: telemetry ? (call) => telemetry.calls.push(call) : undefined,
+      },
     );
 
     const images =
       draft.images && draft.images.length > 0
         ? draft.images
-        : await regenerateImageSpecs(draft, signal);
+        : await regenerateImageSpecs(draft, signal, telemetry);
 
     const story = GeneratedStorySchema.parse({ ...draft, images });
     const issues = validateStory(story, tier);
+    telemetry?.storyAttempts.push({
+      attempt,
+      wordCount: countWords(story.paragraphs),
+      readingGrade: readingGrade(story.paragraphs.join(" ")),
+      issues: issues.map((issue) => `${issue.kind}: ${issue.message}`),
+    });
     if (issues.length === 0) return story;
 
     lastIssues = issues;

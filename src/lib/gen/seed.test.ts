@@ -1,32 +1,24 @@
 import { describe, it, expect } from "vitest";
-import { seedForDate } from "@/lib/gen/seed";
+import { createStorySeed } from "@/lib/gen/seed";
 
-describe("seedForDate", () => {
-  it("is deterministic for the same date", () => {
-    expect(seedForDate("2026-07-15")).toEqual(seedForDate("2026-07-15"));
-  });
-
-  it("varies across dates", () => {
-    const a = seedForDate("2026-07-15");
-    const b = seedForDate("2026-08-01");
-    expect(a).not.toEqual(b);
-  });
-
+describe("createStorySeed", () => {
   it("returns non-empty genre and theme", () => {
-    const seed = seedForDate("2026-07-15");
+    const seed = createStorySeed();
     expect(seed.genre).toBeTruthy();
     expect(seed.theme).toBeTruthy();
   });
 
-  it("provides broad genre and theme variety across a year", () => {
-    const seeds = Array.from({ length: 365 }, (_, day) => {
-      const date = new Date(Date.UTC(2027, 0, day + 1));
-      return seedForDate(date.toISOString().slice(0, 10));
-    });
-    const genres = new Set(seeds.map((seed) => seed.genre));
-    const themes = new Set(seeds.map((seed) => seed.theme));
+  it("selects genre and theme independently", () => {
+    const indices = [2, 3];
+    const pickIndex = (maxExclusive: number) => {
+      const index = indices.shift() ?? 0;
+      expect(index).toBeLessThan(maxExclusive);
+      return index;
+    };
 
-    expect(genres.size).toBeGreaterThanOrEqual(55);
-    expect(themes.size).toBeGreaterThanOrEqual(70);
+    expect(createStorySeed(pickIndex)).toEqual({
+      genre: "detective story",
+      theme: "kindness",
+    });
   });
 });

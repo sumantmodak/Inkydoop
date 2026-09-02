@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { randomInt } from "node:crypto";
 
 const GENRES = [
   "adventure",
@@ -210,21 +210,17 @@ const THEMES = [
   "discovering hidden strengths",
 ] as const;
 
-export interface DaySeed {
+export interface StorySeed {
   genre: string;
   theme: string;
 }
 
-/**
- * Deterministically pick a genre and theme for a given date. The same date
- * always yields the same seed so a `force` regenerate is reproducible. The
- * setting is intentionally left open — the model invents a fresh one (§6.1
- * Step 0) so stories aren't confined to a fixed list of places.
- */
-export function seedForDate(date: string): DaySeed {
-  const hash = createHash("sha256").update(date).digest();
+/** Pick a fresh genre and theme for each generation run. */
+export function createStorySeed(
+  pickIndex: (maxExclusive: number) => number = randomInt,
+): StorySeed {
   return {
-    genre: GENRES[hash[0] % GENRES.length],
-    theme: THEMES[hash[1] % THEMES.length],
+    genre: GENRES[pickIndex(GENRES.length)],
+    theme: THEMES[pickIndex(THEMES.length)],
   };
 }
