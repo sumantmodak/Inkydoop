@@ -36,6 +36,7 @@ describe("checkSafety", () => {
 function storyWith(overrides: Partial<GeneratedStory>): GeneratedStory {
   return {
     title: "The Curious Fox",
+    hook: "A fox finds a path no one else can see.",
     genre: "adventure",
     theme: "curiosity",
     paragraphs: ["A fox explored the forest."],

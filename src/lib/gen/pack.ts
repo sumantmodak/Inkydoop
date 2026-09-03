@@ -4,6 +4,7 @@ import { createStorySeed } from "./seed";
 import { generateStory } from "./story";
 import { generateLearningMaterials } from "./learning";
 import { renderImages } from "./images";
+import { generateNarration } from "./audio";
 import { countWords, checkSafety, readingGrade } from "./validators";
 import { TIERS } from "./tiers";
 import { insertPack, newPackId } from "@/lib/store/tableStore";
@@ -13,7 +14,10 @@ import {
   measureStep,
   PROMPT_VERSION,
 } from "./telemetry";
-import type { GenerationModels } from "@/lib/generation-models";
+import type {
+  GenerationModels,
+  NarrationOptions,
+} from "@/lib/generation-models";
 
 export interface GenerateSummary {
   models: GenerationMeta["models"];
@@ -25,6 +29,7 @@ export interface GenerateSummary {
     GenerationMeta["images"],
     "requested" | "succeeded" | "failed" | "totalBytes"
   >;
+  audio?: GenerationMeta["audio"];
 }
 
 export interface GenerateResult {
@@ -49,9 +54,10 @@ export async function generateAndStore(input: {
   date: string;
   tier: TierId;
   models: GenerationModels;
+  narration?: NarrationOptions;
   signal?: AbortSignal;
 }): Promise<GenerateResult> {
-  const { date, tier: tierId, models, signal } = input;
+  const { date, tier: tierId, models, narration, signal } = input;
   const tier = TIERS[tierId];
   const start = Date.now();
   const startedAt = new Date(start).toISOString();
@@ -102,6 +108,13 @@ export async function generateAndStore(input: {
   if (flagged.length > 0) {
     throw new Error(`Safety filter tripped: ${flagged.join(", ")}`);
   }
+
+  if (narration) {
+    const renderedNarration = await measureStep(telemetry, "audio", () =>
+      generateNarration(story, id, { narration, signal, telemetry }),
+    );
+    if (renderedNarration) story.narration = renderedNarration;
+  }
   telemetry.durationsMsByStep.push({
     step: "assembly",
     durationMs: Date.now() - assemblyStart,
@@ -122,6 +135,17 @@ export async function generateAndStore(input: {
     telemetry.images.map((image) => image.costUsd),
   );
   const totalCostUsd = sumReportedCosts([textCostUsd, imagesCostUsd]);
+  const audioUsd = telemetry.audio?.costUsd;
+  const totalWithAudioUsd =
+    audioUsd === undefined
+      ? undefined
+      : sumReportedCosts([textCostUsd, imagesCostUsd, audioUsd]);
+  const audioEstimatedUsd =
+    audioUsd === undefined ? telemetry.audio?.estimatedCostUsd : undefined;
+  const estimatedTotalUsd =
+    audioEstimatedUsd === undefined
+      ? undefined
+      : sumReportedCosts([textCostUsd, imagesCostUsd, audioEstimatedUsd]);
   const imageSucceeded = telemetry.images.filter(
     (image) => image.status === "succeeded",
   ).length;
@@ -147,6 +171,10 @@ export async function generateAndStore(input: {
       textUsd: textCostUsd,
       imagesUsd: imagesCostUsd,
       totalUsd: totalCostUsd,
+      audioUsd,
+      totalWithAudioUsd,
+      audioEstimatedUsd,
+      estimatedTotalUsd,
     },
     durationsMsByStep: telemetry.durationsMsByStep,
     retries: {
@@ -173,6 +201,7 @@ export async function generateAndStore(input: {
       ),
       items: telemetry.images,
     },
+    audio: telemetry.audio,
   };
 
   const pack: DailyPack = {
@@ -204,6 +233,7 @@ export async function generateAndStore(input: {
         failed: generation.images.failed,
         totalBytes: generation.images.totalBytes,
       },
+      audio: generation.audio,
     },
   };
 }

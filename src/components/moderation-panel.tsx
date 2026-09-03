@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ModerationImage } from "@/components/moderation-image";
 import { GenerationMetadata } from "@/components/generation-metadata";
+import { ModerationAudio } from "@/components/moderation-audio";
 import type {
   DailyPack,
   ModerationStatus,
@@ -393,6 +394,22 @@ export function ModerationPanel({
                   </dl>
                 </section>
 
+                {story.narration && (
+                  <section className="mt-8 border-y-2 border-surface-border py-5">
+                    <h4 className="font-display text-xl font-bold">
+                      Story narration
+                    </h4>
+                    <p className="mt-1 mb-4 text-sm text-muted">
+                      Review the complete audio before approving this pack.
+                    </p>
+                    <ModerationAudio
+                      adminKey={adminKey}
+                      blobPath={story.narration.blobPath}
+                      title={story.title}
+                    />
+                  </section>
+                )}
+
                 <div className="mt-8 space-y-5 text-lg leading-relaxed">
                   {story.paragraphs.map((paragraph, index) => (
                     <div key={index} className="space-y-5">
@@ -456,20 +473,20 @@ export function ModerationPanel({
                   <>
                     <GenerationMetadata metadata={selected.pack.generation} />
                     {onReuseModels && reusableModels && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            onReuseModels(
-                              reusableModels,
-                              selected.pack.tier,
-                              selected.date,
-                            )
-                          }
-                          className="font-display mt-5 rounded-full border-2 border-brand px-5 py-2.5 font-semibold text-brand hover:bg-brand/5 focus-visible:ring-4 focus-visible:ring-brand/30 focus-visible:outline-none"
-                        >
-                          Generate another with same models
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          onReuseModels(
+                            reusableModels,
+                            selected.pack.tier,
+                            selected.date,
+                          )
+                        }
+                        className="font-display mt-5 rounded-full border-2 border-brand px-5 py-2.5 font-semibold text-brand hover:bg-brand/5 focus-visible:ring-4 focus-visible:ring-brand/30 focus-visible:outline-none"
+                      >
+                        Generate another with same models
+                      </button>
+                    )}
                   </>
                 ) : (
                   <section className="mt-10 border-t-2 border-surface-border pt-6">

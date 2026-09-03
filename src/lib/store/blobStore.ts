@@ -55,3 +55,17 @@ export async function downloadImage(path: string): Promise<Buffer | null> {
     throw err;
   }
 }
+
+/** Upload generated story narration as an MP3 blob. */
+export async function uploadAudio(path: string, data: Buffer): Promise<void> {
+  const container = await getContainer();
+  const blob = container.getBlockBlobClient(path);
+  await blob.uploadData(data, {
+    blobHTTPHeaders: { blobContentType: "audio/mpeg" },
+  });
+}
+
+/** Download generated story narration, or null if it does not exist. */
+export async function downloadAudio(path: string): Promise<Buffer | null> {
+  return downloadImage(path);
+}

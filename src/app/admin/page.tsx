@@ -9,6 +9,8 @@ import {
   GENERATION_PRESETS,
   IMAGE_MODELS,
   LEARNING_MODELS,
+  NarrationOptionsSchema,
+  SPEECH_MODELS,
   STORY_MODELS,
   type GenerationModels,
   type GenerationPresetId,
@@ -21,12 +23,12 @@ function todayUtc(): string {
 type Status =
   | { kind: "idle" }
   | { kind: "running" }
-  | { kind: "done"; id: string }
+  | { kind: "done"; id: string; audioStatus?: "succeeded" | "failed" }
   | { kind: "error"; message: string };
 
 type PresetSelection = "environment" | GenerationPresetId | "custom";
 
-function GenerationProgress() {
+function GenerationProgress({ narration }: { narration: boolean }) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   useEffect(() => {
@@ -46,8 +48,8 @@ function GenerationProgress() {
 
   return (
     <p className="mt-4 text-sm text-muted" aria-live="polite">
-      Working for {elapsed}… writing, checking, and illustrating the story. Keep
-      this tab open.
+      Working for {elapsed}… writing, checking, illustrating
+      {narration ? ", and narrating" : ""} the story. Keep this tab open.
     </p>
   );
 }
@@ -73,6 +75,8 @@ const PRESET_OPTIONS: { value: PresetSelection; label: string }[] = [
   { value: "custom", label: "Custom" },
 ];
 
+type SpeechModelId = (typeof SPEECH_MODELS)[number]["id"];
+
 export default function AdminPage() {
   const [key, setKey] = useState("");
   const [date, setDate] = useState(todayUtc());
@@ -81,7 +85,24 @@ export default function AdminPage() {
   const [models, setModels] = useState<GenerationModels>({
     ...GENERATION_PRESETS.balanced.models,
   });
+  const [includeNarration, setIncludeNarration] = useState(false);
+  const [speechModel, setSpeechModel] = useState<SpeechModelId>(
+    SPEECH_MODELS[0].id,
+  );
+  const [speechVoice, setSpeechVoice] = useState<string>(
+    SPEECH_MODELS[0].voices[0].id,
+  );
   const [status, setStatus] = useState<Status>({ kind: "idle" });
+
+  const selectedSpeechModel = SPEECH_MODELS.find(
+    (model) => model.id === speechModel,
+  )!;
+
+  function selectSpeechModel(model: SpeechModelId) {
+    const selected = SPEECH_MODELS.find((item) => item.id === model)!;
+    setSpeechModel(model);
+    setSpeechVoice(selected.voices[0].id);
+  }
 
   function selectPreset(nextPreset: PresetSelection) {
     setPreset(nextPreset);
@@ -117,6 +138,12 @@ export default function AdminPage() {
           : preset === "custom"
             ? models
             : GENERATION_PRESETS[preset].models;
+      const narration = includeNarration
+        ? NarrationOptionsSchema.parse({
+            model: speechModel,
+            voice: speechVoice,
+          })
+        : undefined;
       const res = await fetch(
         `/api/generate?date=${encodeURIComponent(date)}&tier=${tier}`,
         {
@@ -126,7 +153,9 @@ export default function AdminPage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(
-            selectedModels ? { models: selectedModels } : {},
+            selectedModels || narration
+              ? { models: selectedModels, narration }
+              : {},
           ),
         },
       );
@@ -147,12 +176,18 @@ export default function AdminPage() {
         return;
       }
       let id = "";
+      let audioStatus: "succeeded" | "failed" | undefined;
       try {
-        id = (JSON.parse(text) as { id?: string }).id ?? "";
+        const parsed = JSON.parse(text) as {
+          id?: string;
+          metadata?: { audio?: { status?: "succeeded" | "failed" } };
+        };
+        id = parsed.id ?? "";
+        audioStatus = parsed.metadata?.audio?.status;
       } catch {
         // non-JSON body — leave id empty
       }
-      setStatus({ kind: "done", id });
+      setStatus({ kind: "done", id, audioStatus });
     } catch (err) {
       setStatus({ kind: "error", message: String(err) });
     }
@@ -285,6 +320,68 @@ export default function AdminPage() {
             </select>
           </label>
 
+          <div className="border-t-2 border-surface-border pt-4">
+            <label className="flex min-h-11 items-center gap-3">
+              <input
+                type="checkbox"
+                checked={includeNarration}
+                onChange={(event) => setIncludeNarration(event.target.checked)}
+                className="h-5 w-5 accent-brand"
+              />
+              <span>
+                <span className="font-display block text-sm font-semibold">
+                  Generate story audio
+                </span>
+                <span className="block text-xs text-muted">
+                  Optional MP3 narration. Adds generation time and provider
+                  cost.
+                </span>
+              </span>
+            </label>
+
+            {includeNarration && (
+              <div className="mt-4 space-y-3 pl-8">
+                <label className="flex flex-col gap-1">
+                  <span className="font-display text-sm font-semibold">
+                    Speech model
+                  </span>
+                  <select
+                    value={speechModel}
+                    onChange={(event) =>
+                      selectSpeechModel(event.target.value as SpeechModelId)
+                    }
+                    className="min-w-0 rounded-xl border-2 border-surface-border bg-background px-3 py-2 focus-visible:border-brand focus-visible:outline-none"
+                  >
+                    {SPEECH_MODELS.map((model) => (
+                      <option key={model.id} value={model.id}>
+                        {model.label}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="text-xs text-muted">
+                    {selectedSpeechModel.profile} · {selectedSpeechModel.cost}
+                  </span>
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="font-display text-sm font-semibold">
+                    Voice
+                  </span>
+                  <select
+                    value={speechVoice}
+                    onChange={(event) => setSpeechVoice(event.target.value)}
+                    className="rounded-xl border-2 border-surface-border bg-background px-3 py-2 focus-visible:border-brand focus-visible:outline-none"
+                  >
+                    {selectedSpeechModel.voices.map((voice) => (
+                      <option key={voice.id} value={voice.id}>
+                        {voice.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            )}
+          </div>
+
           <button
             type="submit"
             disabled={running || !key}
@@ -294,7 +391,9 @@ export default function AdminPage() {
           </button>
         </form>
 
-        {status.kind === "running" && <GenerationProgress />}
+        {status.kind === "running" && (
+          <GenerationProgress narration={includeNarration} />
+        )}
         {status.kind === "done" && (
           <div
             role="status"
@@ -307,6 +406,12 @@ export default function AdminPage() {
               Pack {status.id} is private. Load the Pending queue below to
               review it.
             </p>
+            {status.audioStatus === "failed" && (
+              <p className="mt-2 font-semibold text-amber-800 dark:text-amber-200">
+                The story was saved, but optional narration could not be
+                generated. Review the audio telemetry below before approval.
+              </p>
+            )}
           </div>
         )}
         {status.kind === "error" && (

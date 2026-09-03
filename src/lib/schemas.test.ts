@@ -130,7 +130,13 @@ describe("GenerationMetaSchema", () => {
       calls: [],
       tokens: { prompt: 100, completion: 200, total: 300 },
       costUsd: 0.04,
-      costs: { textUsd: 0.01, imagesUsd: 0.03, totalUsd: 0.04 },
+      costs: {
+        textUsd: 0.01,
+        imagesUsd: 0.03,
+        totalUsd: 0.04,
+        audioEstimatedUsd: 0.02,
+        estimatedTotalUsd: 0.06,
+      },
       durationsMsByStep: [{ step: "story", durationMs: 20_000 }],
       retries: { story: 1, learning: 0, invalidJson: 0 },
       validation: {
@@ -153,6 +159,18 @@ describe("GenerationMetaSchema", () => {
         failed: 0,
         totalBytes: 30_000,
         items: [],
+      },
+      audio: {
+        status: "succeeded",
+        moderationStatus: "not_run",
+        model: "microsoft/mai-voice-2-flash",
+        voice: "en-US-Harper:MAI-Voice-2",
+        format: "mp3",
+        inputCharacters: 1200,
+        bytes: 42_000,
+        durationMs: 900,
+        generationId: "audio-1",
+        blobPath: "pack-id/narration.mp3",
       },
     };
 

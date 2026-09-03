@@ -4,6 +4,7 @@ import { resolveGenerationModels } from "./model-selection";
 import {
   GENERATION_PRESETS,
   GenerationModelsSchema,
+  NarrationOptionsSchema,
 } from "@/lib/generation-models";
 
 vi.mock("@/lib/env", () => ({
@@ -50,5 +51,23 @@ describe("generation model selection", () => {
       learning: "z-ai/glm-5.3-flash",
       image: "microsoft/mai-image-2.5",
     });
+  });
+
+  it("accepts only allowlisted speech model and voice combinations", () => {
+    expect(
+      NarrationOptionsSchema.parse({
+        model: "microsoft/mai-voice-2-flash",
+        voice: "en-US-Harper:MAI-Voice-2",
+      }),
+    ).toEqual({
+      model: "microsoft/mai-voice-2-flash",
+      voice: "en-US-Harper:MAI-Voice-2",
+    });
+    expect(() =>
+      NarrationOptionsSchema.parse({
+        model: "microsoft/mai-voice-2-flash",
+        voice: "ara",
+      }),
+    ).toThrow();
   });
 });

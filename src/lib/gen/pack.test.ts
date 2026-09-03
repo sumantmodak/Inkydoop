@@ -4,6 +4,7 @@ import { generateAndStore } from "./pack";
 import { generateStory } from "./story";
 import { generateLearningMaterials } from "./learning";
 import { renderImages } from "./images";
+import { generateNarration } from "./audio";
 import { insertPack } from "@/lib/store/tableStore";
 import type { GeneratedStory, ProviderCall } from "@/lib/schemas";
 import { GENERATION_PRESETS } from "@/lib/generation-models";
@@ -20,6 +21,7 @@ vi.mock("./seed", () => ({
 vi.mock("./story", () => ({ generateStory: vi.fn() }));
 vi.mock("./learning", () => ({ generateLearningMaterials: vi.fn() }));
 vi.mock("./images", () => ({ renderImages: vi.fn() }));
+vi.mock("./audio", () => ({ generateNarration: vi.fn() }));
 vi.mock("@/lib/store/tableStore", () => ({
   newPackId: () => "pack-id",
   insertPack: vi.fn(),
@@ -152,6 +154,30 @@ describe("generateAndStore metadata", () => {
         },
       ];
     });
+    vi.mocked(generateNarration).mockImplementation(
+      async (_story, _id, options) => {
+        const narration = {
+          blobPath: "pack-id/narration.mp3",
+          model: options.narration.model,
+          voice: options.narration.voice,
+          format: "mp3" as const,
+          bytes: 200,
+          durationMs: 30,
+          generationId: "audio-1",
+          costUsd: 0.005,
+          estimatedCostUsd: 0.006,
+        };
+        if (options.telemetry) {
+          options.telemetry.audio = {
+            status: "succeeded",
+            moderationStatus: "not_run",
+            ...narration,
+            inputCharacters: 40,
+          };
+        }
+        return narration;
+      },
+    );
   });
 
   it("stores and returns rolled-up generation telemetry", async () => {
@@ -159,11 +185,6 @@ describe("generateAndStore metadata", () => {
       date: "2026-09-01",
       tier: "growing",
       models: GENERATION_PRESETS.balanced.models,
-      prompts: [
-        { step: "story", user: "story user" },
-        { step: "learning", user: "learning user" },
-        { step: "image", user: "image prompt" },
-      ],
     });
 
     const storedPack = vi.mocked(insertPack).mock.calls[0][3];
@@ -195,6 +216,42 @@ describe("generateAndStore metadata", () => {
       costs: { textUsd: 0.031, imagesUsd: 0.03, totalUsd: 0.061 },
       retries: { story: 1, learning: 1, invalidJson: 1 },
       images: { requested: 1, succeeded: 1, failed: 0, totalBytes: 100 },
+    });
+    expect(generateNarration).not.toHaveBeenCalled();
+  });
+
+  it("adds narration only when requested", async () => {
+    const narration = {
+      model: "microsoft/mai-voice-2-flash" as const,
+      voice: "en-US-Harper:MAI-Voice-2" as const,
+    };
+    const result = await generateAndStore({
+      date: "2026-09-01",
+      tier: "growing",
+      models: GENERATION_PRESETS.balanced.models,
+      narration,
+    });
+
+    expect(generateNarration).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "The Lantern" }),
+      "pack-id",
+      expect.objectContaining({ narration }),
+    );
+    const storedPack = vi.mocked(insertPack).mock.calls[0][3];
+    expect(storedPack.story.narration).toMatchObject({
+      blobPath: "pack-id/narration.mp3",
+      model: narration.model,
+      format: "mp3",
+    });
+    expect(result.metadata.audio).toMatchObject({ status: "succeeded" });
+    expect(storedPack.generation?.costs).toMatchObject({
+      textUsd: 0.031,
+      imagesUsd: 0.03,
+      totalUsd: 0.061,
+      audioUsd: 0.005,
+      totalWithAudioUsd: 0.066,
+      audioEstimatedUsd: undefined,
+      estimatedTotalUsd: undefined,
     });
   });
 });

@@ -5,7 +5,10 @@ import { parseTier } from "@/lib/gen/tiers";
 import { rateLimit } from "@/lib/rate-limit";
 import { todayUtc } from "@/lib/store/read";
 import { z } from "zod";
-import { GenerationModelsSchema } from "@/lib/generation-models";
+import {
+  GenerationModelsSchema,
+  NarrationOptionsSchema,
+} from "@/lib/generation-models";
 import { resolveGenerationModels } from "@/lib/gen/model-selection";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +17,10 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 800;
 
 const BodySchema = z
-  .object({ models: GenerationModelsSchema.optional() })
+  .object({
+    models: GenerationModelsSchema.optional(),
+    narration: NarrationOptionsSchema.optional(),
+  })
   .strict();
 
 function clientIp(req: NextRequest): string {
@@ -47,7 +53,12 @@ export async function POST(req: NextRequest) {
 
   try {
     const models = resolveGenerationModels(body.models);
-    const result = await generateAndStore({ date, tier, models });
+    const result = await generateAndStore({
+      date,
+      tier,
+      models,
+      narration: body.narration,
+    });
     console.log(
       JSON.stringify({
         event: "generate",
@@ -59,6 +70,7 @@ export async function POST(req: NextRequest) {
         costs: result.metadata.costs,
         models,
         images: result.metadata.images,
+        audio: result.metadata.audio,
         ip,
       }),
     );

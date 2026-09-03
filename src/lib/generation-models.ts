@@ -69,6 +69,62 @@ export const IMAGE_MODELS = [
   },
 ] as const;
 
+export const SPEECH_MODELS = [
+  {
+    id: "microsoft/mai-voice-2-flash",
+    label: "MAI Voice 2 Flash",
+    profile: "Fast, expressive English narration",
+    cost: "$$",
+    pricePerCharacterUsd: 0.000015,
+    voices: [{ id: "en-US-Harper:MAI-Voice-2", label: "Harper" }],
+  },
+  {
+    id: "microsoft/mai-voice-2",
+    label: "MAI Voice 2",
+    profile: "Natural long-form educational narration",
+    cost: "$$",
+    pricePerCharacterUsd: 0.000022,
+    voices: [{ id: "en-US-Harper:MAI-Voice-2", label: "Harper" }],
+  },
+  {
+    id: "x-ai/grok-voice-tts-1.0",
+    label: "Grok Voice TTS",
+    profile: "Expressive narration with multiple voices",
+    cost: "$$",
+    pricePerCharacterUsd: 0.000015,
+    voices: [
+      { id: "ara", label: "Ara" },
+      { id: "eve", label: "Eve" },
+      { id: "leo", label: "Leo" },
+      { id: "rex", label: "Rex" },
+      { id: "sal", label: "Sal" },
+    ],
+  },
+] as const;
+
+export const NarrationOptionsSchema = z.discriminatedUnion("model", [
+  z
+    .object({
+      model: z.literal("microsoft/mai-voice-2-flash"),
+      voice: z.literal("en-US-Harper:MAI-Voice-2"),
+    })
+    .strict(),
+  z
+    .object({
+      model: z.literal("microsoft/mai-voice-2"),
+      voice: z.literal("en-US-Harper:MAI-Voice-2"),
+    })
+    .strict(),
+  z
+    .object({
+      model: z.literal("x-ai/grok-voice-tts-1.0"),
+      voice: z.enum(["ara", "eve", "leo", "rex", "sal"]),
+    })
+    .strict(),
+]);
+
+export type NarrationOptions = z.infer<typeof NarrationOptionsSchema>;
+
 const STORY_MODEL_IDS = STORY_MODELS.map((model) => model.id) as [
   (typeof STORY_MODELS)[number]["id"],
   ...(typeof STORY_MODELS)[number]["id"][],

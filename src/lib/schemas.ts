@@ -28,6 +28,18 @@ export const StoryImageSchema = z.object({
   blobPath: z.string(),
 });
 
+export const StoryNarrationSchema = z.object({
+  blobPath: z.string(),
+  model: z.string(),
+  voice: z.string(),
+  format: z.literal("mp3"),
+  bytes: z.number().int().nonnegative(),
+  durationMs: z.number().int().nonnegative(),
+  generationId: z.string().optional(),
+  costUsd: z.number().nonnegative().optional(),
+  estimatedCostUsd: z.number().nonnegative().optional(),
+});
+
 export const StorySchema = z.object({
   title: z.string(),
   hook: z.string().default(""),
@@ -38,6 +50,7 @@ export const StorySchema = z.object({
   targetWords: z.array(z.string()),
   artDirection: ArtDirectionSchema,
   images: z.array(StoryImageSchema),
+  narration: StoryNarrationSchema.optional(),
 });
 
 /**
@@ -139,7 +152,7 @@ export const StoryValidationAttemptSchema = z.object({
 });
 
 export const GenerationPromptRecordSchema = z.object({
-  step: z.enum(["story", "learning", "image_specs", "image"]),
+  step: z.enum(["story", "learning", "image_specs", "image", "audio"]),
   attempt: z.number().int().positive(),
   model: z.string(),
   label: z.string().optional(),
@@ -164,6 +177,22 @@ export const GeneratedImageMetaSchema = z.object({
   bytes: z.number().int().nonnegative().optional(),
   durationMs: z.number().int().nonnegative(),
   costUsd: z.number().nonnegative().optional(),
+  error: z.string().optional(),
+});
+
+export const GeneratedAudioMetaSchema = z.object({
+  status: z.enum(["succeeded", "failed"]),
+  moderationStatus: z.literal("not_run"),
+  model: z.string(),
+  voice: z.string(),
+  format: z.literal("mp3"),
+  inputCharacters: z.number().int().nonnegative(),
+  bytes: z.number().int().nonnegative(),
+  durationMs: z.number().int().nonnegative(),
+  generationId: z.string().optional(),
+  costUsd: z.number().nonnegative().optional(),
+  estimatedCostUsd: z.number().nonnegative().optional(),
+  blobPath: z.string().optional(),
   error: z.string().optional(),
 });
 
@@ -201,6 +230,10 @@ const GenerationMetaInputSchema = z.object({
       textUsd: z.number().nonnegative().optional(),
       imagesUsd: z.number().nonnegative().optional(),
       totalUsd: z.number().nonnegative().optional(),
+      audioUsd: z.number().nonnegative().optional(),
+      totalWithAudioUsd: z.number().nonnegative().optional(),
+      audioEstimatedUsd: z.number().nonnegative().optional(),
+      estimatedTotalUsd: z.number().nonnegative().optional(),
     })
     .optional(),
   durationsMsByStep: z.array(GenerationStepSchema),
@@ -223,6 +256,7 @@ const GenerationMetaInputSchema = z.object({
     totalBytes: z.number().int().nonnegative(),
     items: z.array(GeneratedImageMetaSchema),
   }),
+  audio: GeneratedAudioMetaSchema.optional(),
 });
 
 export const GenerationMetaSchema = GenerationMetaInputSchema.refine(
@@ -293,6 +327,7 @@ export const QuizAttemptSchema = z.object({
 
 export type ArtDirection = z.infer<typeof ArtDirectionSchema>;
 export type StoryImage = z.infer<typeof StoryImageSchema>;
+export type StoryNarration = z.infer<typeof StoryNarrationSchema>;
 export type Story = z.infer<typeof StorySchema>;
 export type ImageSpec = z.infer<typeof ImageSpecSchema>;
 export type StoryDraft = z.infer<typeof StoryDraftSchema>;
@@ -311,6 +346,7 @@ export type GenerationPromptRecord = z.infer<
   typeof GenerationPromptRecordSchema
 >;
 export type GeneratedImageMeta = z.infer<typeof GeneratedImageMetaSchema>;
+export type GeneratedAudioMeta = z.infer<typeof GeneratedAudioMetaSchema>;
 export type GenerationMeta = z.infer<typeof GenerationMetaSchema>;
 export type DailyPack = z.infer<typeof DailyPackSchema>;
 export type PackSummary = z.infer<typeof PackSummarySchema>;

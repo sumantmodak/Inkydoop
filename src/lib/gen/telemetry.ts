@@ -1,5 +1,6 @@
 import type {
   GeneratedImageMeta,
+  GeneratedAudioMeta,
   GenerationPromptRecord,
   GenerationStep,
   ProviderCall,
@@ -18,6 +19,7 @@ export interface GenerationTelemetry {
   validVocabularyItems: number;
   validQuestions: number;
   images: GeneratedImageMeta[];
+  audio?: GeneratedAudioMeta;
 }
 
 export function createGenerationTelemetry(): GenerationTelemetry {

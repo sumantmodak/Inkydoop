@@ -56,11 +56,19 @@ interface PackEntity {
   totalCostUsd?: number;
   textCostUsd?: number;
   imageCostUsd?: number;
+  audioCostUsd?: number;
+  totalWithAudioCostUsd?: number;
+  audioEstimatedCostUsd?: number;
+  estimatedTotalCostUsd?: number;
   durationMs?: number;
   storyRetries?: number;
   learningRetries?: number;
   imageSucceeded?: number;
   imageFailed?: number;
+  audioModel?: string;
+  audioVoice?: string;
+  audioStatus?: string;
+  audioBytes?: number;
   generationPromptCount?: number;
   moderationStatus?: string;
   moderatedAt?: string;
@@ -320,11 +328,31 @@ export async function insertPack(
           ...(generation.costs?.imagesUsd === undefined
             ? {}
             : { imageCostUsd: generation.costs.imagesUsd }),
+          ...(generation.costs?.audioUsd === undefined
+            ? {}
+            : { audioCostUsd: generation.costs.audioUsd }),
+          ...(generation.costs?.totalWithAudioUsd === undefined
+            ? {}
+            : { totalWithAudioCostUsd: generation.costs.totalWithAudioUsd }),
+          ...(generation.costs?.audioEstimatedUsd === undefined
+            ? {}
+            : { audioEstimatedCostUsd: generation.costs.audioEstimatedUsd }),
+          ...(generation.costs?.estimatedTotalUsd === undefined
+            ? {}
+            : { estimatedTotalCostUsd: generation.costs.estimatedTotalUsd }),
           durationMs: generation.durationMs,
           storyRetries: generation.retries.story,
           learningRetries: generation.retries.learning,
           imageSucceeded: generation.images.succeeded,
           imageFailed: generation.images.failed,
+          ...(generation.audio
+            ? {
+                audioModel: generation.audio.model,
+                audioVoice: generation.audio.voice,
+                audioStatus: generation.audio.status,
+                audioBytes: generation.audio.bytes,
+              }
+            : {}),
         }
       : {}),
   };

@@ -13,13 +13,14 @@ The implemented application includes:
 - Tier-aware story generation with corrective validation retries.
 - One combined AI call for vocabulary and comprehension materials.
 - Up to three non-blocking story illustrations.
+- Optional non-blocking MP3 story narration generated through OpenRouter Speech.
 - An archive of append-only story packs.
 - Inline word definitions with story vocabulary and dictionary lookup fallback.
 - A scored, client-side multiple-choice vocabulary exercise.
 - Manual comprehension self-review with answer and explanation reveal.
 - A printable teacher pack with an answer key.
 - A key-protected admin generation page and API.
-- A human moderation gate that keeps generated stories and images private until approval.
+- A human moderation gate that keeps generated stories, images, and narration private until approval.
 - A story-first landing page with recent stories, genre discovery, sharing, direct learning actions, and a teacher entry point.
 - Immersive full-width story covers and inline scene illustrations that preserve their complete composition, with a constrained reading column.
 - Persisted generation telemetry covering provider calls, costs, retries, validation, timings, and image outputs.
@@ -34,9 +35,9 @@ The implemented application includes:
 - TypeScript
 - Tailwind CSS 4
 - Zod 4
-- OpenRouter for text and image model requests
+- OpenRouter for text, image, and speech model requests
 - Azure Table Storage for story packs
-- Azure Blob Storage for story images
+- Azure Blob Storage for story images and MP3 narration
 - Azure Identity for production storage authentication
 - Azurite for local storage emulation
 - Vitest for unit tests
@@ -77,6 +78,7 @@ The story page displays:
 - Story paragraphs constrained to a comfortable reading width.
 - Large scene illustrations that preserve the full image while expanding to the story canvas and remaining inline with their configured paragraphs.
 - Tap-a-word definitions.
+- A custom play/pause, seek, mute, and playback-speed player before the story body when approved narration is available. Speed choices are `0.75x`, `1x`, `1.25x`, and `1.5x`; native download controls are not exposed.
 - Story-generation, learning, and illustration model IDs when generation metadata is available, plus a collapsed prompt audit for newly generated stories.
 - Links to the vocabulary activity and printable teacher pack.
 
@@ -128,8 +130,9 @@ The Print button opens the browser print dialog, which can print the worksheet o
 
 - Choose a date and reading tier and generate a new pack.
 - Choose Environment defaults, Economy, Balanced, Quality, or a Custom allowlisted story/learning/image model combination.
+- Optionally generate MP3 narration with an allowlisted OpenRouter speech model and compatible voice.
 - Review pending, approved, or rejected queues.
-- Read the complete story and inspect every illustration.
+- Read the complete story and inspect every illustration and optional narration.
 - Check vocabulary, comprehension questions, answer key, story/art-direction metadata, and the complete generation audit record.
 - Inspect versions, random selection, models, tokens, costs, retries, validation attempts, step timings, every provider call, and every image result.
 - Expand the raw normalized generation JSON when exact field-level inspection is needed.
@@ -137,7 +140,7 @@ The Print button opens the browser print dialog, which can print the worksheet o
 - Approve and publish or reject the pack.
 - Repopulate the generation form from an existing pack with `Generate another with same models`.
 
-Every successful generation creates a private `pending` pack. Existing packs are not overwritten. Approval publishes the story, learning pages, print view, library metadata, and images together. Rejection keeps them private.
+Every successful generation creates a private `pending` pack. Existing packs are not overwritten. Approval publishes the story, learning pages, print view, library metadata, images, and optional narration together. Rejection keeps them private.
 
 ## Reading Tiers
 
@@ -193,11 +196,15 @@ Optional JSON body:
     "story": "z-ai/glm-5.2",
     "learning": "deepseek/deepseek-v4-flash",
     "image": "google/gemini-2.5-flash-image"
+  },
+  "narration": {
+    "model": "microsoft/mai-voice-2-flash",
+    "voice": "en-US-Harper:MAI-Voice-2"
   }
 }
 ```
 
-Omitting `models` uses the server environment defaults. Every supplied model must be in the server-side allowlist for its category; arbitrary, category-mismatched, partial, and unknown-field requests return `400` before generation starts.
+Omitting `models` uses the server environment defaults. Omitting `narration` skips audio generation. Every supplied model and speech model/voice combination must be in the server-side allowlist; arbitrary, category-mismatched, partial, and unknown-field requests return `400` before generation starts.
 
 The endpoint is limited to five requests per minute per client IP within each running process.
 
@@ -220,17 +227,37 @@ Successful response:
     },
     "tokens": { "prompt": 1000, "completion": 2500, "total": 3500 },
     "costUsd": 0.12,
-    "costs": { "textUsd": 0.01, "imagesUsd": 0.11, "totalUsd": 0.12 },
+    "costs": {
+      "textUsd": 0.01,
+      "imagesUsd": 0.11,
+      "totalUsd": 0.12,
+      "audioUsd": 0.09,
+      "totalWithAudioUsd": 0.21
+    },
     "retries": { "story": 0, "learning": 1, "invalidJson": 0 },
     "images": {
       "requested": 3,
       "succeeded": 3,
       "failed": 0,
       "totalBytes": 450000
+    },
+    "audio": {
+      "status": "succeeded",
+      "model": "microsoft/mai-voice-2-flash",
+      "voice": "en-US-Harper:MAI-Voice-2",
+      "format": "mp3",
+      "inputCharacters": 6000,
+      "bytes": 800000,
+      "durationMs": 20000,
+      "blobPath": "<pack-id>/narration.mp3",
+      "costUsd": 0.09,
+      "estimatedCostUsd": 0.09
     }
   }
 }
 ```
+
+Narration failure is non-blocking: the pack remains pending with `audio.status = "failed"` and no reader audio player.
 
 ### `GET /api/stories`
 
@@ -265,6 +292,10 @@ Streams an approved pack image from Blob Storage.
 - Returns one-day public immutable caching headers.
 - Returns `404` when the blob does not exist.
 
+### `GET /api/audio`
+
+Streams approved MP3 narration from Blob Storage. It validates the pack-scoped `.mp3` path, returns `404` for pending or rejected packs, and supports byte-range requests for playback seeking.
+
 ### `GET /api/admin/moderation`
 
 Requires `x-generate-key`.
@@ -287,6 +318,10 @@ Requires `x-generate-key` and records an approval or rejection without rewriting
 ### `GET /api/admin/moderation/image`
 
 Requires `x-generate-key` and streams pending, approved, or rejected images for the moderation workspace with private, no-store caching.
+
+### `GET /api/admin/moderation/audio`
+
+Requires `x-generate-key` and streams pending, approved, or rejected narration for moderation playback with private, no-store caching.
 
 ### `GET /api/dev/story`
 
@@ -338,11 +373,14 @@ flowchart TD
     Learning --> LearningValidation[Filter and validate learning materials]
     LearningValidation --> Images[Render images concurrently]
     Images --> Assemble[Assemble and safety-check DailyPack]
+    Assemble -->|Optional| Audio[Generate MP3 narration]
+    Audio --> Pending
     Assemble --> Pending[Insert private pending pack]
     Images --> Blob[Upload successful images to Blob Storage]
+    Audio --> Blob
     Pending --> Review[Human review]
-    Review -->|Approve| Public[Public story, library, learning, print, and images]
-    Review -->|Reject| Private[Keep story and images private]
+    Review -->|Approve| Public[Public story, learning, images, and audio]
+    Review -->|Reject| Private[Keep story media private]
 ```
 
 ### 1. Story Selection
@@ -405,7 +443,7 @@ Question filtering:
 
 ### 5. Assembly and Persistence
 
-The pack is assembled with a reading-time estimate of 150 words per minute. A final banned-term pass checks the title, story text, and question text. If it passes, the new pack is inserted into Azure Table Storage.
+The pack is assembled with a reading-time estimate of 150 words per minute. A final banned-term pass checks the title, story text, and question text. If narration was requested, the approved text is sent to OpenRouter's `/api/v1/audio/speech` endpoint as MP3 and successful bytes are uploaded to `<pack-id>/narration.mp3`. Audio failure is recorded but does not block persistence. The new pack is then inserted into Azure Table Storage.
 
 ## Grading Pipeline
 
@@ -448,6 +486,17 @@ interface DailyPack {
       alt: string;
       blobPath: string;
     }[];
+    narration?: {
+      blobPath: string;
+      model: string;
+      voice: string;
+      format: "mp3";
+      bytes: number;
+      durationMs: number;
+      generationId?: string;
+      costUsd?: number;
+      estimatedCostUsd?: number;
+    };
   };
   vocabulary: {
     word: string;
@@ -481,17 +530,18 @@ interface DailyPack {
 
 - Metadata schema version, success status, start/finish timestamps, total pre-persistence duration, application version, and prompt version.
 - Randomly selected genre/theme/tier combination and requested story, learning, and image models.
-- Exact system and user prompts for every story and learning attempt, plus the exact prompt for each requested image. This audit field is optional for packs created before prompt capture was introduced.
+- Exact system and user prompts for every story and learning attempt, plus exact image and narration inputs. This audit field is optional for packs created before prompt capture was introduced.
 - Every text-provider attempt with step, attempt number, requested/response model, provider, provider request ID, start time, duration, status, token counts, reported cost, and a sanitized error category.
 - Rolled-up prompt, completion, and total tokens plus separate reported text, image, and total costs. The legacy `costUsd` total is retained for compatibility.
 - Story, learning, image, and assembly durations.
 - Story corrective retries, learning corrective retries, and invalid-JSON/schema retries.
 - Final word count, Flesch-Kincaid reading grade, each story validation attempt and its issues, and valid vocabulary/question counts.
 - Every requested image with role, success/failure, requested 16:9/WebP settings, explicit moderation status, provider/model/request ID, blob path, actual format, dimensions, byte size, duration, reported cost, and sanitized error category.
+- Optional narration status, model, voice, format, input characters, bytes, duration, generation ID, blob path, actual or fallback estimated cost, and sanitized failure category.
 
 Provider IDs, provider names, actual response models, token usage, and costs are optional because OpenRouter or its upstream provider may omit them. Image moderation is currently recorded as `not_run` rather than implying a check occurred.
 
-Cost fields represent provider-reported values. `costs.textUsd` sums every text attempt, including retry attempts; `costs.imagesUsd` sums every image response; and `costs.totalUsd` combines both. Packs created before the breakdown was introduced can have only `costUsd` and per-image item costs.
+Cost fields represent provider-reported values. `costs.textUsd` sums every text attempt, including retry attempts; `costs.imagesUsd` sums every image response; and `costs.totalUsd` is their reported subtotal. The Speech response itself contains no usage object, so generation uses its `X-Generation-Id` to query OpenRouter's `/api/v1/generation` endpoint for the billed `total_cost`. When available, `costs.audioUsd` and `costs.totalWithAudioUsd` contain actual values. If that lookup is unavailable, the catalog-rate fallback is stored separately in `audioEstimatedUsd` and `estimatedTotalUsd` rather than presented as billed cost.
 
 ## Storage
 
@@ -522,7 +572,9 @@ Archive queries can filter the denormalized `genre` column without loading `pack
 
 ### Azure Blob Storage
 
-Story images are stored in the configured container under paths namespaced by pack ID. The public `/api/image` route checks the parent pack's moderation state before returning bytes. The admin review workspace uses the authenticated moderation-image route.
+Story images and optional MP3 narration are stored in the configured container under paths namespaced by pack ID. Public image and audio routes check the parent pack's moderation state before returning bytes. The admin review workspace uses authenticated media routes.
+
+The reader uses custom audio controls and the public route returns inline, same-origin media without a download control. As with any anonymously playable web media, this prevents ordinary UI downloads but cannot prevent a determined user from capturing bytes through browser developer tools or recording playback.
 
 ### Authentication
 
@@ -573,12 +625,12 @@ Model settings have defaults:
 
 `src/lib/generation-models.ts` is the server-enforced catalog used by the admin generation form. It contains:
 
-- `STORY_MODELS`, `LEARNING_MODELS`, and `IMAGE_MODELS` category allowlists.
+- `STORY_MODELS`, `LEARNING_MODELS`, `IMAGE_MODELS`, and `SPEECH_MODELS` category allowlists.
 - Display labels, intended profiles, and relative cost indicators.
 - Economy, Balanced, and Quality presets.
 - The Zod schema that rejects arbitrary or category-mismatched overrides.
 
-The current catalog includes `z-ai/glm-5.3` for stories, `z-ai/glm-5.3-flash` for learning materials, and `microsoft/mai-image-2.5` for 16:9 image generation. As of September 2026, OpenRouter does not publish routable `z-ai/glm-latest` or `z-ai/glm-flash-latest` IDs, so the catalog uses the current concrete GLM versions rather than broken aliases.
+The speech catalog includes `microsoft/mai-voice-2-flash`, `microsoft/mai-voice-2`, and `x-ai/grok-voice-tts-1.0` with model-compatible voice allowlists. Other current OpenRouter speech models can be added after MP3, input-length, voice, reliability, and moderation review.
 
 To add a selectable model:
 
@@ -690,7 +742,7 @@ src/
   components/          Interactive reader, library, quiz, and theme UI
   lib/
     ai/                 OpenRouter JSON client
-    gen/                Seed, tiers, story, learning, images, validation, assembly
+    gen/                Seed, tiers, story, learning, images, audio, validation, assembly
     grade/              Optional answer-grading pipeline
     store/              Azure Table/Blob access and read fallback
     env.ts              Server-only validated environment access
@@ -702,8 +754,9 @@ src/
 ## Current Operational Limitations
 
 - Image responses are not moderated after generation.
+- Audio output is not automatically moderated; the pending-pack review includes playback before approval.
 - Moderation uses the shared generation key and does not record an individual reviewer identity because accounts are not implemented.
-- Image generation and storage costs occur before human approval. Rejecting a pack does not currently delete its blobs.
+- Image and optional audio generation/storage costs occur before human approval. Rejecting a pack does not currently delete its blobs.
 - WebP is requested, but providers can return PNG or JPEG; those formats are stored as received. There is no local conversion or byte-size limit.
 - Content safety uses prompt constraints and a small banned-term filter, not a dedicated moderation service.
 - Generation is a synchronous HTTP operation and can take several minutes.

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { StoryBody } from "@/components/story-body";
 import { StoryImage } from "@/components/story-image";
+import { StoryAudioPlayer } from "@/components/story-audio-player";
 import { getServedPack } from "@/lib/store/read";
 import { getTierCookie } from "@/lib/tier-cookie";
 
@@ -96,6 +97,13 @@ export default async function StoryPage({
         </div>
       )}
 
+      {story.narration && (
+        <StoryAudioPlayer
+          blobPath={story.narration.blobPath}
+          title={story.title}
+        />
+      )}
+
       <article className="mt-10 sm:mt-14">
         <StoryBody
           paragraphs={story.paragraphs}
@@ -122,6 +130,12 @@ export default async function StoryPage({
                 ["Story generation model", pack.generation.models.story],
                 ["Learning model", pack.generation.models.learning],
                 ["Image model", pack.generation.models.image],
+                ...(story.narration
+                  ? [
+                      ["Speech model", story.narration.model],
+                      ["Narration voice", story.narration.voice],
+                    ]
+                  : []),
               ].map(([label, model]) => (
                 <div key={label} className="min-w-0">
                   <dt className="text-xs font-semibold text-muted">{label}</dt>
@@ -158,6 +172,12 @@ export default async function StoryPage({
                         (prompt) => prompt.step === "image",
                       ),
                     ],
+                    [
+                      "Speech model",
+                      pack.generation.prompts.filter(
+                        (prompt) => prompt.step === "audio",
+                      ),
+                    ],
                   ].map(([label, prompts]) => {
                     const records = prompts as NonNullable<
                       typeof pack.generation.prompts
@@ -188,7 +208,8 @@ export default async function StoryPage({
                                 </>
                               )}
                               <h4 className="mt-3 text-xs font-semibold text-muted uppercase">
-                                {prompt.step === "image"
+                                {prompt.step === "image" ||
+                                prompt.step === "audio"
                                   ? "Prompt"
                                   : "User prompt"}
                               </h4>

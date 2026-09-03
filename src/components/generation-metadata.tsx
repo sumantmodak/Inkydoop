@@ -37,6 +37,23 @@ function Value({
 }
 
 export function GenerationMetadata({ metadata }: { metadata: GenerationMeta }) {
+  const reportedTotal = metadata.costs?.totalUsd ?? metadata.costUsd;
+  const audioActual = metadata.costs?.audioUsd ?? metadata.audio?.costUsd;
+  const audioEstimated =
+    audioActual === undefined
+      ? (metadata.costs?.audioEstimatedUsd ?? metadata.audio?.estimatedCostUsd)
+      : undefined;
+  const totalWithAudio =
+    metadata.costs?.totalWithAudioUsd ??
+    (reportedTotal !== undefined && audioActual !== undefined
+      ? reportedTotal + audioActual
+      : undefined);
+  const combinedEstimated =
+    metadata.costs?.estimatedTotalUsd ??
+    (reportedTotal !== undefined && audioEstimated !== undefined
+      ? reportedTotal + audioEstimated
+      : undefined);
+
   return (
     <section className="mt-10 border-t-2 border-surface-border pt-6">
       <h4 className="font-display text-xl font-bold">Generation metadata</h4>
@@ -59,6 +76,43 @@ export function GenerationMetadata({ metadata }: { metadata: GenerationMeta }) {
         <Value label="Image model">{metadata.models.image}</Value>
       </dl>
 
+      {metadata.audio && (
+        <>
+          <h5 className="font-display mt-8 font-bold">Story narration</h5>
+          <dl className="mt-3 grid gap-x-5 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Value label="Status">{metadata.audio.status}</Value>
+            <Value label="Automated moderation">
+              {metadata.audio.moderationStatus}
+            </Value>
+            <Value label="Model">{metadata.audio.model}</Value>
+            <Value label="Voice">{metadata.audio.voice}</Value>
+            <Value label="Format">{metadata.audio.format}</Value>
+            <Value label="Input characters">
+              {metadata.audio.inputCharacters.toLocaleString()}
+            </Value>
+            <Value label="Audio bytes">
+              {formatBytes(metadata.audio.bytes)}
+            </Value>
+            <Value label="Duration">
+              {formatDuration(metadata.audio.durationMs)}
+            </Value>
+            <Value label="Generation ID">
+              {metadata.audio.generationId ?? "Not reported"}
+            </Value>
+            <Value
+              label={
+                audioActual === undefined ? "Estimated cost" : "Actual cost"
+              }
+            >
+              {formatCost(audioActual ?? audioEstimated)}
+            </Value>
+            {metadata.audio.error && (
+              <Value label="Error">{metadata.audio.error}</Value>
+            )}
+          </dl>
+        </>
+      )}
+
       <h5 className="font-display mt-8 font-bold">Usage and cost</h5>
       <dl className="mt-3 grid gap-x-5 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
         <Value label="Prompt tokens">
@@ -74,9 +128,23 @@ export function GenerationMetadata({ metadata }: { metadata: GenerationMeta }) {
         <Value label="Image cost">
           {formatCost(metadata.costs?.imagesUsd)}
         </Value>
-        <Value label="Total cost">
-          {formatCost(metadata.costs?.totalUsd ?? metadata.costUsd)}
-        </Value>
+        <Value label="Reported total">{formatCost(reportedTotal)}</Value>
+        {audioActual !== undefined && (
+          <Value label="Audio cost">{formatCost(audioActual)}</Value>
+        )}
+        {totalWithAudio !== undefined && (
+          <Value label="Total with audio">{formatCost(totalWithAudio)}</Value>
+        )}
+        {audioEstimated !== undefined && (
+          <Value label="Audio cost (estimated)">
+            {formatCost(audioEstimated)}
+          </Value>
+        )}
+        {combinedEstimated !== undefined && (
+          <Value label="Combined total (estimated)">
+            {formatCost(combinedEstimated)}
+          </Value>
+        )}
       </dl>
 
       <h5 className="font-display mt-8 font-bold">Retries and validation</h5>
