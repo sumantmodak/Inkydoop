@@ -54,10 +54,13 @@ The home page resolves the most recently generated pack for the saved reading ti
 - A truthful publication label for today's story, yesterday's story, older stories, and sample content.
 - Exact links to read the story, practice its vocabulary, and review its questions.
 - A dominant reading action with compact native sharing and device-local Save controls.
-- A tier-filtered shelf of recently added stories.
+- An image-backed, tier-filtered shelf of recently added stories with stable book-cover dimensions, tier badges, reading times, and recent-publication labels.
+- A `Surprise me` command that opens a random approved story for the saved reading tier.
 - Genre shortcuts that open filtered Story Library views.
 - A teacher-focused entry point for printable packs.
 - The reading-level selector, Story Library link, and persisted theme toggle.
+
+The landing sections alternate restrained background bands and unframed layouts to distinguish story discovery, the reading path, genre browsing, and grown-up actions without stacking decorative cards.
 
 If no matching tier exists, the app tries the latest pack from any tier. If storage is unavailable or contains no packs, it displays the bundled sample pack.
 

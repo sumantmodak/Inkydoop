@@ -24,11 +24,13 @@ The landing page currently provides:
 - Truthful publication freshness plus vocabulary and question counts in the featured hero.
 - Exact links to the story, vocabulary activity, and comprehension review.
 - Compact Share and device-local Save actions in the hero, with Print in the teacher section.
-- A tier-filtered Recently Added shelf when matching stories exist.
+- An image-backed, horizontally scrollable Recently Added shelf with stable covers, tier badges, reading times, and recent-publication labels.
+- A tier-scoped `Surprise me` command backed by approved story metadata.
 - Hardcoded genre shortcuts.
 - A three-step reading path.
 - A teacher print entry point.
 - Persisted reading-tier and theme controls.
+- Alternating unframed section bands that separate discovery, learning, and grown-up actions.
 
 The roadmap builds on this baseline rather than replacing it.
 
@@ -727,6 +729,8 @@ Keep brand and navigation usable without crowding narrow screens.
 - Better accessibility for touch and keyboard users.
 
 ### R7.2 Story Shelf Component
+
+**Status:** The Recently Added visual treatment is complete. Extracting a shared component for Continue Reading and Saved Stories remains future work.
 
 #### Goal
 
