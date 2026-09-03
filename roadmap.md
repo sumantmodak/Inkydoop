@@ -2,7 +2,7 @@
 
 This roadmap defines the next product work for improving discovery, return visits, trust, and sharing around Inkydoop's anonymous reading experience.
 
-It describes proposed work, not current behavior. See [README.md](README.md) for the implemented application.
+It describes proposed work, not current behavior. See [README.md](README.md) for the implemented application. See [google-auth-user-design.md](google-auth-user-design.md) for the detailed adult Google sign-in and user-system design.
 
 ## Product Principles
 
@@ -33,16 +33,16 @@ The roadmap builds on this baseline rather than replacing it.
 
 ## Milestone Overview
 
-| Milestone | Theme                          | Primary outcome                                                                      |
-| --------- | ------------------------------ | ------------------------------------------------------------------------------------ |
-| R1        | Publication clarity            | Readers understand whether content is current, older, or sample content.             |
-| R2        | Reliable discovery             | The landing page always offers useful approved stories and valid genre destinations. |
-| R3        | Anonymous continuity           | Returning readers can continue and revisit stories without accounts.                 |
-| R4        | Sharing and stable URLs        | Stories are reliably shareable and understandable in link previews.                  |
-| R5        | Adult trust                    | Parents and teachers can understand moderation, privacy, and classroom use.          |
-| R6        | Privacy-preserving measurement | Product decisions can be based on aggregate funnel behavior.                         |
-| R7        | Performance and accessibility  | The richer landing experience remains fast, responsive, and inclusive.               |
-| R8        | Model experimentation           | Admins can compare model quality, reliability, speed, and cost under controlled inputs. |
+| Milestone | Theme                          | Primary outcome                                                                         |
+| --------- | ------------------------------ | --------------------------------------------------------------------------------------- |
+| R1        | Publication clarity            | Readers understand whether content is current, older, or sample content.                |
+| R2        | Reliable discovery             | The landing page always offers useful approved stories and valid genre destinations.    |
+| R3        | Anonymous continuity           | Returning readers can continue and revisit stories without accounts.                    |
+| R4        | Sharing and stable URLs        | Stories are reliably shareable and understandable in link previews.                     |
+| R5        | Adult trust                    | Parents and teachers can understand moderation, privacy, and classroom use.             |
+| R6        | Privacy-preserving measurement | Product decisions can be based on aggregate funnel behavior.                            |
+| R7        | Performance and accessibility  | The richer landing experience remains fast, responsive, and inclusive.                  |
+| R8        | Model experimentation          | Admins can compare model quality, reliability, speed, and cost under controlled inputs. |
 
 ---
 
