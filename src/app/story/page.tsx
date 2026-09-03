@@ -103,6 +103,37 @@ export default async function StoryPage({
           vocabulary={vocabulary}
         />
 
+        {pack.generation && (
+          <section
+            aria-labelledby="model-provenance-heading"
+            className="mx-auto mt-10 max-w-2xl border-y-2 border-surface-border py-6"
+          >
+            <p className="font-display text-xs font-bold tracking-wide text-brand uppercase">
+              Story notes
+            </p>
+            <h2
+              id="model-provenance-heading"
+              className="font-display mt-1 text-xl font-bold"
+            >
+              How this story was made
+            </h2>
+            <dl className="mt-5 grid gap-5 sm:grid-cols-3">
+              {[
+                ["Story generation model", pack.generation.models.story],
+                ["Learning model", pack.generation.models.learning],
+                ["Image model", pack.generation.models.image],
+              ].map(([label, model]) => (
+                <div key={label} className="min-w-0">
+                  <dt className="text-xs font-semibold text-muted">{label}</dt>
+                  <dd className="mt-1 break-words text-sm font-semibold">
+                    {model}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        )}
+
         <Link
           href={`/vocabulary?id=${packId}`}
           className="hover-pop mx-auto mt-10 flex max-w-2xl items-center justify-between gap-4 rounded-3xl bg-gradient-to-br from-mint to-sky p-5 text-white shadow-md focus-visible:ring-4 focus-visible:ring-mint/40 focus-visible:outline-none"

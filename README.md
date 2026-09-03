@@ -77,6 +77,7 @@ The story page displays:
 - Story paragraphs constrained to a comfortable reading width.
 - Large scene illustrations that preserve the full image while expanding to the story canvas and remaining inline with their configured paragraphs.
 - Tap-a-word definitions.
+- Story-generation, learning, and illustration model IDs when generation metadata is available.
 - Links to the vocabulary activity and printable teacher pack.
 
 Generated vocabulary words are highlighted and use definitions stored in the pack. Other clicked words are looked up through `dictionaryapi.dev`.
