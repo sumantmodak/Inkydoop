@@ -92,6 +92,11 @@ export function LibraryGrid({
                   <span className="text-muted">
                     {s.readingTimeMin} min read
                   </span>
+                  {s.hasNarration && (
+                    <span className="font-display font-semibold text-brand">
+                      Audio
+                    </span>
+                  )}
                 </div>
                 <h2 className="font-display mt-2 text-lg font-bold text-foreground">
                   {s.title}

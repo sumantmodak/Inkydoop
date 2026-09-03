@@ -22,6 +22,7 @@ The landing page currently provides:
 
 - An approved featured story with cover, hook, tier, genre, theme, and reading time.
 - Truthful publication freshness plus vocabulary and question counts in the featured hero.
+- Narration-aware hero actions and audio availability signals for approved narrated stories.
 - A spoiler-free three-word vocabulary preview for the featured pack.
 - Exact links to the story, vocabulary activity, and comprehension review.
 - Compact Share and device-local Save actions in the hero, with Print in the teacher section.

@@ -133,6 +133,30 @@ export default async function Home() {
                   className="h-1 w-1 rounded-full bg-white/50"
                 />
                 <span className="capitalize">{story.genre}</span>
+                {story.narration && (
+                  <>
+                    <span
+                      aria-hidden="true"
+                      className="h-1 w-1 rounded-full bg-white/50"
+                    />
+                    <span className="font-display inline-flex items-center gap-1 text-sunny">
+                      <svg
+                        aria-hidden="true"
+                        viewBox="0 0 24 24"
+                        className="h-3.5 w-3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M11 5 6 9H2v6h4l5 4V5Z" />
+                        <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+                      </svg>
+                      Audio included
+                    </span>
+                  </>
+                )}
               </div>
               <h2
                 id="featured-title"
@@ -165,7 +189,8 @@ export default async function Home() {
                   href={exactStoryPath}
                   className="font-display inline-flex min-h-12 items-center rounded-full bg-sunny px-7 py-2.5 font-bold text-[#2b2d52] shadow-md transition-transform hover:scale-105 focus-visible:ring-4 focus-visible:ring-white/50 focus-visible:outline-none"
                 >
-                  Read the story&nbsp; →
+                  {story.narration ? "Read or listen" : "Read the story"}
+                  &nbsp; →
                 </Link>
                 <span
                   aria-hidden="true"
@@ -282,8 +307,27 @@ export default async function Home() {
                       <p className="mt-2 line-clamp-1 text-xs text-muted capitalize">
                         {item.genre}
                       </p>
-                      <p className="font-display mt-0.5 text-xs font-semibold text-foreground">
-                        {item.readingTimeMin} min read
+                      <p className="font-display mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                        <span>{item.readingTimeMin} min read</span>
+                        {item.hasNarration && (
+                          <span className="inline-flex items-center gap-1 text-brand">
+                            <span aria-hidden="true">·</span>
+                            <svg
+                              aria-hidden="true"
+                              viewBox="0 0 24 24"
+                              className="h-3.5 w-3.5"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M11 5 6 9H2v6h4l5 4V5Z" />
+                              <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+                            </svg>
+                            Audio
+                          </span>
+                        )}
                       </p>
                     </Link>
                   </li>
@@ -310,8 +354,8 @@ export default async function Home() {
             {[
               [
                 "01",
-                "Read the story",
-                "Meet the characters and follow the adventure.",
+                "Read or listen",
+                "Read at your pace, with narration on select stories.",
                 exactStoryPath,
               ],
               [

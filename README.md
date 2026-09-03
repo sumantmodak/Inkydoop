@@ -55,8 +55,9 @@ The home page resolves the most recently generated pack for the saved reading ti
 - A truthful publication label for today's story, yesterday's story, older stories, and sample content.
 - Exact links to read the story, practice its vocabulary, and review its questions.
 - A dominant reading action with compact native sharing and device-local Save controls.
+- An `Audio included` badge and `Read or listen` action when the featured story has approved narration.
 - A spoiler-free preview of the first three vocabulary words with a link to the full activity.
-- An image-backed, tier-filtered shelf of recently added stories with stable book-cover dimensions, tier badges, reading times, and recent-publication labels.
+- An image-backed, tier-filtered shelf of recently added stories with stable book-cover dimensions, tier badges, reading times, recent-publication labels, and narration availability.
 - A `Surprise me` command that opens a random approved story for the saved reading tier.
 - Genre shortcuts that open filtered Story Library views.
 - Up to six themes derived from approved stories for the saved reading tier. The section appears only when at least three distinct themes are available.

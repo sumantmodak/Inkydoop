@@ -286,6 +286,7 @@ export const PackSummarySchema = z.object({
   theme: z.string(),
   readingTimeMin: z.number(),
   coverBlobPath: z.string().nullable(),
+  hasNarration: z.boolean().default(false),
 });
 
 export const ModerationSummarySchema = PackSummarySchema.extend({

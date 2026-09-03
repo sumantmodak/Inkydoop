@@ -49,6 +49,7 @@ describe("entityToSummary", () => {
       theme: "growth",
       readingTimeMin: 6,
       coverBlobPath: null,
+      hasNarration: false,
     });
   });
 
@@ -57,6 +58,16 @@ describe("entityToSummary", () => {
       entityToSummary({ ...base, coverBlobPath: "2026-07-15/cover.png" })
         .coverBlobPath,
     ).toBe("2026-07-15/cover.png");
+  });
+
+  it("projects successful narration without loading packJson", () => {
+    expect(
+      entityToSummary({
+        ...base,
+        coverBlobPath: "",
+        audioStatus: "succeeded",
+      }).hasNarration,
+    ).toBe(true);
   });
 });
 

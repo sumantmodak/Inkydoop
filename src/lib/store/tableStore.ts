@@ -373,6 +373,7 @@ type PackMetaEntity = Pick<
   | "theme"
   | "readingTimeMin"
   | "coverBlobPath"
+  | "audioStatus"
   | "moderationStatus"
 >;
 
@@ -391,6 +392,7 @@ export function entityToSummary(entity: PackMetaEntity): PackSummary {
     theme: entity.theme,
     readingTimeMin: entity.readingTimeMin,
     coverBlobPath: entity.coverBlobPath ? entity.coverBlobPath : null,
+    hasNarration: entity.audioStatus === "succeeded",
   };
 }
 
@@ -425,6 +427,7 @@ export async function listPacks(opts?: {
             "theme",
             "readingTimeMin",
             "coverBlobPath",
+            "audioStatus",
             "moderationStatus",
           ],
         },
