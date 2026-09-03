@@ -54,10 +54,13 @@ The home page resolves the most recently generated pack for the saved reading ti
 - A truthful publication label for today's story, yesterday's story, older stories, and sample content.
 - Exact links to read the story, practice its vocabulary, and review its questions.
 - A dominant reading action with compact native sharing and device-local Save controls.
+- A spoiler-free preview of the first three vocabulary words with a link to the full activity.
 - An image-backed, tier-filtered shelf of recently added stories with stable book-cover dimensions, tier badges, reading times, and recent-publication labels.
 - A `Surprise me` command that opens a random approved story for the saved reading tier.
 - Genre shortcuts that open filtered Story Library views.
+- Up to six themes derived from approved stories for the saved reading tier. The section appears only when at least three distinct themes are available.
 - A teacher-focused entry point for printable packs.
+- An adult trust strip describing publication review, anonymous reader access, and printable learning packs.
 - The reading-level selector, Story Library link, and persisted theme toggle.
 
 The landing sections alternate restrained background bands and unframed layouts to distinguish story discovery, the reading path, genre browsing, and grown-up actions without stacking decorative cards.
@@ -105,7 +108,7 @@ The Story Library loads pack metadata without loading complete story JSON. It di
 - Reading time and generation date.
 - A link to the exact pack by immutable ID.
 
-The first 12 results are server-rendered. Additional pages load through a continuation cursor. The optional `genre` query parameter filters both the initial result and subsequent pages.
+The first 12 results are server-rendered. Additional pages load through a continuation cursor. The optional `genre` and `theme` query parameters filter both the initial result and subsequent pages.
 
 ### Teacher Pack
 
@@ -149,15 +152,16 @@ Tier configuration lives in `src/lib/gen/tiers.ts`.
 
 ## Application Routes
 
-| Route                      | Behavior                                                                                                                         |
-| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `/`                        | Featured story, recent shelf, learning actions, genre discovery, teacher actions, tier selector, library link, and theme toggle. |
-| `/story?id=<pack-id>`      | Exact story pack when `id` is present; otherwise the latest resolved pack.                                                       |
-| `/vocabulary?id=<pack-id>` | Vocabulary list and local multiple-choice activity for the resolved pack.                                                        |
-| `/quiz?id=<pack-id>`       | Manual comprehension response and answer-reveal UI.                                                                              |
-| `/library?genre=<genre>`   | Newest-first, metadata-only archive with optional genre filtering and cursor pagination.                                         |
-| `/print/[id]`              | Print-oriented story, vocabulary, questions, and answer key.                                                                     |
-| `/admin`                   | Key-protected generation and human moderation workspace.                                                                         |
+| Route                      | Behavior                                                                                                                    |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `/`                        | Featured story, vocabulary preview, recent shelf, genre/theme discovery, teacher actions, trust strip, and reader controls. |
+| `/story?id=<pack-id>`      | Exact story pack when `id` is present; otherwise the latest resolved pack.                                                  |
+| `/vocabulary?id=<pack-id>` | Vocabulary list and local multiple-choice activity for the resolved pack.                                                   |
+| `/quiz?id=<pack-id>`       | Manual comprehension response and answer-reveal UI.                                                                         |
+| `/library?genre=<genre>`   | Newest-first, metadata-only archive with optional genre filtering and cursor pagination.                                    |
+| `/library?theme=<theme>`   | Newest-first, metadata-only archive with optional theme filtering and cursor pagination.                                    |
+| `/print/[id]`              | Print-oriented story, vocabulary, questions, and answer key.                                                                |
+| `/admin`                   | Key-protected generation and human moderation workspace.                                                                    |
 
 All reader pages are dynamically rendered because they resolve current storage and cookie state.
 
@@ -239,6 +243,7 @@ Query parameters:
 | `cursor` | No       | Azure Table continuation token returned by the previous page. |
 | `tier`   | No       | Optional exact tier filter.                                   |
 | `genre`  | No       | Optional lowercase genre filter, such as `mystery`.           |
+| `theme`  | No       | Optional exact theme filter, such as `Starting over`.         |
 
 The endpoint is limited to 60 requests per minute per client IP within each running process. If storage is unavailable, it returns an empty `items` array.
 

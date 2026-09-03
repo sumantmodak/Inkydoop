@@ -22,13 +22,16 @@ The landing page currently provides:
 
 - An approved featured story with cover, hook, tier, genre, theme, and reading time.
 - Truthful publication freshness plus vocabulary and question counts in the featured hero.
+- A spoiler-free three-word vocabulary preview for the featured pack.
 - Exact links to the story, vocabulary activity, and comprehension review.
 - Compact Share and device-local Save actions in the hero, with Print in the teacher section.
 - An image-backed, horizontally scrollable Recently Added shelf with stable covers, tier badges, reading times, and recent-publication labels.
 - A tier-scoped `Surprise me` command backed by approved story metadata.
 - Hardcoded genre shortcuts.
+- Approved theme destinations when at least three distinct themes exist for the selected tier.
 - A three-step reading path.
 - A teacher print entry point.
+- An adult trust strip covering human review, anonymous access, and printable packs.
 - Persisted reading-tier and theme controls.
 - Alternating unframed section bands that separate discovery, learning, and grown-up actions.
 

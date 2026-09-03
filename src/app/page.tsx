@@ -45,6 +45,15 @@ function storyHook(hook: string, firstParagraph: string): string {
   return firstSentence?.trim() ?? firstParagraph;
 }
 
+function browseThemes(items: PackSummary[]): string[] {
+  const themes = new Map<string, string>();
+  for (const item of items) {
+    const theme = item.theme.trim();
+    if (theme) themes.set(theme.toLocaleLowerCase(), theme);
+  }
+  return [...themes.values()].slice(0, 6);
+}
+
 export default async function Home() {
   const tier = await getTierCookie();
   const [{ pack, id: packId, date, isSample }, recentPacks] = await Promise.all(
@@ -56,6 +65,8 @@ export default async function Home() {
   const featuredLabel = publicationLabel(date, isSample, today);
   const recent = recentPacks.filter((item) => item.id !== packId).slice(0, 6);
   const surpriseIds = recentPacks.map((item) => item.id);
+  const themes = browseThemes(recentPacks);
+  const previewWords = pack.vocabulary.slice(0, 3);
   const exactStoryPath = `/story?id=${encodeURIComponent(packId)}`;
 
   return (
@@ -165,6 +176,40 @@ export default async function Home() {
               </div>
             </div>
           </section>
+          {previewWords.length > 0 && (
+            <section
+              aria-labelledby="vocabulary-preview-heading"
+              className="mx-auto mt-8 flex max-w-4xl flex-col items-start justify-between gap-5 border-y-2 border-surface-border py-6 sm:flex-row sm:items-center"
+            >
+              <div>
+                <p className="font-display text-xs font-bold tracking-wide text-brand uppercase">
+                  A peek inside
+                </p>
+                <h2
+                  id="vocabulary-preview-heading"
+                  className="font-display mt-1 text-xl font-bold sm:text-2xl"
+                >
+                  Words you&apos;ll discover
+                </h2>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                {previewWords.map((item) => (
+                  <span
+                    key={item.word}
+                    className="font-display rounded-full bg-brand/10 px-4 py-2 text-sm font-semibold text-brand"
+                  >
+                    {item.word}
+                  </span>
+                ))}
+                <Link
+                  href={`/vocabulary?id=${encodeURIComponent(packId)}`}
+                  className="font-display px-2 py-2 text-sm font-semibold text-brand hover:underline focus-visible:ring-2 focus-visible:ring-brand/30 focus-visible:outline-none"
+                >
+                  Practice all →
+                </Link>
+              </div>
+            </section>
+          )}
         </div>
 
         {recent.length > 0 && (
@@ -324,6 +369,24 @@ export default async function Home() {
                   </Link>
                 ))}
               </div>
+              {themes.length >= 3 && (
+                <div className="mt-8 border-t-2 border-coral/15 pt-6">
+                  <h3 className="font-display text-lg font-bold">
+                    Or follow a theme
+                  </h3>
+                  <div className="mt-3 flex flex-wrap gap-x-5 gap-y-3">
+                    {themes.map((theme) => (
+                      <Link
+                        key={theme}
+                        href={`/library?theme=${encodeURIComponent(theme)}`}
+                        className="font-display text-sm font-semibold text-brand capitalize underline decoration-brand/25 decoration-2 underline-offset-4 hover:decoration-brand focus-visible:ring-2 focus-visible:ring-brand/30 focus-visible:outline-none"
+                      >
+                        {theme}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
             {surpriseIds.length > 0 && (
               <div className="border-t-2 border-coral/20 pt-8 lg:border-t-0 lg:border-l-2 lg:pt-0 lg:pl-10">
@@ -371,6 +434,49 @@ export default async function Home() {
             >
               Browse stories
             </Link>
+          </div>
+        </section>
+
+        <section
+          aria-labelledby="trust-heading"
+          className="bg-[#242642] py-10 text-white sm:py-12"
+        >
+          <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
+            <p className="font-display text-xs font-bold tracking-wide text-sunny uppercase">
+              For grown-ups
+            </p>
+            <h2
+              id="trust-heading"
+              className="font-display mt-1 text-2xl font-bold sm:text-3xl"
+            >
+              Made for thoughtful reading
+            </h2>
+            <dl className="mt-7 grid gap-6 sm:grid-cols-3">
+              {[
+                [
+                  "Human-reviewed",
+                  "New stories stay private until an adult approves them.",
+                ],
+                [
+                  "No reader account",
+                  "Children can read and practice without signing in.",
+                ],
+                [
+                  "Classroom ready",
+                  "Every story includes a printable learning pack.",
+                ],
+              ].map(([label, detail], index) => (
+                <div key={label} className="border-l-2 border-sunny/60 pl-4">
+                  <dt className="font-display flex items-center gap-2 font-bold">
+                    <span className="text-sunny">0{index + 1}</span>
+                    {label}
+                  </dt>
+                  <dd className="mt-2 text-sm leading-relaxed text-white/70">
+                    {detail}
+                  </dd>
+                </div>
+              ))}
+            </dl>
           </div>
         </section>
       </main>

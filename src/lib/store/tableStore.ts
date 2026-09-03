@@ -275,17 +275,15 @@ export async function listPacks(opts?: {
   cursor?: string;
   tier?: TierId;
   genre?: string;
+  theme?: string;
 }): Promise<{ items: PackSummary[]; nextCursor?: string }> {
   const client = await getClient();
   const limit = clampListLimit(opts?.limit);
-  const filter =
-    opts?.tier && opts.genre
-      ? odata`PartitionKey eq ${PARTITION} and tier eq ${opts.tier} and genre eq ${opts.genre}`
-      : opts?.tier
-        ? odata`PartitionKey eq ${PARTITION} and tier eq ${opts.tier}`
-        : opts?.genre
-          ? odata`PartitionKey eq ${PARTITION} and genre eq ${opts.genre}`
-          : odata`PartitionKey eq ${PARTITION}`;
+  const filters = [odata`PartitionKey eq ${PARTITION}`];
+  if (opts?.tier) filters.push(odata`tier eq ${opts.tier}`);
+  if (opts?.genre) filters.push(odata`genre eq ${opts.genre}`);
+  if (opts?.theme) filters.push(odata`theme eq ${opts.theme}`);
+  const filter = filters.join(" and ");
   const items: PackSummary[] = [];
   let continuationToken = opts?.cursor;
   do {

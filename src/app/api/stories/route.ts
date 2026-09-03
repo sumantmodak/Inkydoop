@@ -30,12 +30,15 @@ export async function GET(req: NextRequest) {
     : undefined;
   const genreRaw = req.nextUrl.searchParams.get("genre");
   const genre =
-    genreRaw && /^[a-z][a-z /()-]{0,49}$/.test(genreRaw)
-      ? genreRaw
+    genreRaw && /^[a-z][a-z /()-]{0,49}$/.test(genreRaw) ? genreRaw : undefined;
+  const themeRaw = req.nextUrl.searchParams.get("theme");
+  const theme =
+    themeRaw && /^[a-z][a-z /'()-]{0,79}$/i.test(themeRaw)
+      ? themeRaw
       : undefined;
 
   try {
-    const page = await listPacks({ limit, cursor, tier, genre });
+    const page = await listPacks({ limit, cursor, tier, genre, theme });
     return NextResponse.json(ResponseSchema.parse(page));
   } catch {
     // Store unavailable — return an empty page rather than breaking browse.

@@ -8,17 +8,20 @@ export const dynamic = "force-dynamic";
 export default async function LibraryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ genre?: string }>;
+  searchParams: Promise<{ genre?: string; theme?: string }>;
 }) {
-  const { genre: genreRaw } = await searchParams;
+  const { genre: genreRaw, theme: themeRaw } = await searchParams;
   const genre =
-    genreRaw && /^[a-z][a-z /()-]{0,49}$/.test(genreRaw)
-      ? genreRaw
+    genreRaw && /^[a-z][a-z /()-]{0,49}$/.test(genreRaw) ? genreRaw : undefined;
+  const theme =
+    themeRaw && /^[a-z][a-z /'()-]{0,79}$/i.test(themeRaw)
+      ? themeRaw
       : undefined;
+  const activeFilter = theme ?? genre;
   let initialItems: PackSummary[] = [];
   let initialCursor: string | undefined;
   try {
-    const page = await listPacks({ limit: 12, genre });
+    const page = await listPacks({ limit: 12, genre, theme });
     initialItems = page.items;
     initialCursor = page.nextCursor;
   } catch {
@@ -35,16 +38,19 @@ export default async function LibraryPage({
       </Link>
 
       <h1 className="font-display mt-5 text-3xl font-bold text-brand sm:text-4xl">
-        {genre ? `${genre} stories` : "Story Library"}
+        {activeFilter ? `${activeFilter} stories` : "Story Library"}
       </h1>
       <div className="mt-1 flex flex-wrap items-center gap-3 text-muted">
         <p>
-          {genre
-            ? `Explore every ${genre} story, newest first.`
+          {activeFilter
+            ? `Explore every ${activeFilter} story, newest first.`
             : "Every story we've made — newest first."}
         </p>
-        {genre && (
-          <Link href="/library" className="text-sm font-semibold text-brand hover:underline">
+        {activeFilter && (
+          <Link
+            href="/library"
+            className="text-sm font-semibold text-brand hover:underline"
+          >
             Clear filter
           </Link>
         )}
@@ -55,6 +61,7 @@ export default async function LibraryPage({
           initialItems={initialItems}
           initialCursor={initialCursor}
           genre={genre}
+          theme={theme}
         />
       </div>
     </div>
