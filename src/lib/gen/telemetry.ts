@@ -1,5 +1,6 @@
 import type {
   GeneratedImageMeta,
+  GenerationPromptRecord,
   GenerationStep,
   ProviderCall,
   StoryValidationAttempt,
@@ -10,6 +11,7 @@ export const PROMPT_VERSION = "1";
 
 export interface GenerationTelemetry {
   calls: ProviderCall[];
+  prompts: GenerationPromptRecord[];
   durationsMsByStep: GenerationStep[];
   storyAttempts: StoryValidationAttempt[];
   learningAttempts: number;
@@ -21,6 +23,7 @@ export interface GenerationTelemetry {
 export function createGenerationTelemetry(): GenerationTelemetry {
   return {
     calls: [],
+    prompts: [],
     durationsMsByStep: [],
     storyAttempts: [],
     learningAttempts: 0,

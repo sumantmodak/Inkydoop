@@ -77,7 +77,7 @@ The story page displays:
 - Story paragraphs constrained to a comfortable reading width.
 - Large scene illustrations that preserve the full image while expanding to the story canvas and remaining inline with their configured paragraphs.
 - Tap-a-word definitions.
-- Story-generation, learning, and illustration model IDs when generation metadata is available.
+- Story-generation, learning, and illustration model IDs when generation metadata is available, plus a collapsed prompt audit for newly generated stories.
 - Links to the vocabulary activity and printable teacher pack.
 
 Generated vocabulary words are highlighted and use definitions stored in the pack. Other clicked words are looked up through `dictionaryapi.dev`.
@@ -390,7 +390,7 @@ Question filtering:
 
 - Removes duplicate IDs.
 - Requires at least one `mustInclude` rubric item.
-- Requires a multiple-choice answer to appear in its choices.
+- Canonicalizes case, spacing, and trailing punctuation when a multiple-choice answer matches a choice. If no choice matches, preserves the otherwise valid question as an open response instead of discarding it.
 - Requires at least five valid questions after filtering.
 
 ### 4. Illustrations
@@ -481,6 +481,7 @@ interface DailyPack {
 
 - Metadata schema version, success status, start/finish timestamps, total pre-persistence duration, application version, and prompt version.
 - Randomly selected genre/theme/tier combination and requested story, learning, and image models.
+- Exact system and user prompts for every story and learning attempt, plus the exact prompt for each requested image. This audit field is optional for packs created before prompt capture was introduced.
 - Every text-provider attempt with step, attempt number, requested/response model, provider, provider request ID, start time, duration, status, token counts, reported cost, and a sanitized error category.
 - Rolled-up prompt, completion, and total tokens plus separate reported text, image, and total costs. The legacy `costUsd` total is retained for compatibility.
 - Story, learning, image, and assembly durations.
@@ -508,7 +509,8 @@ Ascending queries therefore return newer dates first and newer generations first
 
 Each entity stores:
 
-- Full validated pack JSON in `packJson`.
+- Full validated pack JSON in `packJson`, excluding prompt-audit text.
+- Exact generation prompts in bounded numbered properties (`generationPrompt01Meta`, `generationPrompt01System`, `generationPrompt01User`, and subsequent records). `generationPromptCount` controls read-time reconstruction.
 - Date, tier, and creation timestamp.
 - Denormalized title, genre, theme, reading time, and cover path for archive queries.
 - Denormalized generation schema/app/prompt versions, requested models, total tokens, separate text/image/total reported costs, duration, story/learning retries, and successful/failed image counts for operational queries.

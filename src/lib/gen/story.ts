@@ -54,6 +54,14 @@ async function regenerateImageSpecs(
       }),
     },
   ];
+  telemetry?.prompts.push({
+    step: "image_specs",
+    attempt: 1,
+    model: models.learning,
+    label: "Illustration planning",
+    system: messages[0].content,
+    user: messages[1].content,
+  });
   const { images } = await chatJson(
     models.learning,
     messages,
@@ -115,11 +123,20 @@ export async function generateStory(
   let lastIssues: StoryIssue[] = [];
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const systemPrompt = storySystem(tier);
+    const userPrompt = buildUserPrompt(seed, corrective);
+    telemetry?.prompts.push({
+      step: "story",
+      attempt,
+      model: models.story,
+      system: systemPrompt,
+      user: userPrompt,
+    });
     const draft = await chatJson(
       models.story,
       [
-        { role: "system", content: storySystem(tier) },
-        { role: "user", content: buildUserPrompt(seed, corrective) },
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
       ],
       StoryDraftSchema,
       {

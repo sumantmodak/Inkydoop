@@ -131,6 +131,84 @@ export default async function StoryPage({
                 </div>
               ))}
             </dl>
+            <details className="mt-6 border-t-2 border-surface-border pt-4">
+              <summary className="font-display cursor-pointer font-semibold text-brand marker:text-muted">
+                Finer details: prompts used
+              </summary>
+              {pack.generation.prompts?.length ? (
+                <div className="mt-5 space-y-7">
+                  {[
+                    [
+                      "Story generation model",
+                      pack.generation.prompts.filter(
+                        (prompt) => prompt.step === "story",
+                      ),
+                    ],
+                    [
+                      "Learning model",
+                      pack.generation.prompts.filter(
+                        (prompt) =>
+                          prompt.step === "learning" ||
+                          prompt.step === "image_specs",
+                      ),
+                    ],
+                    [
+                      "Image model",
+                      pack.generation.prompts.filter(
+                        (prompt) => prompt.step === "image",
+                      ),
+                    ],
+                  ].map(([label, prompts]) => {
+                    const records = prompts as NonNullable<
+                      typeof pack.generation.prompts
+                    >;
+                    if (records.length === 0) return null;
+                    return (
+                      <section key={label as string}>
+                        <h3 className="font-display font-bold">
+                          {label as string}
+                        </h3>
+                        <div className="mt-3 space-y-4">
+                          {records.map((prompt, index) => (
+                            <div
+                              key={`${prompt.step}-${prompt.attempt}-${index}`}
+                            >
+                              <p className="text-xs font-semibold text-muted">
+                                {prompt.label ?? `Attempt ${prompt.attempt}`} ·{" "}
+                                {prompt.model}
+                              </p>
+                              {prompt.system && (
+                                <>
+                                  <h4 className="mt-3 text-xs font-semibold text-muted uppercase">
+                                    System prompt
+                                  </h4>
+                                  <pre className="mt-1 max-h-80 overflow-auto whitespace-pre-wrap rounded-md bg-foreground/5 p-3 font-sans text-xs leading-relaxed break-words">
+                                    {prompt.system}
+                                  </pre>
+                                </>
+                              )}
+                              <h4 className="mt-3 text-xs font-semibold text-muted uppercase">
+                                {prompt.step === "image"
+                                  ? "Prompt"
+                                  : "User prompt"}
+                              </h4>
+                              <pre className="mt-1 max-h-80 overflow-auto whitespace-pre-wrap rounded-md bg-foreground/5 p-3 font-sans text-xs leading-relaxed break-words">
+                                {prompt.user}
+                              </pre>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="mt-3 text-sm leading-relaxed text-muted">
+                  Exact prompts were not recorded for this story. Prompt audit
+                  details are available on newly generated stories.
+                </p>
+              )}
+            </details>
           </section>
         )}
 

@@ -4,6 +4,7 @@ import { env } from "@/lib/env";
 import {
   DailyPackSchema,
   type DailyPack,
+  type GenerationPromptRecord,
   type ModerationStatus,
   type ModerationSummary,
   type PackSummary,
@@ -11,6 +12,8 @@ import {
 } from "@/lib/schemas";
 
 const PARTITION = "daily";
+const TABLE_STRING_MAX_CODE_UNITS = 32 * 1024;
+const MAX_PROMPT_RECORDS = 24;
 
 function pad(n: number, len: number): string {
   return n.toString().padStart(len, "0");
@@ -58,10 +61,13 @@ interface PackEntity {
   learningRetries?: number;
   imageSucceeded?: number;
   imageFailed?: number;
+  generationPromptCount?: number;
   moderationStatus?: string;
   moderatedAt?: string;
   moderationNote?: string;
 }
+
+type PromptColumns = Record<string, string | number>;
 
 export interface StoredPack {
   id: string;
@@ -113,8 +119,97 @@ async function getClient(): Promise<TableClient> {
   return clientPromise;
 }
 
-function parsePack(entity: PackEntity): DailyPack {
-  return DailyPackSchema.parse(JSON.parse(entity.packJson));
+function promptColumn(index: number, part: "Meta" | "System" | "User") {
+  return `generationPrompt${String(index + 1).padStart(2, "0")}${part}`;
+}
+
+function assertTableStringFits(property: string, value: string): void {
+  if (value.length > TABLE_STRING_MAX_CODE_UNITS) {
+    throw new Error(
+      `${property} is ${value.length.toLocaleString()} characters; Azure Table string properties allow at most ${TABLE_STRING_MAX_CODE_UNITS.toLocaleString()}`,
+    );
+  }
+}
+
+export function serializePackForTable(pack: DailyPack): {
+  packJson: string;
+  promptColumns: PromptColumns;
+} {
+  const prompts = pack.generation?.prompts ?? [];
+  if (prompts.length > MAX_PROMPT_RECORDS) {
+    throw new Error(
+      `Generation produced ${prompts.length} prompt records; at most ${MAX_PROMPT_RECORDS} can be stored`,
+    );
+  }
+
+  const packWithoutPrompts = pack.generation
+    ? {
+        ...pack,
+        generation: {
+          ...pack.generation,
+          prompts: undefined,
+        },
+      }
+    : pack;
+  const packJson = JSON.stringify(packWithoutPrompts);
+  assertTableStringFits("packJson", packJson);
+
+  const promptColumns: PromptColumns = {};
+  if (prompts.length > 0) promptColumns.generationPromptCount = prompts.length;
+  prompts.forEach(({ system, user, ...metadata }, index) => {
+    const metaProperty = promptColumn(index, "Meta");
+    const userProperty = promptColumn(index, "User");
+    const metadataJson = JSON.stringify(metadata);
+    assertTableStringFits(metaProperty, metadataJson);
+    assertTableStringFits(userProperty, user);
+    promptColumns[metaProperty] = metadataJson;
+    promptColumns[userProperty] = user;
+    if (system !== undefined) {
+      const systemProperty = promptColumn(index, "System");
+      assertTableStringFits(systemProperty, system);
+      promptColumns[systemProperty] = system;
+    }
+  });
+
+  return { packJson, promptColumns };
+}
+
+export function parsePack(entity: PackEntity): DailyPack {
+  const raw = JSON.parse(entity.packJson) as {
+    generation?: { prompts?: GenerationPromptRecord[] };
+  };
+  if (
+    raw.generation &&
+    raw.generation.prompts === undefined &&
+    entity.generationPromptCount
+  ) {
+    const values = entity as unknown as Record<string, unknown>;
+    raw.generation.prompts = Array.from(
+      { length: entity.generationPromptCount },
+      (_, index) => {
+        const metaProperty = promptColumn(index, "Meta");
+        const userProperty = promptColumn(index, "User");
+        const metadataJson = values[metaProperty];
+        const user = values[userProperty];
+        if (typeof metadataJson !== "string" || typeof user !== "string") {
+          throw new Error(
+            `Stored generation prompt ${index + 1} is missing ${typeof metadataJson !== "string" ? metaProperty : userProperty}`,
+          );
+        }
+        const metadata = JSON.parse(metadataJson) as Omit<
+          GenerationPromptRecord,
+          "system" | "user"
+        >;
+        const system = values[promptColumn(index, "System")];
+        return {
+          ...metadata,
+          ...(typeof system === "string" ? { system } : {}),
+          user,
+        };
+      },
+    );
+  }
+  return DailyPackSchema.parse(raw);
 }
 
 export function moderationStatusOf(entity: {
@@ -192,12 +287,13 @@ export async function insertPack(
   const client = await getClient();
   const cover = pack.story.images.find((i) => i.role === "cover");
   const generation = pack.generation;
+  const { packJson, promptColumns } = serializePackForTable(pack);
   const entity: PackEntity = {
     partitionKey: PARTITION,
     rowKey: id,
     date,
     tier,
-    packJson: JSON.stringify(pack),
+    packJson,
     createdAt: new Date().toISOString(),
     title: pack.story.title,
     genre: pack.story.genre,
@@ -205,6 +301,7 @@ export async function insertPack(
     coverBlobPath: cover?.blobPath ?? "",
     readingTimeMin: pack.story.readingTimeMin,
     moderationStatus: "pending",
+    ...promptColumns,
     ...(generation
       ? {
           generationSchemaVersion: generation.schemaVersion,

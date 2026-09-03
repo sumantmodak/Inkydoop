@@ -40,17 +40,41 @@ export function validateQuestions(questions: Question[]): Question[] {
   for (const question of questions) {
     if (seen.has(question.id)) continue;
     if (question.rubric.mustInclude.length === 0) continue;
-    if (
-      question.choices &&
-      question.choices.length > 0 &&
-      !question.choices.includes(question.answer)
-    ) {
+    if (question.choices && question.choices.length > 0) {
+      const choices = [
+        ...new Set(question.choices.map((choice) => choice.trim())),
+      ].filter(Boolean);
+      const normalizedAnswer = normalizeChoice(question.answer);
+      const answerChoice = choices.find(
+        (choice) => normalizeChoice(choice) === normalizedAnswer,
+      );
+      if (choices.length >= 2 && answerChoice) {
+        valid.push({ ...question, choices, answer: answerChoice });
+      } else {
+        valid.push({
+          id: question.id,
+          type: question.type,
+          question: question.question,
+          answer: question.answer,
+          explanation: question.explanation,
+          rubric: question.rubric,
+        });
+      }
+      seen.add(question.id);
       continue;
     }
     seen.add(question.id);
     valid.push(question);
   }
   return valid;
+}
+
+function normalizeChoice(value: string): string {
+  return value
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/[.!?]+$/, "")
+    .toLowerCase();
 }
 
 export async function generateLearningMaterials(
@@ -72,14 +96,23 @@ export async function generateLearningMaterials(
       attempt === 1
         ? ""
         : `\n\nCorrection: the previous response produced only ${lastCounts.vocabulary} valid vocabulary items and ${lastCounts.questions} valid questions after validation. Return 5-10 vocabulary items with verbatim story examples and 5-8 questions with unique IDs, non-empty rubrics, and every multiple-choice answer exactly matching one choice.`;
+    const systemPrompt = learningSystem(tier, MAX_DEFINITION_CHARS);
+    const userPrompt = `${basePrompt}${correction}`;
+    options.telemetry?.prompts.push({
+      step: "learning",
+      attempt,
+      model: options.models.learning,
+      system: systemPrompt,
+      user: userPrompt,
+    });
     const generated = await chatJson(
       options.models.learning,
       [
         {
           role: "system",
-          content: learningSystem(tier, MAX_DEFINITION_CHARS),
+          content: systemPrompt,
         },
-        { role: "user", content: `${basePrompt}${correction}` },
+        { role: "user", content: userPrompt },
       ],
       LearningMaterialsSchema,
       {

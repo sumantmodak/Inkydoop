@@ -141,6 +141,14 @@ async function renderOne(
   telemetry?: GenerationTelemetry,
 ): Promise<StoryImage | null> {
   const startedAt = Date.now();
+  const prompt = buildPrompt(gen, spec);
+  telemetry?.prompts.push({
+    step: "image",
+    attempt: 1,
+    model: imageModel,
+    label: spec.role === "cover" ? "Cover" : `Scene ${sceneIndex}`,
+    user: prompt,
+  });
   try {
     const res = await fetch(OPENROUTER_IMAGE_URL, {
       method: "POST",
@@ -150,7 +158,7 @@ async function renderOne(
       },
       body: JSON.stringify({
         model: imageModel,
-        prompt: buildPrompt(gen, spec),
+        prompt,
         aspect_ratio: "16:9",
         output_format: "webp",
         n: 1,

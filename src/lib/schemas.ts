@@ -138,6 +138,15 @@ export const StoryValidationAttemptSchema = z.object({
   issues: z.array(z.string()),
 });
 
+export const GenerationPromptRecordSchema = z.object({
+  step: z.enum(["story", "learning", "image_specs", "image"]),
+  attempt: z.number().int().positive(),
+  model: z.string(),
+  label: z.string().optional(),
+  system: z.string().optional(),
+  user: z.string(),
+});
+
 export const GeneratedImageMetaSchema = z.object({
   role: z.enum(["cover", "scene"]),
   status: z.enum(["succeeded", "failed"]),
@@ -179,6 +188,7 @@ const GenerationMetaInputSchema = z.object({
     learning: z.string(),
     image: z.string(),
   }),
+  prompts: z.array(GenerationPromptRecordSchema).optional(),
   calls: z.array(ProviderCallSchema),
   tokens: z.object({
     prompt: z.number().int().nonnegative(),
@@ -296,6 +306,9 @@ export type ProviderCall = z.infer<typeof ProviderCallSchema>;
 export type GenerationStep = z.infer<typeof GenerationStepSchema>;
 export type StoryValidationAttempt = z.infer<
   typeof StoryValidationAttemptSchema
+>;
+export type GenerationPromptRecord = z.infer<
+  typeof GenerationPromptRecordSchema
 >;
 export type GeneratedImageMeta = z.infer<typeof GeneratedImageMetaSchema>;
 export type GenerationMeta = z.infer<typeof GenerationMetaSchema>;

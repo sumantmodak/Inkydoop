@@ -111,6 +111,22 @@ describe("GenerationMetaSchema", () => {
         learning: "learning-model",
         image: "image-model",
       },
+      prompts: [
+        {
+          step: "story",
+          attempt: 1,
+          model: "story-model",
+          system: "system instructions",
+          user: "write the story",
+        },
+        {
+          step: "image",
+          attempt: 1,
+          model: "image-model",
+          label: "Cover",
+          user: "paint the cover",
+        },
+      ],
       calls: [],
       tokens: { prompt: 100, completion: 200, total: 300 },
       costUsd: 0.04,

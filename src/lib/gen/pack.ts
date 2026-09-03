@@ -135,6 +135,7 @@ export async function generateAndStore(input: {
     promptVersion: PROMPT_VERSION,
     selection: { ...selection, tier: tierId },
     models: { ...models },
+    prompts: telemetry.prompts,
     calls: telemetry.calls,
     tokens: {
       prompt: promptTokens,

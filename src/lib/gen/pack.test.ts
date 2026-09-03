@@ -72,6 +72,13 @@ describe("generateAndStore metadata", () => {
     vi.clearAllMocks();
     vi.mocked(generateStory).mockImplementation(
       async (_seed, _tier, options) => {
+        options.telemetry?.prompts.push({
+          step: "story",
+          attempt: 1,
+          model: "story-model",
+          system: "story system",
+          user: "story user",
+        });
         options.telemetry?.calls.push(
           providerCall("story", "invalid_response", 20, 0.001),
           providerCall("story", "succeeded", 100, 0.01),
@@ -96,6 +103,13 @@ describe("generateAndStore metadata", () => {
     vi.mocked(generateLearningMaterials).mockImplementation(
       async (_input, _tier, options) => {
         if (options.telemetry) {
+          options.telemetry.prompts.push({
+            step: "learning",
+            attempt: 1,
+            model: "learning-model",
+            system: "learning system",
+            user: "learning user",
+          });
           options.telemetry.calls.push(
             providerCall("learning", "succeeded", 200, 0.02),
           );
@@ -107,6 +121,13 @@ describe("generateAndStore metadata", () => {
       },
     );
     vi.mocked(renderImages).mockImplementation(async (_story, _id, options) => {
+      options.telemetry?.prompts.push({
+        step: "image",
+        attempt: 1,
+        model: "image-model",
+        label: "Cover",
+        user: "image prompt",
+      });
       options.telemetry?.images.push({
         role: "cover",
         status: "succeeded",
@@ -138,6 +159,11 @@ describe("generateAndStore metadata", () => {
       date: "2026-09-01",
       tier: "growing",
       models: GENERATION_PRESETS.balanced.models,
+      prompts: [
+        { step: "story", user: "story user" },
+        { step: "learning", user: "learning user" },
+        { step: "image", user: "image prompt" },
+      ],
     });
 
     const storedPack = vi.mocked(insertPack).mock.calls[0][3];

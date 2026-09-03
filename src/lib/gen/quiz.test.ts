@@ -29,9 +29,22 @@ describe("validateQuestions", () => {
     expect(validateQuestions([bad])).toHaveLength(0);
   });
 
-  it("drops MC questions whose answer is not a choice", () => {
+  it("converts MC questions whose answer is not a choice to open response", () => {
     const bad = question({ choices: ["a", "b"], answer: "c" });
-    expect(validateQuestions([bad])).toHaveLength(0);
+    const [validated] = validateQuestions([bad]);
+    expect(validated).toMatchObject({ id: "q1", answer: "c" });
+    expect(validated).not.toHaveProperty("choices");
+  });
+
+  it("canonicalizes case, spacing, and punctuation to the stored choice", () => {
+    const generated = question({
+      choices: ["The attic", "The cellar"],
+      answer: "  the attic. ",
+    });
+    expect(validateQuestions([generated])[0]).toMatchObject({
+      answer: "The attic",
+      choices: ["The attic", "The cellar"],
+    });
   });
 
   it("dedupes by id", () => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { TIER_IDS, type TierId } from "@/lib/schemas";
 import { TIERS } from "@/lib/gen/tiers";
@@ -25,6 +25,44 @@ type Status =
   | { kind: "error"; message: string };
 
 type PresetSelection = "environment" | GenerationPresetId | "custom";
+
+function GenerationProgress() {
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  useEffect(() => {
+    const startedAt = Date.now();
+    const timer = window.setInterval(
+      () => setElapsedSeconds(Math.floor((Date.now() - startedAt) / 1000)),
+      1000,
+    );
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const minutes = Math.floor(elapsedSeconds / 60);
+  const seconds = elapsedSeconds % 60;
+  const elapsed = minutes
+    ? `${minutes}m ${seconds.toString().padStart(2, "0")}s`
+    : `${seconds}s`;
+
+  return (
+    <p className="mt-4 text-sm text-muted" aria-live="polite">
+      Working for {elapsed}… writing, checking, and illustrating the story. Keep
+      this tab open.
+    </p>
+  );
+}
+
+function responseError(text: string, status: number): string {
+  try {
+    const parsed = JSON.parse(text) as { error?: unknown };
+    if (typeof parsed.error === "string") {
+      return parsed.error.replace(/^Error:\s*/, "");
+    }
+  } catch {
+    // Use the response text below.
+  }
+  return text || `HTTP ${status}`;
+}
 
 const PRESET_OPTIONS: { value: PresetSelection; label: string }[] = [
   { value: "environment", label: "Environment defaults" },
@@ -102,7 +140,10 @@ export default function AdminPage() {
         return;
       }
       if (!res.ok) {
-        setStatus({ kind: "error", message: text || `HTTP ${res.status}` });
+        setStatus({
+          kind: "error",
+          message: responseError(text, res.status),
+        });
         return;
       }
       let id = "";
@@ -185,7 +226,9 @@ export default function AdminPage() {
                 label="Story model"
                 value={models.story}
                 options={STORY_MODELS}
-                onChange={(story) => setModels((current) => ({ ...current, story }))}
+                onChange={(story) =>
+                  setModels((current) => ({ ...current, story }))
+                }
               />
               <ModelSelect
                 label="Learning model"
@@ -199,7 +242,9 @@ export default function AdminPage() {
                 label="Image model"
                 value={models.image}
                 options={IMAGE_MODELS}
-                onChange={(image) => setModels((current) => ({ ...current, image }))}
+                onChange={(image) =>
+                  setModels((current) => ({ ...current, image }))
+                }
               />
             </div>
           ) : (
@@ -249,12 +294,7 @@ export default function AdminPage() {
           </button>
         </form>
 
-        {status.kind === "running" && (
-          <p className="mt-4 text-sm text-muted" aria-live="polite">
-            Working… writing the story and painting the illustrations. Keep this
-            tab open.
-          </p>
-        )}
+        {status.kind === "running" && <GenerationProgress />}
         {status.kind === "done" && (
           <div
             role="status"

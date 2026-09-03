@@ -69,6 +69,15 @@ describe("renderImages", () => {
       output_format: "webp",
       n: 1,
     });
+    expect(telemetry.prompts).toEqual([
+      {
+        step: "image",
+        attempt: 1,
+        model: GENERATION_PRESETS.balanced.models.image,
+        label: "Cover",
+        user: request.prompt,
+      },
+    ]);
     expect(uploadImage).toHaveBeenCalledWith(
       "pack-id/cover.png",
       png,
