@@ -1,4 +1,3 @@
-import { env } from "@/lib/env";
 import { chatJson } from "@/lib/ai/openrouter";
 import {
   LearningMaterialsSchema,
@@ -9,6 +8,7 @@ import {
 import { learningSystem } from "@/lib/prompts";
 import type { Tier } from "./tiers";
 import type { GenerationTelemetry } from "./telemetry";
+import type { GenerationModels } from "@/lib/generation-models";
 
 const MAX_DEFINITION_CHARS = 140;
 const MIN_VOCABULARY_WORDS = 5;
@@ -56,7 +56,11 @@ export function validateQuestions(questions: Question[]): Question[] {
 export async function generateLearningMaterials(
   input: { paragraphs: string[]; candidateVocab: string[] },
   tier: Tier,
-  options: { signal?: AbortSignal; telemetry?: GenerationTelemetry } = {},
+  options: {
+    models: GenerationModels;
+    signal?: AbortSignal;
+    telemetry?: GenerationTelemetry;
+  },
 ): Promise<LearningMaterials> {
   const storyText = input.paragraphs.join("\n\n");
   const basePrompt = `Candidate vocabulary (hint): ${input.candidateVocab.join(", ")}\n\nStory:\n${storyText}`;
@@ -69,7 +73,7 @@ export async function generateLearningMaterials(
         ? ""
         : `\n\nCorrection: the previous response produced only ${lastCounts.vocabulary} valid vocabulary items and ${lastCounts.questions} valid questions after validation. Return 5-10 vocabulary items with verbatim story examples and 5-8 questions with unique IDs, non-empty rubrics, and every multiple-choice answer exactly matching one choice.`;
     const generated = await chatJson(
-      env.OPENROUTER_MODEL_LEARNING,
+      options.models.learning,
       [
         {
           role: "system",

@@ -6,13 +6,11 @@ import { generateLearningMaterials } from "./learning";
 import { renderImages } from "./images";
 import { insertPack } from "@/lib/store/tableStore";
 import type { GeneratedStory, ProviderCall } from "@/lib/schemas";
+import { GENERATION_PRESETS } from "@/lib/generation-models";
 
 vi.mock("@/lib/env", () => ({
   env: {
     APP_VERSION: "test-version",
-    OPENROUTER_MODEL_STORY: "story-model",
-    OPENROUTER_MODEL_LEARNING: "learning-model",
-    IMAGE_MODEL: "image-model",
   },
 }));
 
@@ -139,6 +137,7 @@ describe("generateAndStore metadata", () => {
     const result = await generateAndStore({
       date: "2026-09-01",
       tier: "growing",
+      models: GENERATION_PRESETS.balanced.models,
     });
 
     const storedPack = vi.mocked(insertPack).mock.calls[0][3];
@@ -148,11 +147,7 @@ describe("generateAndStore metadata", () => {
       appVersion: "test-version",
       promptVersion: "1",
       selection: { genre: "mystery", theme: "curiosity", tier: "growing" },
-      models: {
-        story: "story-model",
-        learning: "learning-model",
-        image: "image-model",
-      },
+      models: GENERATION_PRESETS.balanced.models,
       tokens: { prompt: 160, completion: 160, total: 320 },
       costUsd: 0.061,
       costs: { textUsd: 0.031, imagesUsd: 0.03, totalUsd: 0.061 },

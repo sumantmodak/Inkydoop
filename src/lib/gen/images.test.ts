@@ -4,9 +4,10 @@ import { renderImages } from "./images";
 import type { GeneratedStory } from "@/lib/schemas";
 import { uploadImage } from "@/lib/store/blobStore";
 import { createGenerationTelemetry } from "./telemetry";
+import { GENERATION_PRESETS } from "@/lib/generation-models";
 
 vi.mock("@/lib/env", () => ({
-  env: { IMAGE_API_KEY: "test-key", IMAGE_MODEL: "test-image-model" },
+  env: { IMAGE_API_KEY: "test-key" },
 }));
 
 vi.mock("@/lib/store/blobStore", () => ({ uploadImage: vi.fn() }));
@@ -56,11 +57,14 @@ describe("renderImages", () => {
     vi.stubGlobal("fetch", fetchMock);
     const telemetry = createGenerationTelemetry();
 
-    const result = await renderImages(story, "pack-id", { telemetry });
+    const result = await renderImages(story, "pack-id", {
+      models: GENERATION_PRESETS.balanced.models,
+      telemetry,
+    });
 
     const request = JSON.parse(fetchMock.mock.calls[0][1].body as string);
     expect(request).toMatchObject({
-      model: "test-image-model",
+      model: "google/gemini-2.5-flash-image",
       aspect_ratio: "16:9",
       output_format: "webp",
       n: 1,

@@ -42,6 +42,7 @@ The roadmap builds on this baseline rather than replacing it.
 | R5        | Adult trust                    | Parents and teachers can understand moderation, privacy, and classroom use.          |
 | R6        | Privacy-preserving measurement | Product decisions can be based on aggregate funnel behavior.                         |
 | R7        | Performance and accessibility  | The richer landing experience remains fast, responsive, and inclusive.               |
+| R8        | Model experimentation           | Admins can compare model quality, reliability, speed, and cost under controlled inputs. |
 
 ---
 
@@ -816,6 +817,92 @@ Protect accessibility as interactive landing features expand.
 
 ---
 
+## R8: Controlled Model Experimentation
+
+The admin currently supports Environment defaults, Economy, Balanced, Quality, Custom allowlisted selections, and regenerating with the same model set. R8 adds comparable experiments rather than more model-selection controls.
+
+### R8.1 Side-By-Side Generation
+
+#### Goal
+
+Compare model quality, reliability, duration, and cost using controlled generation inputs.
+
+#### Requirements
+
+- Add an admin-only comparison mode that creates two pending packs.
+- Hold these inputs constant across both variants:
+  - Reading tier.
+  - Genre and theme selection.
+  - Prompt version.
+  - Generation date used for grouping.
+- Allow different story, learning, and image model sets for Variant A and Variant B.
+- Validate both model sets through the existing server-side category allowlists.
+- Assign a shared experiment ID plus explicit `A` and `B` labels in generation metadata.
+- Never publish either variant automatically.
+- Show both packs in one moderation comparison view with aligned sections for:
+  - Story and illustrations.
+  - Vocabulary and comprehension materials.
+  - Validation attempts and retries.
+  - Actual provider models and request IDs.
+  - Token usage, image costs, total cost, and duration.
+- Allow the moderator to approve either, both, or neither pack.
+- Preserve each moderation decision independently.
+- Do not reuse provider randomness claims unless a provider-specific deterministic seed is actually supported and stored.
+
+#### Acceptance Criteria
+
+- Both variants use the same tier, genre, theme, and prompt version.
+- Variant models are independently selected and stored.
+- One failed variant does not erase the successful variant's telemetry.
+- The comparison view clearly identifies A and B at every scroll position.
+- Pending comparison packs remain unavailable through all public routes and image endpoints.
+- Approving one variant publishes only that pack.
+- Tests verify allowlist rejection, shared inputs, independent telemetry, moderation isolation, and partial failure behavior.
+
+#### Expected Outcomes
+
+- Model choices are based on comparable evidence instead of anecdotal generations.
+- Quality improvements can be evaluated against added cost and latency.
+- Provider regressions and structured-output failures become easier to identify.
+
+### R8.2 Model Performance History
+
+#### Goal
+
+Aggregate generation telemetry by requested model set and actual provider route.
+
+#### Requirements
+
+- Build admin-only aggregates from stored generation metadata.
+- Report by story, learning, and image model:
+  - Generation count.
+  - Approval and rejection rates.
+  - Median and percentile duration.
+  - Median reported cost.
+  - Invalid-response and corrective-retry rates.
+  - Reading-level pass rate.
+  - Image success rate.
+- Separate requested model IDs from actual response models and providers.
+- Exclude legacy packs without generation metadata from denominators.
+- Make sample size visible and avoid rankings for insufficient samples.
+- Never expose provider request IDs outside the authenticated admin surface.
+
+#### Acceptance Criteria
+
+- Aggregates can be reproduced from stored pack telemetry.
+- Approval rates use final moderation state and cannot count pending packs as failures.
+- Missing provider cost or usage is reported as unknown, not zero.
+- Requested and routed model statistics remain distinguishable.
+- The view works without loading full story text into the browser.
+
+#### Expected Outcomes
+
+- Better default and preset decisions.
+- Earlier detection of model quality or reliability changes.
+- Clearer generation economics over time.
+
+---
+
 ## Delivery Sequence
 
 ### Phase 1: Clarity And Reliable Discovery
@@ -867,6 +954,15 @@ Approved stories are reliably shareable, adults understand the product's safegua
 #### Phase Outcome
 
 The team can evaluate discovery and retention using privacy-conscious aggregate data while protecting performance and accessibility.
+
+### Phase 5: Model Optimization
+
+1. R8.1 Side-by-side generation.
+2. R8.2 Model performance history.
+
+#### Phase Outcome
+
+Admins can compare controlled variants and choose generation defaults using stored quality, reliability, speed, and cost evidence.
 
 ## Deferred Work
 

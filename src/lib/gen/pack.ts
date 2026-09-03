@@ -13,6 +13,7 @@ import {
   measureStep,
   PROMPT_VERSION,
 } from "./telemetry";
+import type { GenerationModels } from "@/lib/generation-models";
 
 export interface GenerateSummary {
   models: GenerationMeta["models"];
@@ -47,9 +48,10 @@ function sumReportedCosts(costs: (number | undefined)[]): number | undefined {
 export async function generateAndStore(input: {
   date: string;
   tier: TierId;
+  models: GenerationModels;
   signal?: AbortSignal;
 }): Promise<GenerateResult> {
-  const { date, tier: tierId, signal } = input;
+  const { date, tier: tierId, models, signal } = input;
   const tier = TIERS[tierId];
   const start = Date.now();
   const startedAt = new Date(start).toISOString();
@@ -57,7 +59,7 @@ export async function generateAndStore(input: {
   const selection = createStorySeed();
   const telemetry = createGenerationTelemetry();
   const gen = await measureStep(telemetry, "story", () =>
-    generateStory(selection, tier, { signal, telemetry }),
+    generateStory(selection, tier, { models, signal, telemetry }),
   );
   const { vocabulary, questions } = await measureStep(
     telemetry,
@@ -66,14 +68,14 @@ export async function generateAndStore(input: {
       generateLearningMaterials(
         { paragraphs: gen.paragraphs, candidateVocab: gen.candidateVocab },
         tier,
-        { signal, telemetry },
+        { models, signal, telemetry },
       ),
   );
 
   // Render illustrations (non-blocking: failures yield fewer/no images).
   // Namespaced by the pack id so same-date stories don't overwrite images.
   const images = await measureStep(telemetry, "images", () =>
-    renderImages(gen, id, { signal, telemetry }),
+    renderImages(gen, id, { models, signal, telemetry }),
   );
 
   const assemblyStart = Date.now();
@@ -132,11 +134,7 @@ export async function generateAndStore(input: {
     appVersion: env.APP_VERSION,
     promptVersion: PROMPT_VERSION,
     selection: { ...selection, tier: tierId },
-    models: {
-      story: env.OPENROUTER_MODEL_STORY,
-      learning: env.OPENROUTER_MODEL_LEARNING,
-      image: env.IMAGE_MODEL,
-    },
+    models: { ...models },
     calls: telemetry.calls,
     tokens: {
       prompt: promptTokens,

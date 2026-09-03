@@ -5,6 +5,14 @@ import Link from "next/link";
 import { TIER_IDS, type TierId } from "@/lib/schemas";
 import { TIERS } from "@/lib/gen/tiers";
 import { ModerationPanel } from "@/components/moderation-panel";
+import {
+  GENERATION_PRESETS,
+  IMAGE_MODELS,
+  LEARNING_MODELS,
+  STORY_MODELS,
+  type GenerationModels,
+  type GenerationPresetId,
+} from "@/lib/generation-models";
 
 function todayUtc(): string {
   return new Date().toISOString().slice(0, 10);
@@ -16,20 +24,73 @@ type Status =
   | { kind: "done"; id: string }
   | { kind: "error"; message: string };
 
+type PresetSelection = "environment" | GenerationPresetId | "custom";
+
+const PRESET_OPTIONS: { value: PresetSelection; label: string }[] = [
+  { value: "environment", label: "Environment defaults" },
+  ...Object.entries(GENERATION_PRESETS).map(([value, preset]) => ({
+    value: value as GenerationPresetId,
+    label: preset.label,
+  })),
+  { value: "custom", label: "Custom" },
+];
+
 export default function AdminPage() {
   const [key, setKey] = useState("");
   const [date, setDate] = useState(todayUtc());
   const [tier, setTier] = useState<TierId>("growing");
+  const [preset, setPreset] = useState<PresetSelection>("environment");
+  const [models, setModels] = useState<GenerationModels>({
+    ...GENERATION_PRESETS.balanced.models,
+  });
   const [status, setStatus] = useState<Status>({ kind: "idle" });
+
+  function selectPreset(nextPreset: PresetSelection) {
+    setPreset(nextPreset);
+    if (nextPreset !== "environment" && nextPreset !== "custom") {
+      setModels({ ...GENERATION_PRESETS[nextPreset].models });
+    }
+  }
+
+  function reuseModels(
+    selectedModels: GenerationModels,
+    selectedTier: TierId,
+    selectedDate: string,
+  ) {
+    setModels({ ...selectedModels });
+    setPreset("custom");
+    setTier(selectedTier);
+    setDate(selectedDate);
+    setStatus({ kind: "idle" });
+    document.getElementById("generation-form")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
 
   async function generate(e: React.FormEvent) {
     e.preventDefault();
     if (!key || status.kind === "running") return;
     setStatus({ kind: "running" });
     try {
+      const selectedModels =
+        preset === "environment"
+          ? undefined
+          : preset === "custom"
+            ? models
+            : GENERATION_PRESETS[preset].models;
       const res = await fetch(
         `/api/generate?date=${encodeURIComponent(date)}&tier=${tier}`,
-        { method: "POST", headers: { "x-generate-key": key } },
+        {
+          method: "POST",
+          headers: {
+            "x-generate-key": key,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(
+            selectedModels ? { models: selectedModels } : {},
+          ),
+        },
       );
       const text = await res.text();
       if (res.status === 401) {
@@ -77,6 +138,7 @@ export default function AdminPage() {
         </p>
 
         <form
+          id="generation-form"
           onSubmit={generate}
           className="mt-6 flex flex-col gap-4 rounded-3xl border-2 border-surface-border bg-surface p-5 shadow-sm"
         >
@@ -93,6 +155,63 @@ export default function AdminPage() {
               className="rounded-xl border-2 border-surface-border bg-background px-3 py-2 focus-visible:border-brand focus-visible:outline-none"
             />
           </label>
+
+          <label className="flex flex-col gap-1">
+            <span className="font-display text-sm font-semibold">
+              Model preset
+            </span>
+            <select
+              value={preset}
+              onChange={(event) =>
+                selectPreset(event.target.value as PresetSelection)
+              }
+              className="rounded-xl border-2 border-surface-border bg-background px-3 py-2 focus-visible:border-brand focus-visible:outline-none"
+            >
+              {PRESET_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {preset === "environment" ? (
+            <p className="rounded-xl bg-background p-3 text-sm text-muted">
+              Uses the three server environment model settings.
+            </p>
+          ) : preset === "custom" ? (
+            <div className="space-y-3 border-t-2 border-surface-border pt-4">
+              <ModelSelect
+                label="Story model"
+                value={models.story}
+                options={STORY_MODELS}
+                onChange={(story) => setModels((current) => ({ ...current, story }))}
+              />
+              <ModelSelect
+                label="Learning model"
+                value={models.learning}
+                options={LEARNING_MODELS}
+                onChange={(learning) =>
+                  setModels((current) => ({ ...current, learning }))
+                }
+              />
+              <ModelSelect
+                label="Image model"
+                value={models.image}
+                options={IMAGE_MODELS}
+                onChange={(image) => setModels((current) => ({ ...current, image }))}
+              />
+            </div>
+          ) : (
+            <p className="rounded-xl bg-background p-3 text-sm text-muted">
+              {GENERATION_PRESETS[preset].description}
+              <span className="mt-1 block text-xs">
+                Story: {GENERATION_PRESETS[preset].models.story} · Learning:{" "}
+                {GENERATION_PRESETS[preset].models.learning} · Image:{" "}
+                {GENERATION_PRESETS[preset].models.image}
+              </span>
+            </p>
+          )}
 
           <label className="flex flex-col gap-1">
             <span className="font-display text-sm font-semibold">Date</span>
@@ -163,7 +282,44 @@ export default function AdminPage() {
       <ModerationPanel
         adminKey={key}
         requestedId={status.kind === "done" ? status.id : undefined}
+        onReuseModels={reuseModels}
       />
     </div>
+  );
+}
+
+interface ModelOption<T extends string> {
+  id: T;
+  label: string;
+  profile: string;
+  cost: string;
+}
+
+function ModelSelect<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: T;
+  options: readonly ModelOption<T>[];
+  onChange: (value: T) => void;
+}) {
+  return (
+    <label className="flex flex-col gap-1">
+      <span className="font-display text-sm font-semibold">{label}</span>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value as T)}
+        className="rounded-xl border-2 border-surface-border bg-background px-3 py-2 focus-visible:border-brand focus-visible:outline-none"
+      >
+        {options.map((option) => (
+          <option key={option.id} value={option.id}>
+            {option.label} — {option.profile} — {option.cost}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }

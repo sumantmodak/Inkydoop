@@ -8,6 +8,10 @@ import type {
   ModerationStatus,
   ModerationSummary,
 } from "@/lib/schemas";
+import {
+  areGenerationModelsAllowed,
+  type GenerationModels,
+} from "@/lib/generation-models";
 
 interface ReviewItem {
   id: string;
@@ -24,6 +28,11 @@ interface ReviewItem {
 interface ModerationPanelProps {
   adminKey: string;
   requestedId?: string;
+  onReuseModels?: (
+    models: GenerationModels,
+    tier: DailyPack["tier"],
+    date: string,
+  ) => void;
 }
 
 const STATUSES: { value: ModerationStatus; label: string }[] = [
@@ -35,6 +44,7 @@ const STATUSES: { value: ModerationStatus; label: string }[] = [
 export function ModerationPanel({
   adminKey,
   requestedId,
+  onReuseModels,
 }: ModerationPanelProps) {
   const [status, setStatus] = useState<ModerationStatus>("pending");
   const [items, setItems] = useState<ModerationSummary[]>([]);
@@ -127,6 +137,10 @@ export function ModerationPanel({
   const story = selected?.pack.story;
   const cover = story?.images.find((image) => image.role === "cover");
   const scenes = story?.images.filter((image) => image.role === "scene") ?? [];
+  const storedModels = selected?.pack.generation?.models;
+  const reusableModels = areGenerationModelsAllowed(storedModels)
+    ? storedModels
+    : undefined;
 
   useEffect(() => {
     if (!adminKey || !requestedId) return;
@@ -439,7 +453,24 @@ export function ModerationPanel({
                 </section>
 
                 {selected.pack.generation ? (
-                  <GenerationMetadata metadata={selected.pack.generation} />
+                  <>
+                    <GenerationMetadata metadata={selected.pack.generation} />
+                    {onReuseModels && reusableModels && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onReuseModels(
+                              reusableModels,
+                              selected.pack.tier,
+                              selected.date,
+                            )
+                          }
+                          className="font-display mt-5 rounded-full border-2 border-brand px-5 py-2.5 font-semibold text-brand hover:bg-brand/5 focus-visible:ring-4 focus-visible:ring-brand/30 focus-visible:outline-none"
+                        >
+                          Generate another with same models
+                        </button>
+                      )}
+                  </>
                 ) : (
                   <section className="mt-10 border-t-2 border-surface-border pt-6">
                     <h4 className="font-display text-xl font-bold">

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createStorySeed } from "@/lib/gen/seed";
 import { generateStory } from "@/lib/gen/story";
 import { TIERS, parseTier } from "@/lib/gen/tiers";
+import { resolveGenerationModels } from "@/lib/gen/model-selection";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +27,9 @@ export async function GET(req: NextRequest) {
   const selection = createStorySeed();
   const tier = TIERS[parseTier(req.nextUrl.searchParams.get("tier"))];
   try {
-    const story = await generateStory(selection, tier);
+    const story = await generateStory(selection, tier, {
+      models: resolveGenerationModels(),
+    });
     return NextResponse.json({ date, selection, tier: tier.id, story });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });

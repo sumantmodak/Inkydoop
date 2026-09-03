@@ -119,6 +119,7 @@ The Print button opens the browser print dialog, which can print the worksheet o
 `/admin` provides a key-protected workspace for generation and publication review.
 
 - Choose a date and reading tier and generate a new pack.
+- Choose Environment defaults, Economy, Balanced, Quality, or a Custom allowlisted story/learning/image model combination.
 - Review pending, approved, or rejected queues.
 - Read the complete story and inspect every illustration.
 - Check vocabulary, comprehension questions, answer key, story/art-direction metadata, and the complete generation audit record.
@@ -126,6 +127,7 @@ The Print button opens the browser print dialog, which can print the worksheet o
 - Expand the raw normalized generation JSON when exact field-level inspection is needed.
 - Add an optional review note.
 - Approve and publish or reject the pack.
+- Repopulate the generation form from an existing pack with `Generate another with same models`.
 
 Every successful generation creates a private `pending` pack. Existing packs are not overwritten. Approval publishes the story, learning pages, print view, library metadata, and images together. Rejection keeps them private.
 
@@ -173,6 +175,20 @@ Query parameters:
 | ------ | -------- | ------------------------------------------------------------ |
 | `date` | No       | Pack date in `YYYY-MM-DD`; defaults to the current UTC date. |
 | `tier` | No       | `early`, `growing`, or `middle`; defaults to `growing`.      |
+
+Optional JSON body:
+
+```json
+{
+  "models": {
+    "story": "z-ai/glm-5.2",
+    "learning": "deepseek/deepseek-v4-flash",
+    "image": "google/gemini-2.5-flash-image"
+  }
+}
+```
+
+Omitting `models` uses the server environment defaults. Every supplied model must be in the server-side allowlist for its category; arbitrary, category-mismatched, partial, and unknown-field requests return `400` before generation starts.
 
 The endpoint is limited to five requests per minute per client IP within each running process.
 
@@ -327,7 +343,7 @@ The requested date does not control the selection. Generating another tier or an
 
 ### 2. Story Draft
 
-`generateStory()` calls `OPENROUTER_MODEL_STORY` with the selected genre, theme, tier limits, writing guidance, and illustration requirements.
+`generateStory()` calls the resolved story model with the selected genre, theme, tier limits, writing guidance, and illustration requirements.
 
 The expected output contains:
 
@@ -369,7 +385,7 @@ Question filtering:
 
 ### 4. Illustrations
 
-`renderImages()` requests all image specifications concurrently through OpenRouter's dedicated Image API using `IMAGE_MODEL` and `IMAGE_API_KEY`.
+`renderImages()` requests all image specifications concurrently through OpenRouter's dedicated Image API using the resolved image model and `IMAGE_API_KEY`.
 
 - Requests specify a 16:9 landscape aspect ratio and prefer WebP output.
 - The prompt combines shared art direction, setting, character descriptions, scene instructions, landscape composition guidance, and kid-safe constraints.
@@ -540,6 +556,27 @@ Model settings have defaults:
 | `OPENROUTER_MODEL_JUDGE`    | `openai/gpt-4o`                 |
 | `IMAGE_MODEL`               | `google/gemini-2.5-flash-image` |
 | `APP_VERSION`               | `development`                   |
+
+### Generation Model Registry
+
+`src/lib/generation-models.ts` is the server-enforced catalog used by the admin generation form. It contains:
+
+- `STORY_MODELS`, `LEARNING_MODELS`, and `IMAGE_MODELS` category allowlists.
+- Display labels, intended profiles, and relative cost indicators.
+- Economy, Balanced, and Quality presets.
+- The Zod schema that rejects arbitrary or category-mismatched overrides.
+
+The current catalog includes `z-ai/glm-5.3` for stories, `z-ai/glm-5.3-flash` for learning materials, and `microsoft/mai-image-2.5` for 16:9 image generation. As of September 2026, OpenRouter does not publish routable `z-ai/glm-latest` or `z-ai/glm-flash-latest` IDs, so the catalog uses the current concrete GLM versions rather than broken aliases.
+
+To add a selectable model:
+
+1. Add it to exactly the categories it supports.
+2. Verify structured JSON output for story or learning models.
+3. Verify Image API, 16:9 aspect ratio, and output-format support for image models.
+4. Add or update presets only after the model passes generation and moderation review.
+5. Ensure every environment-default model also appears in its category allowlist.
+
+The route resolves defaults once, then explicitly passes the selected model set through story, learning, and image generation. Stored telemetry records the requested set and each actual provider response model.
 
 Storage settings:
 

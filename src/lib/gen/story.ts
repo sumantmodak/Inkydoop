@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { env } from "@/lib/env";
 import { chatJson, type ChatMessage } from "@/lib/ai/openrouter";
 import {
   StoryDraftSchema,
@@ -19,6 +18,7 @@ import {
 import type { Tier } from "./tiers";
 import type { GenerationTelemetry } from "./telemetry";
 import { storySystem, IMAGE_SPECS_SYSTEM } from "@/lib/prompts";
+import type { GenerationModels } from "@/lib/generation-models";
 
 const MAX_ATTEMPTS = 3; // 1 initial + 2 corrective retries
 
@@ -37,6 +37,7 @@ const ImageSpecsSchema = z.object({ images: z.array(ImageSpecSchema) });
 /** Fallback: regenerate just the illustration specs from a finished draft. */
 async function regenerateImageSpecs(
   draft: StoryDraft,
+  models: GenerationModels,
   signal?: AbortSignal,
   telemetry?: GenerationTelemetry,
 ): Promise<ImageSpec[]> {
@@ -54,7 +55,7 @@ async function regenerateImageSpecs(
     },
   ];
   const { images } = await chatJson(
-    env.OPENROUTER_MODEL_LEARNING,
+    models.learning,
     messages,
     ImageSpecsSchema,
     {
@@ -94,6 +95,7 @@ function correctionFor(
 }
 
 export interface GenerateStoryOptions {
+  models: GenerationModels;
   signal?: AbortSignal;
   telemetry?: GenerationTelemetry;
 }
@@ -106,15 +108,15 @@ export interface GenerateStoryOptions {
 export async function generateStory(
   seed: StorySeed,
   tier: Tier,
-  options: GenerateStoryOptions = {},
+  options: GenerateStoryOptions,
 ): Promise<GeneratedStory> {
-  const { signal, telemetry } = options;
+  const { models, signal, telemetry } = options;
   let corrective = "";
   let lastIssues: StoryIssue[] = [];
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     const draft = await chatJson(
-      env.OPENROUTER_MODEL_STORY,
+      models.story,
       [
         { role: "system", content: storySystem(tier) },
         { role: "user", content: buildUserPrompt(seed, corrective) },
@@ -131,7 +133,7 @@ export async function generateStory(
     const images =
       draft.images && draft.images.length > 0
         ? draft.images
-        : await regenerateImageSpecs(draft, signal, telemetry);
+        : await regenerateImageSpecs(draft, models, signal, telemetry);
 
     const story = GeneratedStorySchema.parse({ ...draft, images });
     const issues = validateStory(story, tier);

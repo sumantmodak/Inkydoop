@@ -4,11 +4,18 @@ import { generateAndStore } from "@/lib/gen/pack";
 import { parseTier } from "@/lib/gen/tiers";
 import { rateLimit } from "@/lib/rate-limit";
 import { todayUtc } from "@/lib/store/read";
+import { z } from "zod";
+import { GenerationModelsSchema } from "@/lib/generation-models";
+import { resolveGenerationModels } from "@/lib/gen/model-selection";
 
 export const dynamic = "force-dynamic";
 // Generation can take several minutes (the story model dominates). Allow ample
 // headroom so slow models aren't cut off mid-pipeline.
 export const maxDuration = 800;
+
+const BodySchema = z
+  .object({ models: GenerationModelsSchema.optional() })
+  .strict();
 
 function clientIp(req: NextRequest): string {
   return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
@@ -30,8 +37,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "invalid date" }, { status: 400 });
   }
 
+  let body: z.infer<typeof BodySchema> = {};
   try {
-    const result = await generateAndStore({ date, tier });
+    const text = await req.text();
+    body = text ? BodySchema.parse(JSON.parse(text)) : {};
+  } catch {
+    return NextResponse.json({ error: "invalid body" }, { status: 400 });
+  }
+
+  try {
+    const models = resolveGenerationModels(body.models);
+    const result = await generateAndStore({ date, tier, models });
     console.log(
       JSON.stringify({
         event: "generate",
@@ -41,6 +57,7 @@ export async function POST(req: NextRequest) {
         durationMs: result.durationMs,
         totalTokens: result.metadata.tokens.total,
         costs: result.metadata.costs,
+        models,
         images: result.metadata.images,
         ip,
       }),

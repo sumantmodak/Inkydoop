@@ -4,6 +4,7 @@ import { uploadImage } from "@/lib/store/blobStore";
 import type { GeneratedStory, ImageSpec, StoryImage } from "@/lib/schemas";
 import { IMAGE_SAFE_SUFFIX } from "@/lib/prompts";
 import type { GenerationTelemetry } from "./telemetry";
+import type { GenerationModels } from "@/lib/generation-models";
 
 const OPENROUTER_IMAGE_URL = "https://openrouter.ai/api/v1/images";
 
@@ -135,6 +136,7 @@ async function renderOne(
   spec: ImageSpec,
   prefix: string,
   sceneIndex: number,
+  imageModel: GenerationModels["image"],
   signal?: AbortSignal,
   telemetry?: GenerationTelemetry,
 ): Promise<StoryImage | null> {
@@ -147,7 +149,7 @@ async function renderOne(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: env.IMAGE_MODEL,
+        model: imageModel,
         prompt: buildPrompt(gen, spec),
         aspect_ratio: "16:9",
         output_format: "webp",
@@ -159,7 +161,7 @@ async function renderOne(
       telemetry?.images.push({
         role: spec.role,
         status: "failed",
-        model: env.IMAGE_MODEL,
+        model: imageModel,
         requestedAspectRatio: "16:9",
         requestedFormat: "webp",
         moderationStatus: "not_run",
@@ -173,7 +175,7 @@ async function renderOne(
       telemetry?.images.push({
         role: spec.role,
         status: "failed",
-        model: env.IMAGE_MODEL,
+        model: imageModel,
         requestedAspectRatio: "16:9",
         requestedFormat: "webp",
         moderationStatus: "not_run",
@@ -188,7 +190,7 @@ async function renderOne(
       telemetry?.images.push({
         role: spec.role,
         status: "failed",
-        model: env.IMAGE_MODEL,
+        model: imageModel,
         requestedAspectRatio: "16:9",
         requestedFormat: "webp",
         moderationStatus: "not_run",
@@ -210,7 +212,7 @@ async function renderOne(
     telemetry?.images.push({
       role: spec.role,
       status: "succeeded",
-      model: env.IMAGE_MODEL,
+      model: imageModel,
       requestedAspectRatio: "16:9",
       requestedFormat: "webp",
       moderationStatus: "not_run",
@@ -236,7 +238,7 @@ async function renderOne(
     telemetry?.images.push({
       role: spec.role,
       status: "failed",
-      model: env.IMAGE_MODEL,
+      model: imageModel,
       requestedAspectRatio: "16:9",
       requestedFormat: "webp",
       moderationStatus: "not_run",
@@ -253,7 +255,11 @@ async function renderOne(
 export async function renderImages(
   gen: GeneratedStory,
   prefix: string,
-  options: { signal?: AbortSignal; telemetry?: GenerationTelemetry } = {},
+  options: {
+    models: GenerationModels;
+    signal?: AbortSignal;
+    telemetry?: GenerationTelemetry;
+  },
 ): Promise<StoryImage[]> {
   let sceneCounter = 0;
   const jobs = gen.images.map((spec) => {
@@ -263,6 +269,7 @@ export async function renderImages(
       spec,
       prefix,
       sceneIndex,
+      options.models.image,
       options.signal,
       options.telemetry,
     );

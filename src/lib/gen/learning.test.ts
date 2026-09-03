@@ -5,10 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { chatJson } from "@/lib/ai/openrouter";
 import { generateLearningMaterials } from "@/lib/gen/learning";
 import { TIERS } from "@/lib/gen/tiers";
-
-vi.mock("@/lib/env", () => ({
-  env: { OPENROUTER_MODEL_LEARNING: "test-learning-model" },
-}));
+import { GENERATION_PRESETS } from "@/lib/generation-models";
 
 vi.mock("@/lib/ai/openrouter", () => ({ chatJson: vi.fn() }));
 
@@ -61,6 +58,7 @@ describe("generateLearningMaterials", () => {
         candidateVocab: ["lantern"],
       },
       TIERS.growing,
+      { models: GENERATION_PRESETS.balanced.models },
     );
 
     expect(chatJson).toHaveBeenCalledTimes(1);
@@ -87,9 +85,13 @@ describe("generateLearningMaterials", () => {
         candidateVocab: ["lantern"],
       },
       TIERS.growing,
+      { models: GENERATION_PRESETS.balanced.models },
     );
 
     expect(chatJson).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(chatJson).mock.calls[0][0]).toBe(
+      "deepseek/deepseek-v4-flash",
+    );
     expect(result.questions).toHaveLength(5);
     expect(vi.mocked(chatJson).mock.calls[1][1][1].content).toContain(
       "5 valid vocabulary items and 4 valid questions",
