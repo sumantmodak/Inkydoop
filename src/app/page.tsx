@@ -4,10 +4,12 @@ import { Mascot } from "@/components/mascot";
 import { StoryImage } from "@/components/story-image";
 import { TierSelect } from "@/components/tier-select";
 import { ShareButton } from "@/components/share-button";
+import { SaveStoryButton } from "@/components/save-story-button";
 import { getServedPack, todayUtc } from "@/lib/store/read";
 import { listPacks } from "@/lib/store/tableStore";
 import { getTierCookie } from "@/lib/tier-cookie";
 import { TIERS } from "@/lib/gen/tiers";
+import { publicationLabel } from "@/lib/publication-label";
 import type { PackSummary, TierId } from "@/lib/schemas";
 
 export const dynamic = "force-dynamic";
@@ -41,20 +43,25 @@ export default async function Home() {
     await Promise.all([getServedPack(undefined, tier), loadRecent(tier)]);
   const story = pack.story;
   const cover = story.images.find((img) => img.role === "cover");
-  const featuredLabel = !isSample && date === todayUtc() ? "Today's story" : "Featured story";
+  const featuredLabel = publicationLabel(date, isSample, todayUtc());
   const recent = recentPacks.filter((item) => item.id !== packId).slice(0, 6);
   const exactStoryPath = `/story?id=${encodeURIComponent(packId)}`;
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-5 sm:px-6 sm:py-8">
-      <header className="mb-6 flex flex-wrap items-center justify-between gap-3 sm:mb-8">
-        <div className="flex items-center gap-3">
-          <Mascot className="animate-bob h-14 w-14 sm:h-16 sm:w-16" />
-          <h1 className="font-display text-3xl font-bold text-brand sm:text-4xl">
-            Inkydoop
-          </h1>
+      <header className="mb-4 flex flex-wrap items-center justify-between gap-3 sm:mb-8">
+        <div className="flex w-full items-center justify-between sm:w-auto">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Mascot className="animate-bob h-12 w-12 sm:h-16 sm:w-16" />
+            <h1 className="font-display text-2xl font-bold text-brand sm:text-4xl">
+              Inkydoop
+            </h1>
+          </div>
+          <div className="sm:hidden">
+            <ThemeToggle />
+          </div>
         </div>
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className="flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-end">
           <TierSelect current={tier} />
           <Link
             href="/library"
@@ -62,12 +69,17 @@ export default async function Home() {
           >
             Library
           </Link>
-          <ThemeToggle />
+          <div className="hidden sm:block">
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 
       <main className="space-y-12 sm:space-y-16">
-        <section className="animate-pop-in relative flex min-h-[32rem] flex-col justify-end overflow-hidden rounded-3xl shadow-xl ring-4 ring-white sm:min-h-[36rem] dark:ring-surface">
+        <section
+          aria-labelledby="featured-title"
+          className="animate-pop-in relative flex min-h-[28rem] flex-col justify-end overflow-hidden rounded-xl bg-[#20203a] shadow-xl ring-4 ring-white sm:min-h-[38rem] dark:ring-surface"
+        >
           {cover ? (
             <StoryImage
               alt={cover.alt}
@@ -82,43 +94,49 @@ export default async function Home() {
           )}
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent"
+            className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/5"
           />
-          <Mascot className="animate-float absolute top-5 right-5 h-16 w-16 drop-shadow-lg sm:h-24 sm:w-24" />
-          <div className="relative z-10 max-w-3xl p-6 sm:p-10">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="font-display inline-block rounded-full bg-sunny px-3 py-1 text-xs font-extrabold text-[#2b2d52] shadow-md">
-                {featuredLabel}
-              </span>
-              <span className="font-display rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-brand">
-                {TIERS[pack.tier].label}
-              </span>
-              <span className="rounded-full bg-black/35 px-3 py-1 text-xs font-semibold text-white capitalize backdrop-blur-sm">
-                {story.genre}
-              </span>
+          <Mascot className="animate-float absolute top-5 right-5 hidden h-24 w-24 drop-shadow-lg sm:block" />
+          <div className="relative z-10 max-w-4xl p-5 sm:p-10 lg:p-12">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs font-bold text-white/85 uppercase">
+              <span className="font-display text-sunny">{featuredLabel}</span>
+              <span aria-hidden="true" className="h-1 w-1 rounded-full bg-white/50" />
+              <span>{TIERS[pack.tier].label}</span>
+              <span aria-hidden="true" className="h-1 w-1 rounded-full bg-white/50" />
+              <span className="capitalize">{story.genre}</span>
             </div>
-            <h2 className="font-display mt-4 text-4xl font-bold text-white drop-shadow-md sm:text-6xl">
+            <h2
+              id="featured-title"
+              className="font-display mt-3 max-w-3xl text-3xl leading-[1.05] font-bold text-white drop-shadow-md sm:mt-4 sm:text-6xl lg:text-7xl"
+            >
               {story.title}
             </h2>
-            <p className="mt-3 max-w-2xl text-base leading-relaxed text-white/90 sm:text-lg">
+            <p className="mt-3 line-clamp-3 max-w-2xl text-sm leading-relaxed text-white/90 sm:mt-4 sm:line-clamp-none sm:text-xl">
               {storyHook(story.hook, story.paragraphs[0] ?? "")}
             </p>
-            <p className="mt-3 text-sm font-medium text-white/75 capitalize">
-              {story.theme} · {story.readingTimeMin} min read
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
+            <dl className="mt-4 flex flex-wrap gap-x-5 gap-y-1.5 border-y border-white/25 py-2.5 text-xs text-white/80 sm:mt-5 sm:gap-y-2 sm:py-3 sm:text-sm">
+              <div className="flex gap-1.5">
+                <dt className="sr-only">Theme</dt>
+                <dd className="capitalize">{story.theme}</dd>
+              </div>
+              <div className="flex gap-1.5">
+                <dt className="font-semibold text-white">Read</dt>
+                <dd>{story.readingTimeMin} min</dd>
+              </div>
+              <div className="flex gap-1.5">
+                <dt className="font-semibold text-white">Inside</dt>
+                <dd>{pack.vocabulary.length} words · {pack.questions.length} questions</dd>
+              </div>
+            </dl>
+            <div className="mt-4 flex flex-wrap items-center gap-2 sm:mt-6 sm:gap-3">
               <Link
                 href={exactStoryPath}
-                className="font-display inline-flex min-h-11 items-center rounded-full bg-white px-6 py-2 font-bold text-brand shadow-md transition-transform hover:scale-105 focus-visible:ring-4 focus-visible:ring-white/50 focus-visible:outline-none"
+                className="font-display inline-flex min-h-12 items-center rounded-full bg-sunny px-7 py-2.5 font-bold text-[#2b2d52] shadow-md transition-transform hover:scale-105 focus-visible:ring-4 focus-visible:ring-white/50 focus-visible:outline-none"
               >
-                Read story →
+                Read the story&nbsp; →
               </Link>
-              <Link
-                href={`/print/${encodeURIComponent(packId)}`}
-                className="font-display inline-flex min-h-11 items-center rounded-full border-2 border-white/60 bg-black/20 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm transition-colors hover:bg-black/35 focus-visible:ring-4 focus-visible:ring-white/50 focus-visible:outline-none"
-              >
-                Print pack
-              </Link>
+              <span aria-hidden="true" className="hidden h-7 w-px bg-white/35 sm:block" />
+              <SaveStoryButton packId={packId} />
               <ShareButton path={exactStoryPath} title={story.title} />
             </div>
           </div>

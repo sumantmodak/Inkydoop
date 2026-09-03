@@ -21,8 +21,9 @@ It describes proposed work, not current behavior. See [README.md](README.md) for
 The landing page currently provides:
 
 - An approved featured story with cover, hook, tier, genre, theme, and reading time.
+- Truthful publication freshness plus vocabulary and question counts in the featured hero.
 - Exact links to the story, vocabulary activity, and comprehension review.
-- Share and print actions.
+- Compact Share and device-local Save actions in the hero, with Print in the teacher section.
 - A tier-filtered Recently Added shelf when matching stories exist.
 - Hardcoded genre shortcuts.
 - A three-step reading path.
@@ -49,6 +50,8 @@ The roadmap builds on this baseline rather than replacing it.
 ## R1: Publication Clarity
 
 ### R1.1 Freshness And Publication Labels
+
+**Status:** Landing-page helper, rendering, and unit coverage are complete. Story-page rendering and machine-readable publication metadata remain.
 
 #### Goal
 
@@ -84,6 +87,8 @@ Make it immediately clear whether the featured pack is today's approved story, a
 - Operators can verify publication freshness from the public UI.
 
 ### R1.2 Featured Story Content Counts
+
+**Status:** Complete on the featured-story hero. Responsive browser verification remains part of R7.
 
 #### Goal
 
@@ -270,6 +275,8 @@ interface LocalReadingProgress {
 - Useful personalization without child accounts.
 
 ### R3.2 Device-Local Favorites
+
+**Status:** The featured hero can save and remove up to 100 pack IDs on device. Story/library controls, approved-pack resolution, and the Saved Stories shelf remain.
 
 #### Goal
 

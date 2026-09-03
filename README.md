@@ -48,11 +48,12 @@ The project uses Node.js 22 or newer and pnpm.
 
 ### Home
 
-The home page resolves the most recently generated pack for the saved reading tier and presents it as the featured story. It displays:
+The home page resolves the most recently generated pack for the saved reading tier and presents it in an editorial featured-story hero. It displays:
 
-- Cover art, a spoiler-free hook, tier, genre, theme, and reading time.
+- Cover art, a spoiler-free hook, tier, genre, theme, reading time, vocabulary count, and question count.
+- A truthful publication label for today's story, yesterday's story, older stories, and sample content.
 - Exact links to read the story, practice its vocabulary, and review its questions.
-- Print and native share actions for the featured pack.
+- A dominant reading action with compact native sharing and device-local Save controls.
 - A tier-filtered shelf of recently added stories.
 - Genre shortcuts that open filtered Story Library views.
 - A teacher-focused entry point for printable packs.
@@ -60,7 +61,7 @@ The home page resolves the most recently generated pack for the saved reading ti
 
 If no matching tier exists, the app tries the latest pack from any tier. If storage is unavailable or contains no packs, it displays the bundled sample pack.
 
-The page labels a pack as "Today's story" only when it is a stored pack dated today; sample and older packs are labeled "Featured story."
+The Save control stores at most 100 immutable pack IDs in browser local storage. It does not require an account or send favorites to the server. Saved-story shelves and Save controls outside the featured hero are not implemented yet.
 
 ### Story
 
