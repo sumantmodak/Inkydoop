@@ -19,6 +19,10 @@ import type { Tier } from "./tiers";
 import type { GenerationTelemetry } from "./telemetry";
 import { storySystem, IMAGE_SPECS_SYSTEM } from "@/lib/prompts";
 import type { GenerationModels } from "@/lib/generation-models";
+import {
+  reportGenerationProgress,
+  type GenerationProgressReporter,
+} from "./progress";
 
 const MAX_ATTEMPTS = 3; // 1 initial + 2 corrective retries
 
@@ -106,6 +110,7 @@ export interface GenerateStoryOptions {
   models: GenerationModels;
   signal?: AbortSignal;
   telemetry?: GenerationTelemetry;
+  onProgress?: GenerationProgressReporter;
 }
 
 /**
@@ -118,11 +123,17 @@ export async function generateStory(
   tier: Tier,
   options: GenerateStoryOptions,
 ): Promise<GeneratedStory> {
-  const { models, signal, telemetry } = options;
+  const { models, signal, telemetry, onProgress } = options;
   let corrective = "";
   let lastIssues: StoryIssue[] = [];
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    reportGenerationProgress(onProgress, {
+      stage: "story",
+      label: "Writing and validating the story",
+      status: "active",
+      detail: `Draft attempt ${attempt} of ${MAX_ATTEMPTS}`,
+    });
     const systemPrompt = storySystem(tier);
     const userPrompt = buildUserPrompt(seed, corrective);
     telemetry?.prompts.push({
@@ -160,9 +171,23 @@ export async function generateStory(
       readingGrade: readingGrade(story.paragraphs.join(" ")),
       issues: issues.map((issue) => `${issue.kind}: ${issue.message}`),
     });
-    if (issues.length === 0) return story;
+    if (issues.length === 0) {
+      reportGenerationProgress(onProgress, {
+        stage: "story",
+        label: "Story written and validated",
+        status: "completed",
+        detail: `${countWords(story.paragraphs).toLocaleString()} words · passed on attempt ${attempt}`,
+      });
+      return story;
+    }
 
     lastIssues = issues;
+    reportGenerationProgress(onProgress, {
+      stage: "story",
+      label: "Story revision needed",
+      status: "warning",
+      detail: issues.map((issue) => issue.message).join(" "),
+    });
     corrective = correctionFor(story, issues, tier);
   }
 

@@ -181,10 +181,12 @@ describe("generateAndStore metadata", () => {
   });
 
   it("stores and returns rolled-up generation telemetry", async () => {
+    const progress: string[] = [];
     const result = await generateAndStore({
       date: "2026-09-01",
       tier: "growing",
       models: GENERATION_PRESETS.balanced.models,
+      onProgress: (event) => progress.push(`${event.stage}:${event.status}`),
     });
 
     const storedPack = vi.mocked(insertPack).mock.calls[0][3];
@@ -218,6 +220,17 @@ describe("generateAndStore metadata", () => {
       images: { requested: 1, succeeded: 1, failed: 0, totalBytes: 100 },
     });
     expect(generateNarration).not.toHaveBeenCalled();
+    expect(progress).toEqual([
+      "selection:active",
+      "selection:completed",
+      "images:active",
+      "images:completed",
+      "assembly:active",
+      "assembly:completed",
+      "audio:skipped",
+      "storage:active",
+      "storage:completed",
+    ]);
   });
 
   it("adds narration only when requested", async () => {

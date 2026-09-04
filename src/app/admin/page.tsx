@@ -15,6 +15,8 @@ import {
   type GenerationModels,
   type GenerationPresetId,
 } from "@/lib/generation-models";
+import type { GenerationProgressEvent } from "@/lib/gen/progress";
+import { consumeServerSentEvents } from "@/lib/gen/progress-stream";
 
 function todayUtc(): string {
   return new Date().toISOString().slice(0, 10);
@@ -22,13 +24,13 @@ function todayUtc(): string {
 
 type Status =
   | { kind: "idle" }
-  | { kind: "running" }
+  | { kind: "running"; progress: GenerationProgressEvent[] }
   | { kind: "done"; id: string; audioStatus?: "succeeded" | "failed" }
   | { kind: "error"; message: string };
 
 type PresetSelection = "environment" | GenerationPresetId | "custom";
 
-function GenerationProgress({ narration }: { narration: boolean }) {
+function GenerationProgress({ events }: { events: GenerationProgressEvent[] }) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   useEffect(() => {
@@ -47,10 +49,64 @@ function GenerationProgress({ narration }: { narration: boolean }) {
     : `${seconds}s`;
 
   return (
-    <p className="mt-4 text-sm text-muted" aria-live="polite">
-      Working for {elapsed}… writing, checking, illustrating
-      {narration ? ", and narrating" : ""} the story. Keep this tab open.
-    </p>
+    <section
+      aria-labelledby="generation-progress-heading"
+      className="mt-4 border-l-4 border-brand bg-brand/5 p-4"
+    >
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 id="generation-progress-heading" className="font-display font-bold">
+          Generation progress
+        </h2>
+        <span className="text-xs tabular-nums text-muted">{elapsed}</span>
+      </div>
+      <p className="mt-1 text-xs text-muted">Keep this tab open.</p>
+      <ol className="mt-4 space-y-3" aria-live="polite">
+        {events.length === 0 && (
+          <li className="text-sm text-muted">Starting generation request…</li>
+        )}
+        {events.map((event, index) => {
+          const isCurrent =
+            event.status === "active" && index === events.length - 1;
+          return (
+            <li
+              key={`${event.timestamp}-${event.stage}-${index}`}
+              className="flex gap-3 text-sm"
+            >
+              <span
+                aria-hidden="true"
+                className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                  event.status === "completed"
+                    ? "bg-mint text-emerald-950"
+                    : event.status === "warning"
+                      ? "bg-sunny text-amber-950"
+                      : event.status === "skipped"
+                        ? "bg-surface-border text-muted"
+                        : isCurrent
+                          ? "animate-pulse bg-brand text-white"
+                          : "bg-brand/15 text-brand"
+                }`}
+              >
+                {event.status === "completed"
+                  ? "✓"
+                  : event.status === "warning"
+                    ? "!"
+                    : event.status === "skipped"
+                      ? "–"
+                      : "•"}
+              </span>
+              <span className="min-w-0">
+                <span className="font-semibold">{event.label}</span>
+                {event.detail && (
+                  <span className="mt-0.5 block break-words text-xs text-muted">
+                    {event.detail}
+                  </span>
+                )}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+    </section>
   );
 }
 
@@ -130,7 +186,7 @@ export default function AdminPage() {
   async function generate(e: React.FormEvent) {
     e.preventDefault();
     if (!key || status.kind === "running") return;
-    setStatus({ kind: "running" });
+    setStatus({ kind: "running", progress: [] });
     try {
       const selectedModels =
         preset === "environment"
@@ -151,6 +207,7 @@ export default function AdminPage() {
           headers: {
             "x-generate-key": key,
             "Content-Type": "application/json",
+            Accept: "text/event-stream",
           },
           body: JSON.stringify(
             selectedModels || narration
@@ -159,7 +216,6 @@ export default function AdminPage() {
           ),
         },
       );
-      const text = await res.text();
       if (res.status === 401) {
         setStatus({ kind: "error", message: "Wrong key." });
         return;
@@ -169,25 +225,50 @@ export default function AdminPage() {
         return;
       }
       if (!res.ok) {
+        const text = await res.text();
         setStatus({
           kind: "error",
           message: responseError(text, res.status),
         });
         return;
       }
-      let id = "";
-      let audioStatus: "succeeded" | "failed" | undefined;
-      try {
-        const parsed = JSON.parse(text) as {
-          id?: string;
-          metadata?: { audio?: { status?: "succeeded" | "failed" } };
-        };
-        id = parsed.id ?? "";
-        audioStatus = parsed.metadata?.audio?.status;
-      } catch {
-        // non-JSON body — leave id empty
+      let completed = false;
+      await consumeServerSentEvents(res, ({ event, data }) => {
+        if (event === "progress") {
+          const progress = data as GenerationProgressEvent;
+          setStatus((current) =>
+            current.kind === "running"
+              ? { kind: "running", progress: [...current.progress, progress] }
+              : current,
+          );
+        }
+        if (event === "result") {
+          const result = data as {
+            id: string;
+            metadata?: { audio?: { status?: "succeeded" | "failed" } };
+          };
+          completed = true;
+          setStatus({
+            kind: "done",
+            id: result.id,
+            audioStatus: result.metadata?.audio?.status,
+          });
+        }
+        if (event === "error") {
+          const error = data as { error?: string };
+          completed = true;
+          setStatus({
+            kind: "error",
+            message: error.error ?? "Generation failed.",
+          });
+        }
+      });
+      if (!completed) {
+        setStatus({
+          kind: "error",
+          message: "Generation stream ended before a result was returned.",
+        });
       }
-      setStatus({ kind: "done", id, audioStatus });
     } catch (err) {
       setStatus({ kind: "error", message: String(err) });
     }
@@ -392,7 +473,7 @@ export default function AdminPage() {
         </form>
 
         {status.kind === "running" && (
-          <GenerationProgress narration={includeNarration} />
+          <GenerationProgress events={status.progress} />
         )}
         {status.kind === "done" && (
           <div

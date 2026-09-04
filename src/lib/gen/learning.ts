@@ -9,6 +9,10 @@ import { learningSystem } from "@/lib/prompts";
 import type { Tier } from "./tiers";
 import type { GenerationTelemetry } from "./telemetry";
 import type { GenerationModels } from "@/lib/generation-models";
+import {
+  reportGenerationProgress,
+  type GenerationProgressReporter,
+} from "./progress";
 
 const MAX_DEFINITION_CHARS = 140;
 const MIN_VOCABULARY_WORDS = 5;
@@ -84,6 +88,7 @@ export async function generateLearningMaterials(
     models: GenerationModels;
     signal?: AbortSignal;
     telemetry?: GenerationTelemetry;
+    onProgress?: GenerationProgressReporter;
   },
 ): Promise<LearningMaterials> {
   const storyText = input.paragraphs.join("\n\n");
@@ -91,6 +96,12 @@ export async function generateLearningMaterials(
   let lastCounts = { vocabulary: 0, questions: 0 };
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    reportGenerationProgress(options.onProgress, {
+      stage: "learning",
+      label: "Creating vocabulary and questions",
+      status: "active",
+      detail: `Learning attempt ${attempt} of ${MAX_ATTEMPTS}`,
+    });
     if (options.telemetry) options.telemetry.learningAttempts = attempt;
     const correction =
       attempt === 1
@@ -139,8 +150,21 @@ export async function generateLearningMaterials(
       vocabulary.length >= MIN_VOCABULARY_WORDS &&
       questions.length >= MIN_QUESTIONS
     ) {
+      reportGenerationProgress(options.onProgress, {
+        stage: "learning",
+        label: "Learning activities validated",
+        status: "completed",
+        detail: `${vocabulary.length} vocabulary words · ${questions.length} questions`,
+      });
       return { vocabulary, questions };
     }
+
+    reportGenerationProgress(options.onProgress, {
+      stage: "learning",
+      label: "Learning revision needed",
+      status: "warning",
+      detail: `${vocabulary.length} valid words · ${questions.length} valid questions`,
+    });
   }
 
   throw new Error(

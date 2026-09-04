@@ -10,6 +10,8 @@ import {
   NarrationOptionsSchema,
 } from "@/lib/generation-models";
 import { resolveGenerationModels } from "@/lib/gen/model-selection";
+import type { GenerationProgressEvent } from "@/lib/gen/progress";
+import type { GenerateResult } from "@/lib/gen/pack";
 
 export const dynamic = "force-dynamic";
 // Generation can take several minutes (the story model dominates). Allow ample
@@ -25,6 +27,77 @@ const BodySchema = z
 
 function clientIp(req: NextRequest): string {
   return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
+}
+
+function logGeneration(
+  result: GenerateResult,
+  context: { date: string; tier: string; models: unknown; ip: string },
+) {
+  console.log(
+    JSON.stringify({
+      event: "generate",
+      id: result.id,
+      date: context.date,
+      tier: context.tier,
+      durationMs: result.durationMs,
+      totalTokens: result.metadata.tokens.total,
+      costs: result.metadata.costs,
+      models: context.models,
+      images: result.metadata.images,
+      audio: result.metadata.audio,
+      ip: context.ip,
+    }),
+  );
+}
+
+function streamGeneration(input: {
+  date: string;
+  tier: ReturnType<typeof parseTier>;
+  models: ReturnType<typeof resolveGenerationModels>;
+  narration: z.infer<typeof NarrationOptionsSchema> | undefined;
+  signal: AbortSignal;
+  ip: string;
+}) {
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    start(controller) {
+      function send(event: string, data: unknown) {
+        controller.enqueue(
+          encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`),
+        );
+      }
+
+      void generateAndStore({
+        date: input.date,
+        tier: input.tier,
+        models: input.models,
+        narration: input.narration,
+        signal: input.signal,
+        onProgress: (progress: GenerationProgressEvent) =>
+          send("progress", progress),
+      })
+        .then((result) => {
+          logGeneration(result, input);
+          send("result", { ok: true, ...result });
+        })
+        .catch((error) => {
+          send("error", {
+            ok: false,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        })
+        .finally(() => controller.close());
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream; charset=utf-8",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+      "X-Accel-Buffering": "no",
+    },
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -53,27 +126,23 @@ export async function POST(req: NextRequest) {
 
   try {
     const models = resolveGenerationModels(body.models);
+    if (req.headers.get("accept")?.includes("text/event-stream")) {
+      return streamGeneration({
+        date,
+        tier,
+        models,
+        narration: body.narration,
+        signal: req.signal,
+        ip,
+      });
+    }
     const result = await generateAndStore({
       date,
       tier,
       models,
       narration: body.narration,
     });
-    console.log(
-      JSON.stringify({
-        event: "generate",
-        id: result.id,
-        date,
-        tier,
-        durationMs: result.durationMs,
-        totalTokens: result.metadata.tokens.total,
-        costs: result.metadata.costs,
-        models,
-        images: result.metadata.images,
-        audio: result.metadata.audio,
-        ip,
-      }),
-    );
+    logGeneration(result, { date, tier, models, ip });
     return NextResponse.json({ ok: true, ...result });
   } catch (err) {
     return NextResponse.json(

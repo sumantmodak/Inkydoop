@@ -67,6 +67,18 @@ export const IMAGE_MODELS = [
     profile: "High-quality 16:9 illustrations",
     cost: "$$",
   },
+  {
+    id: "microsoft/mai-image-2.6-flash",
+    label: "Microsoft MAI Image 2.6 Flash",
+    profile: "Lower-latency multi-aspect illustrations",
+    cost: "$",
+  },
+  {
+    id: "microsoft/mai-image-2.6",
+    label: "Microsoft MAI Image 2.6",
+    profile: "Latest high-quality multi-aspect illustrations",
+    cost: "$$",
+  },
 ] as const;
 
 export const SPEECH_MODELS = [

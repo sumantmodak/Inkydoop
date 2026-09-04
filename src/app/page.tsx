@@ -1,8 +1,6 @@
 import Link from "next/link";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { Mascot } from "@/components/mascot";
 import { StoryImage } from "@/components/story-image";
-import { TierSelect } from "@/components/tier-select";
 import { ShareButton } from "@/components/share-button";
 import { SaveStoryButton } from "@/components/save-story-button";
 import { SurpriseStoryButton } from "@/components/surprise-story-button";
@@ -70,34 +68,8 @@ export default async function Home() {
   const exactStoryPath = `/story?id=${encodeURIComponent(packId)}`;
 
   return (
-    <div className="w-full py-5 sm:py-8">
-      <header className="mx-auto mb-4 flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-4 sm:mb-8 sm:px-6">
-        <div className="flex w-full items-center justify-between sm:w-auto">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Mascot className="animate-bob h-12 w-12 sm:h-16 sm:w-16" />
-            <h1 className="font-display text-2xl font-bold text-brand sm:text-4xl">
-              Inkydoop
-            </h1>
-          </div>
-          <div className="sm:hidden">
-            <ThemeToggle />
-          </div>
-        </div>
-        <div className="flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-end">
-          <TierSelect current={tier} />
-          <Link
-            href="/library"
-            className="font-display rounded-full bg-surface px-4 py-1.5 text-sm font-semibold text-brand shadow-sm transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none"
-          >
-            Library
-          </Link>
-          <div className="hidden sm:block">
-            <ThemeToggle />
-          </div>
-        </div>
-      </header>
-
-      <main>
+    <div className="w-full pb-5 sm:pb-8">
+      <main className="pt-4 sm:pt-8">
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
           <section
             aria-labelledby="featured-title"
@@ -158,12 +130,12 @@ export default async function Home() {
                   </>
                 )}
               </div>
-              <h2
+              <h1
                 id="featured-title"
                 className="font-display mt-3 max-w-3xl text-3xl leading-[1.05] font-bold text-white drop-shadow-md sm:mt-4 sm:text-6xl lg:text-7xl"
               >
                 {story.title}
-              </h2>
+              </h1>
               <p className="mt-3 line-clamp-3 max-w-2xl text-sm leading-relaxed text-white/90 sm:mt-4 sm:line-clamp-none sm:text-xl">
                 {storyHook(story.hook, story.paragraphs[0] ?? "")}
               </p>

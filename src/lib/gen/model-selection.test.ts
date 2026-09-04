@@ -39,17 +39,21 @@ describe("generation model selection", () => {
     ).toThrow();
   });
 
-  it("accepts the current GLM and Microsoft image models", () => {
+  it.each([
+    "microsoft/mai-image-2.5",
+    "microsoft/mai-image-2.6-flash",
+    "microsoft/mai-image-2.6",
+  ] as const)("accepts the Microsoft image model %s", (image) => {
     expect(
       GenerationModelsSchema.parse({
         story: "z-ai/glm-5.3",
         learning: "z-ai/glm-5.3-flash",
-        image: "microsoft/mai-image-2.5",
+        image,
       }),
     ).toEqual({
       story: "z-ai/glm-5.3",
       learning: "z-ai/glm-5.3-flash",
-      image: "microsoft/mai-image-2.5",
+      image,
     });
   });
 

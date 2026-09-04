@@ -18,6 +18,10 @@ import type {
   GenerationModels,
   NarrationOptions,
 } from "@/lib/generation-models";
+import {
+  reportGenerationProgress,
+  type GenerationProgressReporter,
+} from "./progress";
 
 export interface GenerateSummary {
   models: GenerationMeta["models"];
@@ -56,16 +60,33 @@ export async function generateAndStore(input: {
   models: GenerationModels;
   narration?: NarrationOptions;
   signal?: AbortSignal;
+  onProgress?: GenerationProgressReporter;
 }): Promise<GenerateResult> {
-  const { date, tier: tierId, models, narration, signal } = input;
+  const { date, tier: tierId, models, narration, signal, onProgress } = input;
   const tier = TIERS[tierId];
   const start = Date.now();
   const startedAt = new Date(start).toISOString();
   const id = newPackId(date);
+  reportGenerationProgress(onProgress, {
+    stage: "selection",
+    label: "Choosing a fresh story idea",
+    status: "active",
+  });
   const selection = createStorySeed();
+  reportGenerationProgress(onProgress, {
+    stage: "selection",
+    label: "Story idea selected",
+    status: "completed",
+    detail: `${selection.genre} · ${selection.theme}`,
+  });
   const telemetry = createGenerationTelemetry();
   const gen = await measureStep(telemetry, "story", () =>
-    generateStory(selection, tier, { models, signal, telemetry }),
+    generateStory(selection, tier, {
+      models,
+      signal,
+      telemetry,
+      onProgress,
+    }),
   );
   const { vocabulary, questions } = await measureStep(
     telemetry,
@@ -74,17 +95,36 @@ export async function generateAndStore(input: {
       generateLearningMaterials(
         { paragraphs: gen.paragraphs, candidateVocab: gen.candidateVocab },
         tier,
-        { models, signal, telemetry },
+        { models, signal, telemetry, onProgress },
       ),
   );
 
   // Render illustrations (non-blocking: failures yield fewer/no images).
   // Namespaced by the pack id so same-date stories don't overwrite images.
+  reportGenerationProgress(onProgress, {
+    stage: "images",
+    label: "Painting the illustrations",
+    status: "active",
+    detail: `${gen.images.length} images requested`,
+  });
   const images = await measureStep(telemetry, "images", () =>
     renderImages(gen, id, { models, signal, telemetry }),
   );
+  reportGenerationProgress(onProgress, {
+    stage: "images",
+    label: "Illustrations finished",
+    status: telemetry.images.some((image) => image.status === "failed")
+      ? "warning"
+      : "completed",
+    detail: `${images.length} of ${gen.images.length} images ready`,
+  });
 
   const assemblyStart = Date.now();
+  reportGenerationProgress(onProgress, {
+    stage: "assembly",
+    label: "Assembling and safety-checking the pack",
+    status: "active",
+  });
   const story: Story = {
     title: gen.title,
     hook: gen.hook,
@@ -108,12 +148,39 @@ export async function generateAndStore(input: {
   if (flagged.length > 0) {
     throw new Error(`Safety filter tripped: ${flagged.join(", ")}`);
   }
+  reportGenerationProgress(onProgress, {
+    stage: "assembly",
+    label: "Pack assembled and safety check passed",
+    status: "completed",
+  });
 
   if (narration) {
+    reportGenerationProgress(onProgress, {
+      stage: "audio",
+      label: "Narrating the story",
+      status: "active",
+      detail: narration.model,
+    });
     const renderedNarration = await measureStep(telemetry, "audio", () =>
       generateNarration(story, id, { narration, signal, telemetry }),
     );
     if (renderedNarration) story.narration = renderedNarration;
+    reportGenerationProgress(onProgress, {
+      stage: "audio",
+      label: renderedNarration
+        ? "Story narration finished"
+        : "Narration could not be generated",
+      status: renderedNarration ? "completed" : "warning",
+      detail: renderedNarration
+        ? `${(renderedNarration.bytes / 1024).toFixed(1)} KiB MP3`
+        : telemetry.audio?.error,
+    });
+  } else {
+    reportGenerationProgress(onProgress, {
+      stage: "audio",
+      label: "Story narration not requested",
+      status: "skipped",
+    });
   }
   telemetry.durationsMsByStep.push({
     step: "assembly",
@@ -213,7 +280,18 @@ export async function generateAndStore(input: {
     generation,
   };
 
+  reportGenerationProgress(onProgress, {
+    stage: "storage",
+    label: "Saving the private pack",
+    status: "active",
+  });
   await insertPack(id, date, tierId, pack);
+  reportGenerationProgress(onProgress, {
+    stage: "storage",
+    label: "Private pack saved for review",
+    status: "completed",
+    detail: id,
+  });
   return {
     id,
     date,

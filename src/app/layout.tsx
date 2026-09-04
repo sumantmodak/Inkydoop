@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Fredoka, Lexend } from "next/font/google";
+import { SiteHeader } from "@/components/site-header";
 import "./globals.css";
 
 const fredoka = Fredoka({
@@ -35,6 +36,7 @@ export default function RootLayout({
     >
       <body className="flex min-h-full flex-col">
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <SiteHeader />
         {children}
       </body>
     </html>

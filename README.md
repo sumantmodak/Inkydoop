@@ -51,6 +51,7 @@ The project uses Node.js 22 or newer and pnpm.
 
 The home page resolves the most recently generated pack for the saved reading tier and presents it in an editorial featured-story hero. It displays:
 
+- The Inkydoop tagline: `Stories to read, hear, and grow with.`
 - Cover art, a spoiler-free hook, tier, genre, theme, reading time, vocabulary count, and question count.
 - A truthful publication label for today's story, yesterday's story, older stories, and sample content.
 - Exact links to read the story, practice its vocabulary, and review its questions.
@@ -64,6 +65,8 @@ The home page resolves the most recently generated pack for the saved reading ti
 - A teacher-focused entry point for printable packs.
 - An adult trust strip describing publication review, anonymous reader access, and printable learning packs.
 - The reading-level selector, Story Library link, and persisted theme toggle.
+
+The clickable Inkydoop wordmark, tagline, reading-level selector, Story Library link, and theme toggle live in the shared application header and remain available on every screen. The shared header is hidden from printed worksheets, which retain their own compact Inkydoop print branding.
 
 The landing sections alternate restrained background bands and unframed layouts to distinguish story discovery, the reading path, genre browsing, and grown-up actions without stacking decorative cards.
 
@@ -132,6 +135,7 @@ The Print button opens the browser print dialog, which can print the worksheet o
 - Choose a date and reading tier and generate a new pack.
 - Choose Environment defaults, Economy, Balanced, Quality, or a Custom allowlisted story/learning/image model combination.
 - Optionally generate MP3 narration with an allowlisted OpenRouter speech model and compatible voice.
+- Watch a live generation timeline covering story selection, draft/validation attempts, learning-material attempts, illustration results, safety assembly, optional narration, and private persistence, with total elapsed time shown above it.
 - Review pending, approved, or rejected queues.
 - Read the complete story and inspect every illustration and optional narration.
 - Check vocabulary, comprehension questions, answer key, story/art-direction metadata, and the complete generation audit record.
@@ -206,6 +210,8 @@ Optional JSON body:
 ```
 
 Omitting `models` uses the server environment defaults. Omitting `narration` skips audio generation. Every supplied model and speech model/voice combination must be in the server-side allowlist; arbitrary, category-mismatched, partial, and unknown-field requests return `400` before generation starts.
+
+Ordinary callers receive the final JSON response below. Clients that send `Accept: text/event-stream` receive Server-Sent Events on the same authenticated POST: zero or more `progress` events followed by one `result` or `error` event. The admin page uses this stream to show real stages and corrective retries rather than an inferred percentage.
 
 The endpoint is limited to five requests per minute per client IP within each running process.
 
@@ -631,7 +637,7 @@ Model settings have defaults:
 - Economy, Balanced, and Quality presets.
 - The Zod schema that rejects arbitrary or category-mismatched overrides.
 
-The speech catalog includes `microsoft/mai-voice-2-flash`, `microsoft/mai-voice-2`, and `x-ai/grok-voice-tts-1.0` with model-compatible voice allowlists. Other current OpenRouter speech models can be added after MP3, input-length, voice, reliability, and moderation review.
+The image catalog includes `microsoft/mai-image-2.5`, `microsoft/mai-image-2.6-flash`, and `microsoft/mai-image-2.6`. The speech catalog includes `microsoft/mai-voice-2-flash`, `microsoft/mai-voice-2`, and `x-ai/grok-voice-tts-1.0` with model-compatible voice allowlists. Other current OpenRouter media models can be added after format, aspect-ratio, reliability, cost, and moderation review.
 
 To add a selectable model:
 
@@ -760,7 +766,7 @@ src/
 - Image and optional audio generation/storage costs occur before human approval. Rejecting a pack does not currently delete its blobs.
 - WebP is requested, but providers can return PNG or JPEG; those formats are stored as received. There is no local conversion or byte-size limit.
 - Content safety uses prompt constraints and a small banned-term filter, not a dedicated moderation service.
-- Generation is a synchronous HTTP operation and can take several minutes.
+- Generation remains one long-running HTTP operation and can take several minutes. The admin receives live SSE stage updates, but interrupted requests are not resumable.
 - Rate limiting is in-memory and applies per running process, not across replicas.
 - Reader fallback does not expose freshness metadata or distinguish an older pack from the current date in the UI.
 - Storage failures can be hidden by the bundled sample fallback.
